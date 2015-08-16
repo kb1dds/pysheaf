@@ -1,6 +1,6 @@
 # Persistence-capable sheaf manipulation library
 #
-# Copyright (c) 2013-2014, Michael Robinson
+# Copyright (c) 2013-2015, Michael Robinson
 # Distribution of unaltered copies permitted for noncommercial use only
 # All other uses require express permission of the author
 # This software comes with no warrantees express or implied 
@@ -110,6 +110,18 @@ class CellComplex:
         """Cells in star over a subset of a cell complex"""
         return list(set(cells+[cf.index for c in cells for cf in self.cofaces(c)]))
 
+    def homology(self,k,subcomplex=None):
+        """Compute (relative) homology of the cell complex"""
+        pass
+
+    def localHomology(self,k,cell):
+        """Compute local homology localized at a (star over a) cell"""
+        pass
+
+    def inducedMapLocalHomology(self,k,cell1,cell2):
+        """Compute the induced map on local homology between two cells.  It is assumed that cell2 is a coface (perhaps not dimension 1) of cell1"""
+        pass
+
     def attachDiagram(self):
         """Draw the attachment diagram using NetworkX"""
         G=nx.DiGraph()
@@ -139,34 +151,6 @@ class Poset(CellComplex):
                   if not self.cells[i].cofaces]
 
         return DirectedGraph(graph)
-
-    def matchingDigraph(self):
-        """Construct a bipartite matching directed graph from the poset.  returns the digraph, a dictionary translating cells in the digraph to cells of the poset, the source vertex, and the sink vertex"""
-        
-        cellcount=len(self.cells)
-
-        graph=[(i,cf.index+cellcount,1) for i in range(len(self.cells))
-               for cf in self.cells[i].cofaces]
-        graph+=[(i+cellcount,cf.index,1) for i in range(len(self.cells))
-               for cf in self.cells[i].cofaces]
-        graph+=[(cellcount * 2,i,-1) for i in range(cellcount)]
-        graph+=[(i+cellcount,cellcount*2+1,-1) for i in range(cellcount)]
-        
-        dg=DirectedGraph(graph,vertex_capacity=1)
-        
-        vert_labels=[c.vertex_label for c in dg.cells]
-        src=vert_labels.index(cellcount*2)
-        dest=vert_labels.index(cellcount*2+1)
-        dct=[]
-        for v in vert_labels:
-            if v < cellcount:
-                dct+=[v]
-            elif v >= cellcount and v < cellcount*2:
-                dct+=[v-cellcount]
-            else:
-                dct+=[None]
-        
-        return (dg,dct,src,dest)
 
     def transitiveReduce(self):    
         """Remove coface relations that are redundant
@@ -253,6 +237,11 @@ class Poset(CellComplex):
                     mat[i,j]=default
                     
         return mat
+
+class AbstractSimplicialComplex(CellComplex):
+    def __init__(self,complex):
+        """An abstract simplicial complex defined as a list of lists"""
+        pass
 
 class SheafCoface(Coface):
     """A coface relation"""
@@ -555,14 +544,27 @@ class AmbiguitySheaf(Sheaf):
                 
         Sheaf.__init__(self,cellsnew)
 
+class LocalHomologySheaf(Sheaf):
+    def __init__(self,cellcomplex,k):
+        shcells=[]
+
+        for i,c in enumerate(cellcomplex.cells):
+            shcells.append(SheafCell(c.dimension,
+                                     compactClosure=c.compactClosure,
+                                     stalkDim=cellcomplex.localHomology(k,i).shape[1],
+                                     cofaces=[SheafCoface(index=cf.index,
+                                                          orientation=cf.orientation,
+                                                          corestriction=cellcomplex.inducedMapLocalHomology(k,i,cf.index))
+                                              for cf in c.cofaces]))
+        Sheaf.__init__(self,shcells)
+        
 # Poset sheaves
 class ChainSheaf(Poset,Sheaf):
     def __init__(self,poset):
         """Sheaf of chains of a poset or directed graph"""
         
         shcells=[]
-        for i in range(len(poset.cells)):
-            c=poset.cells[i]
+        for i,c in enumerate(poset.cells):
             chains=poset.maximalChains(i)
             shcells.append(SheafCell(c.dimension,
                                      compactClosure=c.compactClosure,
@@ -825,7 +827,21 @@ class TransLineSheaf(Sheaf,DirectedGraph):
                                         stalkDim=n))
 
         Sheaf.__init__(self,sheafcells)
-    
+
+class ConstantSheaf(Sheaf):
+    def __init__(self,cells):
+        """Construct a constant sheaf over a CellComplex"""
+        sheafcells=[SheafCell(dimension=c.dimension,
+                              compactClosure=c.compactClosure,
+                              cofaces=[SheafCoface(cf.index, 
+                                                   cf.orientation,
+                                                   np.matrix(1))
+                                       for cf in c.cofaces],
+                              stalkDim=1)
+                    for c in cells]
+
+        Sheaf.__init__(self,sheafcells)
+        pass
 
 class SheafMorphismCell:
     def __init__(self,destinations=[],maps=[]):
