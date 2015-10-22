@@ -128,10 +128,10 @@ def homology(b1,b2,tol=1e-5):
 
     return Hk
     
-def localHomology(toplexes,k,facet):
-    """Compute local homology relative to a facet"""
+def localHomology(toplexes,k,simplex):
+    """Compute local homology relative to a simplex"""
     rel=[spx for spx in (ksimplices(toplexes,k)+ksimplices(toplexes,k-1)) 
-         if not [f for f in facet if f in spx]]
+         if not set(simplex).issubset(spx)]
     return simplicialHomology(toplexes,k,rel)
 
 def cone(toplexes,subcomplex,coneVertex='*'):
