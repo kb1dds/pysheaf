@@ -18,13 +18,23 @@ class Coface:
     def __init__(self,index,orientation):
         self.index=index
         self.orientation=orientation
-        
+
+    def __repr__(self):
+        return "(index=" + str(self.index) + ",orientation="+str(self.orientation)+")"
+
 class Cell:
     """A cell in a cell complex"""
     def __init__(self,dimension,compactClosure=True,cofaces=[]):
         self.dimension=dimension
         self.compactClosure=compactClosure
         self.cofaces=cofaces
+
+    def __repr__(self):
+        string="(dimension="+str(self.dimension)+",compactClosure="+str(self.compactClosure)
+        if self.cofaces:
+            for cf in self.cofaces:
+                string+="," + cf.__repr__()
+        return string+")"
 
     def cofaceList(self):
         """Return the list of cofaces of this cell"""
@@ -59,16 +69,20 @@ class CellComplex:
         """Compute a list of all faces of a cell"""
         return [i for i in range(len(self.cells)) if self.cells[i].isCoface(c)]
 
+    def closure(self,cells):
+        """Compute the closure of a collection of cells"""
+        return [i for i in range(len(self.cells))
+                if i in cells or [cf for cf in self.cofaces(i) if cf.index in cells]]
+
     def cofaces(self,c,cells=[]):
-        """Iterate over cofaces (of all dimensions) of a given cell; optional argument specifies which cells are permissible cofaces"""
+        """Iterate over cofaces (of all dimensions) of a given cell; optional argument specifies which cells are permissible cofaces
+        Warning: duplicates are possible!"""
         for cf in self.cells[c].cofaces:
             if cf.index in cells or not cells:
+                for cff in self.cofaces(cf.index,cells):
+                    yield cff
                 yield cf
                 
-        for cf in self.cells[c].cofaces:
-            if cf.index in cells or not cells:
-                self.cofaces(cf.index,cells)
-
     def components(self,cells=[]):
         """Compute connected components; optional argument specifies permissible cells"""
         if not cells:
@@ -110,16 +124,76 @@ class CellComplex:
         """Cells in star over a subset of a cell complex"""
         return list(set(cells+[cf.index for c in cells for cf in self.cofaces(c)]))
 
-    def homology(self,k,subcomplex=None):
+    def homology(self,k,subcomplex=None,compactSupport=False,tol=1e-5):
         """Compute (relative) homology of the cell complex"""
-        pass
+                
+        # Obtain boundary matrices for the complex
+        d=self.boundary(k,subcomplex,compactSupport)
+        dp1=self.boundary(k+1,subcomplex,compactSupport)
+        dp1=np.compress(np.any(abs(dp1)>tol,axis=0),dp1,axis=1)
+        
+        # Compute kernel
+        if d.size:
+            ker=kernel(d,tol);
+        else:
+            ker=np.eye(d.shape[1])
 
+        # Remove image
+        if dp1.any():
+            map,j1,j2,j3=np.linalg.lstsq(ker,dp1)
+            Hk=np.dot(ker,cokernel(map,tol));
+        else:
+            Hk=ker
+
+        return Hk
+
+    def localPairComplex(self,cell):
+        """Construct a new cell complex that consists of a cell and its boundary.  The return is the cell complex paired with a list of boundary cells"""
+        # Construct the neighborhood of the cell
+        cells=self.closure([cell])
+        star=self.starCells(cells)
+
+        # Construct a proxy cell complex
+        cplx=CellComplex([self.cells[c] for c in star])
+
+        # Find the boundary of the cell we care about
+        return (cplx,range(len(cells),len(cplx.cells)))
+        
     def localHomology(self,k,cell):
         """Compute local homology localized at a (star over a) cell"""
-        pass
+        cplx,bndry=self.localPairComplex(cell)
+
+        # Compute the relative homology of the proxy complex
+        return cplx.homology(k,subcomplex=bndry)
+        
+    def boundary(self,k,subcomplex=None,compactSupport=False):
+        """Compute the boundary map for the complex"""
+        # Collect the k-cells and k-1-cells
+        if subcomplex:
+            ks=[k for k in self.skeleton(k,compactSupport) and not k in subcomplex]
+            km1=[k for k in self.skeleton(k-1,compactSupport) and not k in subcomplex]
+        else:
+            ks=self.skeleton(k,compactSupport)
+            km1=self.skeleton(k-1,compactSupport)
+
+        # Allocate output matrix
+        rows=len(km1)
+        cols=len(ks)
+        d=np.zeros((rows,cols),dtype=np.complex)
+        if rows and cols:
+            # Loop over all k-1-cells, writing them into the output matrix
+            for i in range(len(km1)):
+                # Loop over faces with compact closure
+                for cf in self.cells[km1[i]].cofaces:
+                    if self.cells[cf.index].compactClosure or compactSupport:
+                        d[i,ks.index(cf.index)]=cf.orientation
+            return d
+        else:
+            return d
 
     def inducedMapLocalHomology(self,k,cell1,cell2):
-        """Compute the induced map on local homology between two cells.  It is assumed that cell2 is a coface (perhaps not dimension 1) of cell1"""
+        """Compute the induced map on local homology between two cells.  It is assumed that cell2 is a coface (perhaps not codimension 1) of cell1"""
+        # Compute local homology basis centered on each cell
         pass
 
     def attachDiagram(self):
@@ -239,9 +313,28 @@ class Poset(CellComplex):
         return mat
 
 class AbstractSimplicialComplex(CellComplex):
-    def __init__(self,complex):
-        """An abstract simplicial complex defined as a list of lists"""
-        pass
+    def __init__(self,toplexes,maxdim=None):
+        """An abstract simplicial complex defined as a list of lists; it's only necessary to pass a generating set of toplexes
+        Beware: this should not be constructed for complexes involving high-dimensional simplices!
+        Simplices are sorted from greatest dimension to least"""
+        
+        if maxdim == None:
+            maxdim=max([len(tplx)-1 for tplx in toplexes])
+            
+        self.cells=[]
+        upsimplices=[] # Simplices of greater dimension than currently being added
+        upindices=[]
+        for k in range(maxdim,-1,-1): 
+            simplices=ksimplices(toplexes,k) # Simplices to be added
+            startindex=len(self.cells)
+            for s in simplices:
+                cell=Cell(dimension=k,compactClosure=True,
+                          cofaces=[Coface(index=upindices[i],
+                                          orientation=simplexOrientation(s,upsimplices[i])) for i in range(len(upsimplices)) if set(s).issubset(upsimplices[i])])
+                self.cells.append(cell)
+
+            upsimplices=simplices
+            upindices=[startindex+i for i in range(len(simplices))]
 
 class SheafCoface(Coface):
     """A coface relation"""
@@ -278,6 +371,8 @@ class SheafCell(Cell):
 class Sheaf(CellComplex):
     def cofaces(self,c,cells=[],currentcf=[]):
         """Iterate over cofaces (of all dimensions) of a given cell; optional argument specifies which cells are permissible cofaces"""
+        if c >= len(self.cells):
+            yield []
         
         for cf in self.cells[c].cofaces:
             if cf.index in cells or not cells:
@@ -458,7 +553,41 @@ class Sheaf(CellComplex):
     def betti(self,k,compactSupport=False,tol=1e-5):
         """Compute the k-th Betti number of the sheaf"""
         return self.cohomology(k,compactSupport).shape[1]
+        
+    def partitionAssignment(self,assignment,tol=1e-5):
+        """Take an assignment to some cells of a sheaf and return a collection of disjoint maximal sets of cells on which this assignment is a local section"""
+        # Extend assignment to all cofaces
+        for i in range(len(assignment.sectionCells)):
+            for cf in self.cofaces(assignment.sectionCells[i].support):
+                assignment.extend(self,cf.index)
+       
+        # Filter the cofaces into a cell complex in which the only attachments that are included as those whose data in the sheaf are consistent
+        cells=[]
+        for i,c in enumerate(self.cells):
+            found=False
+            for s in assignment.sectionCells:
+                if s.support == i:
+                    val=s.value
+                    found=True
+                    break
+            if found:
+                cofaces=[]
+                for cf in c.cofaces:
+                    vv=np.dot(cf.corestriction,val)
+                    for s in assignment.sectionCells:
+                        if s.support == cf.index and np.all(np.abs(vv-s.value)) < tol:
+                            cofaces.append(cf)
+                            break
+                             
+                cells.append(Cell(c.dimension,c.compactClosure,cofaces))
+            else:
+                cells.append(Cell(c.dimension,c.compactClosure,cofaces=[]))
 
+        cplx=CellComplex(cells)
+        
+        # Compute the components of the complex
+        return cplx.components()
+        
     def pushForward(self,targetComplex,map):
         """Compute the pushforward sheaf and morphism along a map"""
         
@@ -841,7 +970,7 @@ class ConstantSheaf(Sheaf):
                     for c in cells]
 
         Sheaf.__init__(self,sheafcells)
-        pass
+        return
 
 class SheafMorphismCell:
     def __init__(self,destinations=[],maps=[]):
@@ -868,7 +997,7 @@ class Section:
         """Extend the section to another cell; returns True if successful"""
         # If the desired cell is already in the support, do nothing
         if cell in self.support():
-            return True
+            return 
 
         # Is the desired cell a coface of a cell in the support?
         for s in self.sectionCells:
@@ -1038,3 +1167,51 @@ def inducedMap(sheaf1,sheaf2,morphism,k,compactSupport=False,tol=1e-5):
     map,j1,j2,j3 = np.linalg.lstsq(im,Hk_2)
 
     return map.conj().T
+
+def simplexOrientation(s1,s2):
+    """Assuming s1 is a face of s2, what's its orientation?"""
+    if not set(s1).issubset(s2):
+        return 0 # s1 is not a face of s2
+
+    # Find what element(s) are missing in s1 and the orientation arising from those missing slots
+    orientation=1
+    for i,s in enumerate(s2):
+        if not s in s1:
+            orientation *= (-1)**i
+
+    # Find permutation of the remaining entries
+    orientation*=perm_parity([s1.index(s) for s in s2 if s in s1])
+
+    return orientation
+
+def perm_parity(lst):
+    '''\
+    Given a permutation of the digits 0..N in order as a list, 
+    returns its parity (or sign): +1 for even parity; -1 for odd.
+    '''
+    parity = 1
+    for i in range(0,len(lst)-1):
+        if lst[i] != i:
+            parity *= -1
+            mn = min(range(i,len(lst)), key=lst.__getitem__)
+            lst[i],lst[mn] = lst[mn],lst[i]
+    return parity
+
+def ksublists(lst,n,sublist=[]):
+    """Iterate over all ordered n-sublists of a list lst"""
+    if n==0:
+        yield sublist
+    else:
+        for idx in range(len(lst)):
+            item=lst[idx]
+            for tmp in ksublists(lst[idx+1:],n-1,sublist+[item]):
+                yield tmp
+
+def ksimplices(toplexes,k,relative=None):
+    """List of k-simplices in a list of toplexes"""
+    simplices=[]
+    for toplex in toplexes:
+        for spx in ksublists(toplex,k+1):
+            if not spx in simplices and (relative == None or not spx in relative):
+                simplices.append(spx)
+    return simplices 
