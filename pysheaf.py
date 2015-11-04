@@ -151,13 +151,20 @@ class CellComplex:
         """Construct a new cell complex that consists of a cell and its boundary.  The return is the cell complex paired with a list of boundary cells"""
         # Construct the neighborhood of the cell
         cells=self.closure([cell])
-        star=self.starCells(cells)
+        star_closure=self.starCells(cells)
+        star=self.starCells([cell])
 
         # Construct a proxy cell complex
-        cplx=CellComplex([self.cells[c] for c in star])
+        newcells=[]
+        bndry=[]
+        for i,c in enumerate(star_closure):
+            newcells.append(self.cells[c])
+            if c not in star:
+                bndry.append(i)
+        cplx=CellComplex(newcells)
 
         # Find the boundary of the cell we care about
-        return (cplx,range(len(cells),len(cplx.cells)))
+        return (cplx,bndry)
         
     def localHomology(self,k,cell):
         """Compute local homology localized at a (star over a) cell"""
@@ -170,8 +177,8 @@ class CellComplex:
         """Compute the boundary map for the complex"""
         # Collect the k-cells and k-1-cells
         if subcomplex:
-            ks=[k for k in self.skeleton(k,compactSupport) and not k in subcomplex]
-            km1=[k for k in self.skeleton(k-1,compactSupport) and not k in subcomplex]
+            ks=[spx for spx in self.skeleton(k,compactSupport) if not spx in subcomplex]
+            km1=[spx for spx in self.skeleton(k-1,compactSupport) if not spx in subcomplex]
         else:
             ks=self.skeleton(k,compactSupport)
             km1=self.skeleton(k-1,compactSupport)
