@@ -129,7 +129,7 @@ def homology(b1,b2,tol=1e-5):
     return Hk
     
 def localHomology(toplexes,k,simplex):
-    """Compute local homology relative to a simplex"""
+    """Compute local homology relative to the star over a single simplex"""
     rel=[spx for spx in (ksimplices(toplexes,k)+ksimplices(toplexes,k-1)) 
          if not set(simplex).issubset(spx)]
     return simplicialHomology(toplexes,k,rel)
