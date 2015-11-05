@@ -686,7 +686,7 @@ class LocalHomologySheaf(Sheaf):
         for i,c in enumerate(cellcomplex.cells):
             shcells.append(SheafCell(c.dimension,
                                      compactClosure=c.compactClosure,
-                                     stalkDim=cellcomplex.localHomology(k,i).shape[1],
+                                     stalkDim=cellcomplex.localHomology(k,[i]).shape[1],
                                      cofaces=[SheafCoface(index=cf.index,
                                                           orientation=cf.orientation,
                                                           corestriction=cellcomplex.inducedMapLocalHomology(k,i,cf.index))
