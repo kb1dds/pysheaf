@@ -128,10 +128,10 @@ def homology(b1,b2,tol=1e-5):
 
     return Hk
     
-def localHomology(toplexes,k,simplex):
-    """Compute local homology relative to the star over a single simplex"""
+def localHomology(toplexes,k,simplices):
+    """Compute local homology relative to the star over a list of simplices"""
     rel=[spx for spx in (ksimplices(toplexes,k)+ksimplices(toplexes,k-1)) 
-         if not set(simplex).issubset(spx)]
+         if not any([set(simplex).issubset(spx) for simplex in simplices])]
     return simplicialHomology(toplexes,k,rel)
 
 def cone(toplexes,subcomplex,coneVertex='*'):

@@ -12,9 +12,9 @@ import pysheaf as ps
 toplexes=[[1,2]]
 cplx=ps.AbstractSimplicialComplex(toplexes)
 
-H0=cplx.localHomology(0,0)
-H1=cplx.localHomology(1,0)
-H2=cplx.localHomology(2,0)
+H0=cplx.localHomology(0,[0])
+H1=cplx.localHomology(1,[0])
+H2=cplx.localHomology(2,[0])
 
 if H0.shape[1] != 0 or H1.shape[1] != 1 or H2.shape[1] != 0:
     print "Test 1 failed" 
@@ -29,9 +29,9 @@ else:
 toplexes=[[1,2]]
 cplx=ps.AbstractSimplicialComplex(toplexes)
 
-H0=cplx.localHomology(0,1)
-H1=cplx.localHomology(1,1)
-H2=cplx.localHomology(2,1)
+H0=cplx.localHomology(0,[1])
+H1=cplx.localHomology(1,[1])
+H2=cplx.localHomology(2,[1])
 
 if H0.shape[1] != 0 or H1.shape[1] != 0 or H2.shape[1] != 0:
     print "Test 2 failed"
@@ -62,9 +62,9 @@ else:
 toplexes=[[1,2],[1,3],[2,3]]
 cplx=ps.AbstractSimplicialComplex(toplexes)
 
-H0=cplx.localHomology(0,0)
-H1=cplx.localHomology(1,0)
-H2=cplx.localHomology(2,0)
+H0=cplx.localHomology(0,[0])
+H1=cplx.localHomology(1,[0])
+H2=cplx.localHomology(2,[0])
 
 if H0.shape[1] != 0 or H1.shape[1] != 1 or H2.shape[1] != 0:
     print "Test 4 failed"
@@ -95,9 +95,9 @@ else:
 toplexes=[[1,2,3]]
 cplx=ps.AbstractSimplicialComplex(toplexes)
 
-H0=cplx.localHomology(0,0)
-H1=cplx.localHomology(1,0)
-H2=cplx.localHomology(2,0)
+H0=cplx.localHomology(0,[0])
+H1=cplx.localHomology(1,[0])
+H2=cplx.localHomology(2,[0])
 
 if H0.shape[1] != 0 or H1.shape[1] != 0 or H2.shape[1] != 1:
     print "Test 6 failed"
@@ -112,9 +112,9 @@ else:
 toplexes=[[1,2,3]]
 cplx=ps.AbstractSimplicialComplex(toplexes)
 
-H0=cplx.localHomology(0,1)
-H1=cplx.localHomology(1,1)
-H2=cplx.localHomology(2,1)
+H0=cplx.localHomology(0,[1])
+H1=cplx.localHomology(1,[1])
+H2=cplx.localHomology(2,[1])
 
 if H0.shape[1] != 0 or H1.shape[1] != 0 or H2.shape[1] != 0:
     print "Test 7 failed"
@@ -128,9 +128,9 @@ else:
 toplexes=[[1,2,3],[2,3,4]]
 cplx=ps.AbstractSimplicialComplex(toplexes)
 
-H0=cplx.localHomology(0,4)
-H1=cplx.localHomology(1,4)
-H2=cplx.localHomology(2,4)
+H0=cplx.localHomology(0,[4])
+H1=cplx.localHomology(1,[4])
+H2=cplx.localHomology(2,[4])
 
 if H0.shape[1] != 0 or H1.shape[1] != 0 or H2.shape[1] != 1:
     print "Test 8 failed"
@@ -144,9 +144,9 @@ else:
 toplexes=[[1,2,3],[2,3,4]]
 cplx=ps.AbstractSimplicialComplex(toplexes)
 
-H0=cplx.localHomology(0,2)
-H1=cplx.localHomology(1,2)
-H2=cplx.localHomology(2,2)
+H0=cplx.localHomology(0,[2])
+H1=cplx.localHomology(1,[2])
+H2=cplx.localHomology(2,[2])
 
 if H0.shape[1] != 0 or H1.shape[1] != 0 or H2.shape[1] != 0:
     print "Test 9 failed"

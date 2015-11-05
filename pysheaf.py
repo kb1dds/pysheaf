@@ -147,12 +147,11 @@ class CellComplex:
 
         return Hk
 
-    def localPairComplex(self,cell):
+    def localPairComplex(self,cells):
         """Construct a new cell complex that consists of a cell and its boundary.  The return is the cell complex paired with a list of boundary cells"""
         # Construct the neighborhood of the cell
-        cells=self.closure([cell])
-        star_closure=self.starCells(cells)
-        star=self.starCells([cell])
+        star_closure=self.starCells(self.closure(cells))
+        star=self.starCells(cells)
 
         # Construct a proxy cell complex
         newcells=[]
@@ -163,12 +162,12 @@ class CellComplex:
                 bndry.append(i)
         cplx=CellComplex(newcells)
 
-        # Find the boundary of the cell we care about
+        # Find the boundary of the cells we care about
         return (cplx,bndry)
         
-    def localHomology(self,k,cell):
-        """Compute local homology localized at a (star over a) cell"""
-        cplx,bndry=self.localPairComplex(cell)
+    def localHomology(self,k,cells):
+        """Compute local homology localized at the star over a list of cells"""
+        cplx,bndry=self.localPairComplex(cells)
 
         # Compute the relative homology of the proxy complex
         return cplx.homology(k,subcomplex=bndry)

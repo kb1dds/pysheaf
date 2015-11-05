@@ -11,9 +11,9 @@ import simplicialHomology as sh
 # Test 1: line segment localized to the edge
 toplexes=[[1,2]]
 
-H0=sh.localHomology(toplexes,0,[1,2])
-H1=sh.localHomology(toplexes,1,[1,2])
-H2=sh.localHomology(toplexes,2,[1,2])
+H0=sh.localHomology(toplexes,0,[[1,2]])
+H1=sh.localHomology(toplexes,1,[[1,2]])
+H2=sh.localHomology(toplexes,2,[[1,2]])
 
 if H0.shape[1] != 0 or H1.shape[1] != 1 or H2.shape[1] != 0:
     print "Test 1 failed" 
@@ -27,9 +27,9 @@ else:
 # (using localHomology())
 toplexes=[[1,2]]
 
-H0=sh.localHomology(toplexes,0,[1])
-H1=sh.localHomology(toplexes,1,[1])
-H2=sh.localHomology(toplexes,2,[1])
+H0=sh.localHomology(toplexes,0,[[1]])
+H1=sh.localHomology(toplexes,1,[[1]])
+H2=sh.localHomology(toplexes,2,[[1]])
 
 if H0.shape[1] != 0 or H1.shape[1] != 0 or H2.shape[1] != 0:
     print "Test 2 failed"
@@ -58,9 +58,9 @@ else:
 # Test 4: empty triangle localized to an edge
 toplexes=[[1,2],[1,3],[2,3]]
 
-H0=sh.localHomology(toplexes,0,[1,2])
-H1=sh.localHomology(toplexes,1,[1,2])
-H2=sh.localHomology(toplexes,2,[1,2])
+H0=sh.localHomology(toplexes,0,[[1,2]])
+H1=sh.localHomology(toplexes,1,[[1,2]])
+H2=sh.localHomology(toplexes,2,[[1,2]])
 
 if H0.shape[1] != 0 or H1.shape[1] != 1 or H2.shape[1] != 0:
     print "Test 4 failed"
@@ -89,9 +89,9 @@ else:
 # Test 6: solid triangle localized to the 2-face
 toplexes=[[1,2,3]]
 
-H0=sh.localHomology(toplexes,0,[1,2,3])
-H1=sh.localHomology(toplexes,1,[1,2,3])
-H2=sh.localHomology(toplexes,2,[1,2,3])
+H0=sh.localHomology(toplexes,0,[[1,2,3]])
+H1=sh.localHomology(toplexes,1,[[1,2,3]])
+H2=sh.localHomology(toplexes,2,[[1,2,3]])
 
 if H0.shape[1] != 0 or H1.shape[1] != 0 or H2.shape[1] != 1:
     print "Test 6 failed"
@@ -105,9 +105,9 @@ else:
 # (using localHomology)
 toplexes=[[1,2,3]]
 
-H0=sh.localHomology(toplexes,0,[1,2])
-H1=sh.localHomology(toplexes,1,[1,2])
-H2=sh.localHomology(toplexes,2,[1,2])
+H0=sh.localHomology(toplexes,0,[[1,2]])
+H1=sh.localHomology(toplexes,1,[[1,2]])
+H2=sh.localHomology(toplexes,2,[[1,2]])
 
 if H0.shape[1] != 0 or H1.shape[1] != 0 or H2.shape[1] != 0:
     print "Test 7 failed"
@@ -120,9 +120,9 @@ else:
 # Test 8: two solid trianlges joined along an edge localized to the star over that edge
 toplexes=[[1,2,3],[2,3,4]]
 
-H0=sh.localHomology(toplexes,0,[2,3])
-H1=sh.localHomology(toplexes,1,[2,3])
-H2=sh.localHomology(toplexes,2,[2,3])
+H0=sh.localHomology(toplexes,0,[[2,3]])
+H1=sh.localHomology(toplexes,1,[[2,3]])
+H2=sh.localHomology(toplexes,2,[[2,3]])
 
 if H0.shape[1] != 0 or H1.shape[1] != 0 or H2.shape[1] != 1:
     print "Test 8 failed"
@@ -135,9 +135,9 @@ else:
 # Test 9: two solid triangles joined along an edge localized to the star over some other edge
 toplexes=[[1,2,3],[2,3,4]]
 
-H0=sh.localHomology(toplexes,0,[1,2])
-H1=sh.localHomology(toplexes,1,[1,2])
-H2=sh.localHomology(toplexes,2,[1,2])
+H0=sh.localHomology(toplexes,0,[[1,2]])
+H1=sh.localHomology(toplexes,1,[[1,2]])
+H2=sh.localHomology(toplexes,2,[[1,2]])
 
 if H0.shape[1] != 0 or H1.shape[1] != 0 or H2.shape[1] != 0:
     print "Test 9 failed"
