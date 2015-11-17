@@ -41,12 +41,16 @@ def ksublists(lst,n,sublist=[]):
            for tmp in ksublists(lst[idx+1:],n-1,sublist+[item]):
               yield tmp
 
+def simpcluded(spx,simplices):
+    """Is a simplex in a list of simplices? This ignores vertex ordering"""
+    return any([set(spx).issubset(s) and set(s).issubset(spx) for s in simplices])
+              
 def ksimplices(toplexes,k,relative=None):
     """List of k-simplices in a list of toplexes"""
     simplices=[]
     for toplex in toplexes:
         for spx in ksublists(toplex,k+1):
-            if not spx in simplices and (relative == None or not spx in relative):
+            if not simpcluded(spx, simplices) and (relative == None or not simpcluded(spx,relative)):
                 simplices.append(spx)
     return simplices 
 
