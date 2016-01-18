@@ -7,13 +7,12 @@
 
 import numpy as np
 import random
-try:
-    import networkx as nx
-except:
-    pass
+import matplotlib.pyplot as plt
+import networkx as nx
+
 
 ## Data structures
-class Coface:
+class Coface: 
     """A coface relation"""
     def __init__(self,index,orientation):
         self.index=index
@@ -24,20 +23,22 @@ class Coface:
 
 class Cell:
     """A cell in a cell complex"""
-    def __init__(self,dimension,compactClosure=True,cofaces=[]):
+    def __init__(self,dimension,compactClosure=True,cofaces=[], name=None):
         self.dimension=dimension
         self.compactClosure=compactClosure
         self.cofaces=cofaces
+        self.name = name
 
     def __repr__(self):
-        string="(dimension="+str(self.dimension)+",compactClosure="+str(self.compactClosure)
-        if self.cofaces:
-            for cf in self.cofaces:
-                string+="," + cf.__repr__()
-        return string+")"
+#         string= self.name + " (dimension="+str(self.dimension)+",compactClosure="+str(self.compactClosure) 
+#         if self.cofaces:
+#             for cf in self.cofaces:
+#                 string+="," + cf.__repr__()
+#         return string+")"
+        return self.name
 
     def cofaceList(self):
-        """Return the list of cofaces of this cell"""
+        """Return the list of indicies of the cells which are cofaces of this cell"""
         return [cf.index for cf in self.cofaces]    
     
     def isCoface(self,index,orientation=None):
@@ -48,7 +49,7 @@ class Cell:
             return (index,orientation) in [(cf.index,cf.orientation) for cf in self.cofaces]
         
 class CellComplex:
-    def __init__(self,cells):
+    def __init__(self,cells=[]):
         """Construct a cell complex from its cells"""
         self.cells=cells
         
@@ -104,7 +105,7 @@ class CellComplex:
             cellsleft=list(set(range(len(self.cells))).difference(current_cpt))
         else:
             cellsleft=list(set(cells).difference(current_cpt))
-	if not cellsleft:
+        if not cellsleft:
             return current_cpt
 
         neighbors=self.connectedTo(start,cellsleft)
@@ -149,28 +150,25 @@ class CellComplex:
 
     def localPairComplex(self,cells):
         """Construct a new cell complex that consists of a cell and its boundary.  The return is the cell complex paired with a list of boundary cells"""
+        raise NotImplementedError('localPairComplex is not working!  Please do not use it yet')
+        # TBD fix this; it refers to the wrong cells
         # Construct the neighborhood of the cell
-        star_closure=self.starCells(self.closure(cells))
-        star=self.starCells(cells)
 
-        # Construct a proxy cell complex
-        newcells=[]
-        bndry=[]
-        for i,c in enumerate(star_closure):
-            newcells.append(self.cells[c])
-            if c not in star:
-                bndry.append(i)
-        cplx=CellComplex(newcells)
-
-        # Find the boundary of the cells we care about
-        return (cplx,bndry)
+        star_closure = self.closure(self.starCells(cells))  ### this is the containing complex
+        star=self.starCells(cells)    ###### this is the star of the set we are interested in
+        bndry = list(set(star_closure) - set(star))
+        starcells = [self.cells[idx] for idx in star]
+        bndrycells = [self.cells[idx] for idx in bndry]
+        cplx = CellComplex(starcells + bndrycells)
+        bndryind = [cplx.cells.index(bdcell) for bdcell in bndrycells]
+        return (cplx,bndryind)
         
     def localHomology(self,k,cells):
         """Compute local homology localized at the star over a list of cells"""
         cplx,bndry=self.localPairComplex(cells)
 
         # Compute the relative homology of the proxy complex
-        return cplx.homology(k,subcomplex=bndry)
+        return cplx.homology(k,subcomplex=bndry)   #######ERROR bndry are indicies of self not thet4r cmplx
         
     def boundary(self,k,subcomplex=None,compactSupport=False):
         """Compute the boundary map for the complex"""
@@ -183,16 +181,25 @@ class CellComplex:
             km1=self.skeleton(k-1,compactSupport)
 
         # Allocate output matrix
+#        print "ks=", ks
+#        print "km1=", km1
         rows=len(km1)
         cols=len(ks)
-        d=np.zeros((rows,cols),dtype=np.complex)
+#         d=np.zeros((rows,cols),dtype=np.complex)
+        d=np.zeros((rows,cols))
         if rows and cols:
             # Loop over all k-1-cells, writing them into the output matrix
             for i in range(len(km1)):
+#                print i, self.cells[km1[i]]
                 # Loop over faces with compact closure
+#                print "cofaces=", [cf.index for cf in self.cells[km1[i]].cofaces]
                 for cf in self.cells[km1[i]].cofaces:
-                    if self.cells[cf.index].compactClosure or compactSupport:
+                    
+#                    print cf.index, self.cells[cf.index], cf.orientation,
+#                    if self.cells[cf.index].compactClosure or compactSupport:
+                    if self.cells[cf.index].compactClosure and cf.orientation != 0:
                         d[i,ks.index(cf.index)]=cf.orientation
+#                        print "ok"
             return d
         else:
             return d
@@ -211,7 +218,8 @@ class CellComplex:
         G.add_edges_from([(i,cf.index) 
                           for i in range(len(self.cells)) 
                           for cf in self.cells[i].cofaces])
-
+        nx.draw(G)
+        plt.show()
         return G
 
 class Poset(CellComplex):
@@ -376,33 +384,25 @@ class SheafCell(Cell):
 # Sheaf class
 class Sheaf(CellComplex):
     def cofaces(self,c,cells=[],currentcf=[]):
-        """Iterate over cofaces (of all dimensions) of a given cell; optional argument specifies which cells are permissible cofaces"""
+        """Iterate over cofaces (of all dimensions) of a given cell c; optional argument specifies which cells are permissible cofaces"""
         if c >= len(self.cells):
             yield []
-        
+
         for cf in self.cells[c].cofaces:
             if cf.index in cells or not cells:
-                if currentcf:
+                if currentcf: # If we've already started the iteration, there's a previous corestriction to compose with
                     cfp=SheafCoface(cf.index,
-                        currentcf.orientation*cf.orientation,
-                        np.dot(currentcf.corestriction,corestriction))
-                else:
+                                    cf.orientation*currentcf.orientation,
+                                    np.dot(cf.corestriction,currentcf.corestriction))
+                else: # If we're just starting this iteration, there is no corestriction before this one
                     cfp=cf
+                for cff in self.cofaces(cfp.index,cells,cfp): # Iterate over all higher dimensional cells
+                    yield cff
                 yield cfp
-                
-        for cf in self.cells[c].cofaces:
-            if cf.index in cells or not cells:
-                if currentcf:
-                    cfp=SheafCoface(cf.index,
-                        currentcf.orientation*cf.orientation,
-                        np.dot(currentcf.corestriction,corestriction))
-                else:
-                    cfp=cf
-                self.cofaces(cf.index,cells,cfp)
 
     def star(self,cells):
         """Restrict a sheaf to the star over a subset of the base space"""
-        
+    
         # Extract a list of all relevant cells in the star
         cells=CellComplex.starCells(self,cells)
         
@@ -559,13 +559,31 @@ class Sheaf(CellComplex):
     def betti(self,k,compactSupport=False,tol=1e-5):
         """Compute the k-th Betti number of the sheaf"""
         return self.cohomology(k,compactSupport).shape[1]
+
+    def maximalExtend(self,assignment,multiassign=False,tol=1e-5):
+        """Take a partial assignment and extend it to a maximal assignment that's non-conflicting (if multiassign=False) or one in which multiple values can be given to a given cell (if multiassign=True)"""
+        for i in range(len(assignment.sectionCells)):
+            for cf in self.cofaces(assignment.sectionCells[i].support):
+                if not assignment.extend(self,cf.index) and multiassign:
+                    assignment.sectionCells.append(SectionCell(cf.index,np.dot(cf.corestriction,assignment.sectionCells[i].value)))
+        return assignment
+
+    def approximateSectionRadius(self,assignment,tol=1e-5):
+        """Compute the minimal radius of an approximate section"""
+        assignment=self.maximalExtend(self,assignment,multiassign=True)
+        radius=0
+        for c1 in assignment.sectionCells:
+            for c2 in assignment.sectionCells:
+                if c1.support == c2.support:
+                    rad = np.linalg.norm(c1.value-c2.value)
+                    if rad > radius:
+                        radius = rad
+        return radius
         
     def partitionAssignment(self,assignment,tol=1e-5):
         """Take an assignment to some cells of a sheaf and return a collection of disjoint maximal sets of cells on which this assignment is a local section"""
         # Extend assignment to all cofaces
-        for i in range(len(assignment.sectionCells)):
-            for cf in self.cofaces(assignment.sectionCells[i].support):
-                assignment.extend(self,cf.index)
+        assignment=self.maximalExtend(self,assignment,multiassign=False)
        
         # Filter the cofaces into a cell complex in which the only attachments that are included as those whose data in the sheaf are consistent
         cells=[]
@@ -593,6 +611,31 @@ class Sheaf(CellComplex):
         
         # Compute the components of the complex
         return cplx.components()
+    
+    def smoothness(self,assignment):
+        """ returns the open world smoothness Entropy/log2(number of sections) """
+        partition = self.partitionAssignment(assignment)
+        arr = [len(x) for x in partition]
+        n = sum(arr)*1.0
+        m = len(arr)
+        if (n==0 or m==1):
+            return 1
+        else:
+            f = [x/n for x in arr]
+            E = sum([p*np.log2(p) for p in f])
+            return -E/np.log2(m)
+
+    def dispersion(self,assignment):
+        """ returns a measure on dispersion on the number of sections to number of 0-cells """
+        partition = self.partitionAssignment(assignment)
+        arr = [len(x) for x in partition]
+        n = sum(arr)*1.0
+        m = len(arr)
+        if (n==0):
+            return 0
+        return np.log2(m)/np.log2(n)
+    
+    
         
     def pushForward(self,targetComplex,map):
         """Compute the pushforward sheaf and morphism along a map"""
@@ -781,9 +824,9 @@ Cell attribute .capacity_left specifes whether the cell can be used"""
             # Compute list of outgoing edges
             for cf in self.cells[start].cofaces:
                 if cf.orientation == -1 and cf.index not in history and self.cells[cf.index].capacity_left:
-                   ch=self.findPath(cf.index,end,history+[start])
+                    ch=self.findPath(cf.index,end,history+[start])
                        
-                   if ch:
+                    if ch:
                        return ch
             return None
         else:
@@ -1210,7 +1253,7 @@ def ksublists(lst,n,sublist=[]):
     else:
         for idx in range(len(lst)):
             item=lst[idx]
-            for tmp in ksublists(lst[idx+1:],n-1,sublist+[item]):
+            for tmp in ksublists(lst[idx+1:],n-1,sublist+[item]): 
                 yield tmp
 
 def ksimplices(toplexes,k,relative=None):
