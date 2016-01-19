@@ -564,13 +564,13 @@ class Sheaf(CellComplex):
         """Take a partial assignment and extend it to a maximal assignment that's non-conflicting (if multiassign=False) or one in which multiple values can be given to a given cell (if multiassign=True)"""
         for i in range(len(assignment.sectionCells)):
             for cf in self.cofaces(assignment.sectionCells[i].support):
-                if not assignment.extend(self,cf.index) and multiassign:
+                if not assignment.extend(cf.index) and multiassign:
                     assignment.sectionCells.append(SectionCell(cf.index,np.dot(cf.corestriction,assignment.sectionCells[i].value)))
         return assignment
 
     def approximateSectionRadius(self,assignment,tol=1e-5):
         """Compute the minimal radius of an approximate section"""
-        assignment=self.maximalExtend(self,assignment,multiassign=True)
+        assignment=self.maximalExtend(assignment,multiassign=True)
         radius=0
         for c1 in assignment.sectionCells:
             for c2 in assignment.sectionCells:
