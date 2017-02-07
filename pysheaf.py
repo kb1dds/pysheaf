@@ -1,6 +1,6 @@
 # Persistence-capable sheaf manipulation library
 #
-# Copyright (c) 2013-2015, Michael Robinson
+# Copyright (c) 2013-2017, Michael Robinson
 # Distribution of unaltered copies permitted for noncommercial use only
 # All other uses require express permission of the author
 # This software comes with no warrantees express or implied 
@@ -9,7 +9,6 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 import networkx as nx
-
 
 ## Data structures
 class Coface: 
@@ -350,22 +349,47 @@ class AbstractSimplicialComplex(CellComplex):
             upsimplices=simplices
             upindices=[startindex+i for i in range(len(simplices))]
 
+
+class SetMorphism():
+    """A morphism in a subcategory of Set, described by a function object"""
+    def __init__(self,fcn):
+        self.fcn=fcn
+
+    def __mul__(self,other): # Composition of morphisms
+        return SetMorphism(lambda x : self.fcn(other.fcn(x)))
+
+    def __call__(self,arg): # Calling the morphism on an element of the set
+        return self.fcn(arg)
+
+class LinearMorphism(SetMorphism):
+    """A morphism in a category that has a matrix representation"""
+    def __init__(self,matrix):
+        self.matrix=matrix
+        SetMorphism.__init__(self,lambda x: np.dot(matrix,x))
+
+    def __mul__(self,other): # Composition of morphisms
+        return LinearMorphism(np.dot(self.matrix, other.matrix))
+
 class SheafCoface(Coface):
-    """A coface relation"""
+    """A coface relation, in which the restriction is assumed to be a SetMorphism object
+    If the restriction is instead a matrix, then it gets promoted to a LinearMorphism object automatically"""
     def __init__(self,index,orientation,restriction):
         self.index=index
         self.orientation=orientation
-        self.restriction=restriction
+        if isinstance(restriction,np.ndarray):
+            self.restriction=LinearMorphism(restriction)
+        else:
+            self.restriction=restriction
 
     def __repr__(self):
-        return "(index=" + str(self.index) + ",orientation="+str(self.orientation)+",restriction="+str(self.restriction)+")"
+        return "(index=" + str(self.index) + ",orientation="+str(self.orientation)+",restriction="+str(self.restriction.matrix)+")"
         
 class SheafCell(Cell):
     """A cell in a cell complex with a sheaf over it"""
     def __init__(self,dimension,cofaces=[],compactClosure=True,stalkDim=1):
         if cofaces:
             try:
-                self.stalkDim=cofaces[0].restriction.shape[1]
+                self.stalkDim=cofaces[0].restriction.matrix.shape[1]
             except AttributeError:
                 self.stalkDim=0
         else:
@@ -393,7 +417,7 @@ class Sheaf(CellComplex):
                 if currentcf: # If we've already started the iteration, there's a previous restriction to compose with
                     cfp=SheafCoface(cf.index,
                                     cf.orientation*currentcf.orientation,
-                                    np.dot(cf.restriction,currentcf.restriction))
+                                    cf.restriction*currentcf.restriction)
                 else: # If we're just starting this iteration, there is no restriction before this one
                     cfp=cf
                 for cff in self.cofaces(cfp.index,cells,cfp): # Iterate over all higher dimensional cells
@@ -498,7 +522,7 @@ class Sheaf(CellComplex):
                             if cf.index==ms[0]:
                                 cr=cf.restriction
                                 break
-                        A=np.dot(cr,mor_1[ii].maps[0])
+                        A=cr(mor_1[ii].maps[0])
                         
                         map,j1,j2,j3=np.linalg.lstsq(mor_2[i].maps[0],A)
                         sections[kidx_2[i]:kidx_2[i+1],ss]=np.dot(map,H0_1[kidx_1[idx]:kidx_1[idx+1],ss])
@@ -527,7 +551,7 @@ class Sheaf(CellComplex):
                 for cf in self.cells[ks[i]].cofaces:
                     if self.cells[cf.index].compactClosure or compactSupport:
                         ridx=kp1.index(cf.index)
-                        block=np.matrix(cf.orientation*cf.restriction)
+                        block=np.matrix(cf.orientation*cf.restriction.matrix)
                         d[kp1idx[ridx]:kp1idx[ridx+1],kidx[i]:kidx[i+1]]+=block
             return d
         else:
@@ -565,11 +589,11 @@ class Sheaf(CellComplex):
         for i in range(len(assignment.sectionCells)):
             for cf in self.cofaces(assignment.sectionCells[i].support):
                 if not assignment.extend(cf.index) and multiassign:
-                    assignment.sectionCells.append(SectionCell(cf.index,np.dot(cf.restriction,assignment.sectionCells[i].value)))
+                    assignment.sectionCells.append(SectionCell(cf.index,cf.restriction(assignment.sectionCells[i].value)))
         return assignment
 
-    def approximateSectionRadius(self,assignment,tol=1e-5):
-        """Compute the minimal radius of an approximate section"""
+    def consistencyRadius(self,assignment,tol=1e-5):
+        """Compute the consistency radius of an approximate section"""
         assignment=self.maximalExtend(assignment,multiassign=True)
         radius=0
         for c1 in assignment.sectionCells:
@@ -597,7 +621,7 @@ class Sheaf(CellComplex):
             if found:
                 cofaces=[]
                 for cf in c.cofaces:
-                    vv=np.dot(cf.restriction,val)
+                    vv=cf.restriction(val)
                     for s in assignment.sectionCells:
                         if s.support == cf.index and np.all(np.abs(vv-s.value)) < tol:
                             cofaces.append(cf)
@@ -684,7 +708,7 @@ class Sheaf(CellComplex):
                 map=np.zeros((0,c.stalkDim))
                 for j in range(len(c.cofaces)-1):
                     cf=c.cofaces[j]
-                    map=np.vstack((map,np.sum(cf.restriction,axis=0)))
+                    map=np.vstack((map,np.sum(cf.restriction.matrix,axis=0)))
 
                 mor.append(SheafMorphismCell([i],[map]))
             else:
@@ -708,7 +732,7 @@ class AmbiguitySheaf(Sheaf):
             stalkDim=K.shape[0]
             cfnew=[]
             for cf in shf1.cells[i].cofaces:
-                S=cf.restriction
+                S=cf.restriction.matrix
                 L=kernel(mor[cf.index].map[0])
                 R=np.linalg.lstsq(L,np.dot(S,K))
                 cfnew.append(SheafCoface(index=cf.index,
@@ -1053,7 +1077,7 @@ class Section:
             for cf in sheaf.cells[s.support].cofaces:
                 if cf.index == cell:
                     # If so, extend via restriction
-                    val=np.dot(cf.restriction,s.value)
+                    val=cf.restriction(s.value)
 
                     # Check for consistency
                     if value != None and np.any(np.abs(val - value)>tol):
@@ -1062,11 +1086,12 @@ class Section:
                             
         # Are there are any cofaces for the desired cell in the support?
         if value == None: # Attempt to assign a new value...
+            
             # Stack the restrictions and values associated to existing support
-            lst=[(cf.restriction,s.value) 
+            lst=[(cf.restriction.matrix,s.value) 
                  for cf in sheaf.cells[cell].cofaces 
                  for s in self.sectionCells
-                 if cf.index == s.support]
+                 if isinstance(cf.restriction,LinearMorphism) and (cf.index == s.support)]
             if lst:
                 crs=np.vstack([e[0] for e in lst])
                 vals=np.vstack([e[1] for e in lst])
@@ -1085,7 +1110,7 @@ class Section:
             for cf in sheaf.cells[cell].cofaces:
                 for s in self.sectionCells:
                     if s.support == cf.index:
-                        if np.any(np.abs(np.dot(cf.restriction,value)-s.value)>tol):
+                        if np.any(np.abs(cf.restriction(value)-s.value)>tol):
                             return False
         
         # A value was successfully assigned (if no value was assigned, 

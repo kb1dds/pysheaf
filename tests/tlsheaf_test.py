@@ -22,7 +22,7 @@ print tl.cohomology(0)
 
 sec=np.sum(tl.cohomology(0),1)
 
-if np.allclose(np.dot(tl.cells[6].cofaces[1].restriction,sec[0:3]),np.dot(tl.cells[7].cofaces[1].restriction,sec[3:6])) and np.allclose(np.dot(tl.cells[6].cofaces[2].restriction,sec[0:3]),np.dot(tl.cells[8].cofaces[2].restriction,sec[6:9])) and np.allclose(np.dot(tl.cells[7].cofaces[2].restriction,sec[3:6]),np.dot(tl.cells[8].cofaces[1].restriction,sec[6:9])):
+if np.allclose(tl.cells[6].cofaces[1].restriction(sec[0:3]),tl.cells[7].cofaces[1].restriction(sec[3:6])) and np.allclose(tl.cells[6].cofaces[2].restriction(sec[0:3]),tl.cells[8].cofaces[2].restriction(sec[6:9])) and np.allclose(tl.cells[7].cofaces[2].restriction(sec[3:6]),tl.cells[8].cofaces[1].restriction(sec[6:9])):
     print "Test passed"
 else:
     print "Restriction to an edge is mismatched"
@@ -34,9 +34,9 @@ print "Angles (degrees)"
 print np.angle(sec)*180/np.pi
 
 # Computed edge lengths
-L1=-1j/wavenumber*np.log(np.dot(tl.cells[7].cofaces[2].restriction,sec[3:6])[0,0]/sec[7])/ft2m
-L2=1j/wavenumber*np.log(np.dot(tl.cells[6].cofaces[2].restriction,sec[0:3])[0,1]/sec[8])/ft2m
-L3=-1j/wavenumber*np.log(np.dot(tl.cells[6].cofaces[1].restriction,sec[0:3])[0,0]/sec[4])/ft2m
+L1=-1j/wavenumber*np.log(tl.cells[7].cofaces[2].restriction(sec[3:6])[0,0]/sec[7])/ft2m
+L2=1j/wavenumber*np.log(tl.cells[6].cofaces[2].restriction(sec[0:3])[0,1]/sec[8])/ft2m
+L3=-1j/wavenumber*np.log(tl.cells[6].cofaces[1].restriction(sec[0:3])[0,0]/sec[4])/ft2m
 
 print "L1 = " + str(np.real(L1)) + " ft, which is off by " + str(np.real((L1*wavenumber*ft2m-(150+70)*wavenumber*ft2m)/np.pi)) + " pi"
 print "L2 = " + str(np.real(L2)) + " ft, which is off by " + str(np.real((L2*wavenumber*ft2m-150*wavenumber*ft2m)/np.pi)) + " pi"

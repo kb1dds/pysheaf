@@ -46,9 +46,9 @@ for tl,k in zip(sheaves,wavenumbers):
     print "v3->e2: " + str(10*np.log10(np.abs(sec[8]))) + " dB " + str(np.angle(sec[8])*180/np.pi) + " degrees"
      
     # Computed edge lengths
-    L1=np.real(-1j/k*np.log(np.dot(tl.cells[7].cofaces[2].restriction,sec[3:6])[0,0]/sec[7]))
-    L2=np.real(1j/k*np.log(np.dot(tl.cells[6].cofaces[2].restriction,sec[0:3])[0,1]/sec[8]))
-    L3=np.real(-1j/k*np.log(np.dot(tl.cells[6].cofaces[1].restriction,sec[0:3])[0,0]/sec[4]))
+    L1=np.real(-1j/k*np.log(tl.cells[7].cofaces[2].restriction(sec[3:6])[0,0]/sec[7]))
+    L2=np.real(1j/k*np.log(tl.cells[6].cofaces[2].restriction(sec[0:3])[0,1]/sec[8]))
+    L3=np.real(-1j/k*np.log(tl.cells[6].cofaces[1].restriction(sec[0:3])[0,0]/sec[4]))
 
     print "L1 = " + str(L1/ft2m) + " ft, which is off by " + str((L1-(150+70)*ft2m)*k/np.pi) + " pi"
     print "L2 = " + str(L2/ft2m) + " ft, which is off by " + str((L2-150*ft2m)*k/np.pi) + " pi"
