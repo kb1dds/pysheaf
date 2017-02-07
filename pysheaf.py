@@ -386,7 +386,7 @@ class SheafCoface(Coface):
         
 class SheafCell(Cell):
     """A cell in a cell complex with a sheaf over it"""
-    def __init__(self,dimension,cofaces=[],compactClosure=True,stalkDim=1):
+    def __init__(self,dimension,cofaces=[],compactClosure=True,stalkDim=1,metric=None):
         if cofaces:
             try:
                 self.stalkDim=cofaces[0].restriction.matrix.shape[1]
@@ -394,6 +394,12 @@ class SheafCell(Cell):
                 self.stalkDim=0
         else:
             self.stalkDim=stalkDim
+
+        if metric != None:
+            self.metric=metric
+        else:
+            self.metric=lambda x,y: np.linalg.norm(x-y)
+            
         Cell.__init__(self,dimension,compactClosure,cofaces)
 
     def __repr__(self):
@@ -588,18 +594,29 @@ class Sheaf(CellComplex):
         """Take a partial assignment and extend it to a maximal assignment that's non-conflicting (if multiassign=False) or one in which multiple values can be given to a given cell (if multiassign=True)"""
         for i in range(len(assignment.sectionCells)):
             for cf in self.cofaces(assignment.sectionCells[i].support):
-                if not assignment.extend(cf.index) and multiassign:
+                if not assignment.extend(cf.index,tol) and multiassign:
                     assignment.sectionCells.append(SectionCell(cf.index,cf.restriction(assignment.sectionCells[i].value)))
         return assignment
 
     def consistencyRadius(self,assignment,tol=1e-5):
         """Compute the consistency radius of an approximate section"""
-        assignment=self.maximalExtend(assignment,multiassign=True)
+        assignment=self.maximalExtend(assignment,multiassign=True,tol=tol)
         radius=0
         for c1 in assignment.sectionCells:
             for c2 in assignment.sectionCells:
                 if c1.support == c2.support:
-                    rad = np.linalg.norm(c1.value-c2.value)
+                    rad = self.cells[c1].metric(c1.value,c2.value)
+                    if rad > radius:
+                        radius = rad
+        return radius
+
+    def assignmentMetric(self,assignment1,assignment2):
+        """Compute the distance between two assignments"""
+        radius=0
+        for c1 in assignment1.sectionCells:
+            for c2 in assignment2.sectionCells:
+                if c1.support == c2.support:
+                    rad = self.cells[c1].metric(c1.value,c2.value)
                     if rad > radius:
                         radius = rad
         return radius
