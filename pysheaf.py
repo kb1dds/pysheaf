@@ -352,20 +352,20 @@ class AbstractSimplicialComplex(CellComplex):
 
 class SheafCoface(Coface):
     """A coface relation"""
-    def __init__(self,index,orientation,corestriction):
+    def __init__(self,index,orientation,restriction):
         self.index=index
         self.orientation=orientation
-        self.corestriction=corestriction
+        self.restriction=restriction
 
     def __repr__(self):
-        return "(index=" + str(self.index) + ",orientation="+str(self.orientation)+",corestriction="+str(self.corestriction)+")"
+        return "(index=" + str(self.index) + ",orientation="+str(self.orientation)+",restriction="+str(self.restriction)+")"
         
 class SheafCell(Cell):
     """A cell in a cell complex with a sheaf over it"""
     def __init__(self,dimension,cofaces=[],compactClosure=True,stalkDim=1):
         if cofaces:
             try:
-                self.stalkDim=cofaces[0].corestriction.shape[1]
+                self.stalkDim=cofaces[0].restriction.shape[1]
             except AttributeError:
                 self.stalkDim=0
         else:
@@ -390,11 +390,11 @@ class Sheaf(CellComplex):
 
         for cf in self.cells[c].cofaces:
             if cf.index in cells or not cells:
-                if currentcf: # If we've already started the iteration, there's a previous corestriction to compose with
+                if currentcf: # If we've already started the iteration, there's a previous restriction to compose with
                     cfp=SheafCoface(cf.index,
                                     cf.orientation*currentcf.orientation,
-                                    np.dot(cf.corestriction,currentcf.corestriction))
-                else: # If we're just starting this iteration, there is no corestriction before this one
+                                    np.dot(cf.restriction,currentcf.restriction))
+                else: # If we're just starting this iteration, there is no restriction before this one
                     cfp=cf
                 for cff in self.cofaces(cfp.index,cells,cfp): # Iterate over all higher dimensional cells
                     yield cff
@@ -409,7 +409,7 @@ class Sheaf(CellComplex):
         return Sheaf([SheafCell(dimension=self.cells[i].dimension,
                                 stalkDim=self.cells[i].stalkDim,
                                 compactClosure=self.cells[i].compactClosure and (not set(self.faces(i)).difference(set(cells))),
-                                cofaces=[SheafCoface(cells.index(cf.index),cf.orientation,cf.corestriction) for cf in self.cells[i].cofaces]) for i in cells]) 
+                                cofaces=[SheafCoface(cells.index(cf.index),cf.orientation,cf.restriction) for cf in self.cells[i].cofaces]) for i in cells]) 
 
     def kcells(self,k,compactSupport=False):
         """Extract the compact k-cells and associated components of coboundary matrix"""
@@ -438,7 +438,7 @@ class Sheaf(CellComplex):
         # Vertices of new sheaf = elements of S with no faces
         vert=list(set(cells).difference(edges))  
 
-        # Corestrictions of new sheaf = compositions of corestrictions
+        # Restrictions of new sheaf = compositions of restrictions
         for i in vert:
             # starting at this vertex, do a depth-first search for the edges in the new sheaf
             cofaces=list(self.cofaces(i,cells))
@@ -446,7 +446,7 @@ class Sheaf(CellComplex):
             for cf in cofaces:
                 newcofaces.append(SheafCoface(edges.index(cf.index),
                     cf.orientation,
-                    cf.corestriction))
+                    cf.restriction))
             
             if cofaces:
                 newcells.append(SheafCell(0,compactClosure=True,cofaces=newcofaces))
@@ -473,7 +473,7 @@ class Sheaf(CellComplex):
         # Observe that value at each vertex of sheaf 2 either
         #  (1) comes from value at a vertex of sheaf 1 or
         #  (2) comes from value at an edge of sheaf 1, 
-        #      in which case a single corestriction map obtains it 
+        #      in which case a single restriction map obtains it 
         #      from the value at a vertex of sheaf 1
         k_1,ksizes_1,kidx_1=sheaf_1.kcells(0)
         k_2,ksizes_2,kidx_2=sheaf_2.kcells(0)
@@ -496,7 +496,7 @@ class Sheaf(CellComplex):
                         idx=k_1.index(ii)
                         for cf in sheaf_1.cells[ii].cofaces:
                             if cf.index==ms[0]:
-                                cr=cf.corestriction
+                                cr=cf.restriction
                                 break
                         A=np.dot(cr,mor_1[ii].maps[0])
                         
@@ -527,7 +527,7 @@ class Sheaf(CellComplex):
                 for cf in self.cells[ks[i]].cofaces:
                     if self.cells[cf.index].compactClosure or compactSupport:
                         ridx=kp1.index(cf.index)
-                        block=np.matrix(cf.orientation*cf.corestriction)
+                        block=np.matrix(cf.orientation*cf.restriction)
                         d[kp1idx[ridx]:kp1idx[ridx+1],kidx[i]:kidx[i+1]]+=block
             return d
         else:
@@ -565,7 +565,7 @@ class Sheaf(CellComplex):
         for i in range(len(assignment.sectionCells)):
             for cf in self.cofaces(assignment.sectionCells[i].support):
                 if not assignment.extend(cf.index) and multiassign:
-                    assignment.sectionCells.append(SectionCell(cf.index,np.dot(cf.corestriction,assignment.sectionCells[i].value)))
+                    assignment.sectionCells.append(SectionCell(cf.index,np.dot(cf.restriction,assignment.sectionCells[i].value)))
         return assignment
 
     def approximateSectionRadius(self,assignment,tol=1e-5):
@@ -597,7 +597,7 @@ class Sheaf(CellComplex):
             if found:
                 cofaces=[]
                 for cf in c.cofaces:
-                    vv=np.dot(cf.corestriction,val)
+                    vv=np.dot(cf.restriction,val)
                     for s in assignment.sectionCells:
                         if s.support == cf.index and np.all(np.abs(vv-s.value)) < tol:
                             cofaces.append(cf)
@@ -654,10 +654,10 @@ class Sheaf(CellComplex):
             cfs=[]
             for cf in c.cofaces:
                 smallPreimage=[d for d,r in map if r==cf.index]
-                corest=self.localRestriction(self.starCells(bigPreimage),
+                rest=self.localRestriction(self.starCells(bigPreimage),
                     self.starCells(smallPreimage))
                 cfs.append(SheafCoface(cf.index,
-                    cf.orientation,corest))
+                    cf.orientation,rest))
                     
             mor.append(SheafMorphismCell(bigPreimage,
                 [self.localRestriction(self.starCells(bigPreimage),[d]) for d in bigPreimage]))
@@ -679,12 +679,12 @@ class Sheaf(CellComplex):
         for i in range(len(self.cells)):
             c=self.cells[i]
              
-            # If a vertex, collapse by composing edge morphism with corestrictions
+            # If a vertex, collapse by composing edge morphism with restrictions
             if c.dimension==0:
                 map=np.zeros((0,c.stalkDim))
                 for j in range(len(c.cofaces)-1):
                     cf=c.cofaces[j]
-                    map=np.vstack((map,np.sum(cf.corestriction,axis=0)))
+                    map=np.vstack((map,np.sum(cf.restriction,axis=0)))
 
                 mor.append(SheafMorphismCell([i],[map]))
             else:
@@ -703,17 +703,17 @@ class AmbiguitySheaf(Sheaf):
             
             # New cell has same dimension, compactness,
             # Stalk is the kernel of the component map there
-            # Corestrictions come from basis change on each corestriction
+            # Restrictions come from basis change on each restriction
             K=kernel(mor[i].map[0])
             stalkDim=K.shape[0]
             cfnew=[]
             for cf in shf1.cells[i].cofaces:
-                S=cf.corestriction
+                S=cf.restriction
                 L=kernel(mor[cf.index].map[0])
                 R=np.linalg.lstsq(L,np.dot(S,K))
                 cfnew.append(SheafCoface(index=cf.index,
                     orientation=cf.orientation,
-                    corestriction=R))
+                    restriction=R))
                     
             cellsnew.append(SheafCell(dimension=c.dimension,
                 compactClosure=c.compactClosure,
@@ -732,7 +732,7 @@ class LocalHomologySheaf(Sheaf):
                                      stalkDim=cellcomplex.localHomology(k,[i]).shape[1],
                                      cofaces=[SheafCoface(index=cf.index,
                                                           orientation=cf.orientation,
-                                                          corestriction=cellcomplex.inducedMapLocalHomology(k,i,cf.index))
+                                                          restriction=cellcomplex.inducedMapLocalHomology(k,i,cf.index))
                                               for cf in c.cofaces]))
         Sheaf.__init__(self,shcells)
         
@@ -749,7 +749,7 @@ class ChainSheaf(Poset,Sheaf):
                                      stalkDim=len(chains),
                                      cofaces=[SheafCoface(index=cf.index,
                                                           orientation=cf.orientation,
-                                                          corestriction=subchainMatrix(chains,
+                                                          restriction=subchainMatrix(chains,
                                                                                        poset.maximalChains(cf.index))) 
                                               for cf in c.cofaces]))
 
@@ -942,13 +942,13 @@ class FlowSheaf(Sheaf,DirectedGraph):
             cofaces=[]
             j=0
             for cf in c.cofaces:
-                # Compute corestrictions
+                # Compute restrictions
                 if j in range(len(c.cofaces)-1):
-                    corest=np.matrix([m==j for m in range(len(c.cofaces)-1)],dtype=int)
+                    rest=np.matrix([m==j for m in range(len(c.cofaces)-1)],dtype=int)
                 else:
-                    corest=np.matrix([cf.orientation for cf in c.cofaces][0:-1])
+                    rest=np.matrix([cf.orientation for cf in c.cofaces][0:-1])
                 
-                cofaces.append(SheafCoface(cf.index,cf.orientation,corest))
+                cofaces.append(SheafCoface(cf.index,cf.orientation,rest))
                 j+=1
             
             sheafcells.append(SheafCell(dimension=c.dimension,
@@ -977,26 +977,26 @@ class TransLineSheaf(Sheaf,DirectedGraph):
         for c in graph.cells:
             cofaces=[]
 
-            if c.dimension == 0: # Edges have interesting corestrictions
+            if c.dimension == 0: # Edges have interesting restrictions
                 n=len(c.cofaces)
                 phaselist=[2/n for i in range(n)]
                 for m in range(n):
                     if c.cofaces[m].orientation == -1:
-                        corest=np.matrix([[i==m for i in range(n)],
+                        rest=np.matrix([[i==m for i in range(n)],
                                           phaselist],
                                          dtype=complex)
-                        corest[1,m]-=1
-                        corest[1,:]*=np.exp(-1j*wavenumber*graph.cells[c.cofaces[m].index].length)
+                        rest[1,m]-=1
+                        rest[1,:]*=np.exp(-1j*wavenumber*graph.cells[c.cofaces[m].index].length)
                     else:
-                        corest=np.matrix([phaselist,
+                        rest=np.matrix([phaselist,
                                           [i==m for i in range(n)]],
                                          dtype=complex)
-                        corest[0,m]-=1
-                        corest[0,:]*=np.exp(1j*wavenumber*graph.cells[c.cofaces[m].index].length)
+                        rest[0,m]-=1
+                        rest[0,:]*=np.exp(1j*wavenumber*graph.cells[c.cofaces[m].index].length)
                     cofaces.append(SheafCoface(c.cofaces[m].index,
                                                c.cofaces[m].orientation,
-                                               corest))
-            else: # All other faces have trivial corestrictions
+                                               rest))
+            else: # All other faces have trivial restrictions
                 n=2
                 cofaces=[SheafCoface(cf.index,cf.orientation,[]) for cf in c.cofaces]
             sheafcells.append(SheafCell(dimension=c.dimension,
@@ -1052,8 +1052,8 @@ class Section:
         for s in self.sectionCells:
             for cf in sheaf.cells[s.support].cofaces:
                 if cf.index == cell:
-                    # If so, extend via corestriction
-                    val=np.dot(cf.corestriction,s.value)
+                    # If so, extend via restriction
+                    val=np.dot(cf.restriction,s.value)
 
                     # Check for consistency
                     if value != None and np.any(np.abs(val - value)>tol):
@@ -1062,8 +1062,8 @@ class Section:
                             
         # Are there are any cofaces for the desired cell in the support?
         if value == None: # Attempt to assign a new value...
-            # Stack the corestrictions and values associated to existing support
-            lst=[(cf.corestriction,s.value) 
+            # Stack the restrictions and values associated to existing support
+            lst=[(cf.restriction,s.value) 
                  for cf in sheaf.cells[cell].cofaces 
                  for s in self.sectionCells
                  if cf.index == s.support]
@@ -1085,7 +1085,7 @@ class Section:
             for cf in sheaf.cells[cell].cofaces:
                 for s in self.sectionCells:
                     if s.support == cf.index:
-                        if np.any(np.abs(np.dot(cf.corestriction,value)-s.value)>tol):
+                        if np.any(np.abs(np.dot(cf.restriction,value)-s.value)>tol):
                             return False
         
         # A value was successfully assigned (if no value was assigned, 

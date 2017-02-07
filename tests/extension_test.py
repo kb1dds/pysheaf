@@ -10,8 +10,8 @@
 import numpy as np
 import pysheaf as ps
 
-sh1=ps.Sheaf([ps.SheafCell(dimension=0,cofaces=[ps.SheafCoface(index=2,orientation=-1,corestriction=np.matrix(1))]),
-              ps.SheafCell(dimension=0,cofaces=[ps.SheafCoface(index=2,orientation=1,corestriction=np.matrix(1))]),
+sh1=ps.Sheaf([ps.SheafCell(dimension=0,cofaces=[ps.SheafCoface(index=2,orientation=-1,restriction=np.matrix(1))]),
+              ps.SheafCell(dimension=0,cofaces=[ps.SheafCoface(index=2,orientation=1,restriction=np.matrix(1))]),
               ps.SheafCell(dimension=1,cofaces=[],stalkDim=1)])
 
 sec1=ps.Section([ps.SectionCell(0,1),ps.SectionCell(1,1)])
@@ -24,10 +24,10 @@ if sec1.extend(sh1,2) and sec2.extend(sh1,2) and not sec3.extend(sh1,2) and sec2
 else:
     print "Test 1 failed"
 
-sh2=ps.Sheaf([ps.SheafCell(dimension=0,cofaces=[ps.SheafCoface(index=1,orientation=-1,corestriction=np.matrix(1))]),
+sh2=ps.Sheaf([ps.SheafCell(dimension=0,cofaces=[ps.SheafCoface(index=1,orientation=-1,restriction=np.matrix(1))]),
               ps.SheafCell(dimension=1,cofaces=[],stalkDim=1),
-              ps.SheafCell(dimension=0,cofaces=[ps.SheafCoface(index=1,orientation=1,corestriction=np.matrix(-1)),
-                                                ps.SheafCoface(index=3,orientation=-1,corestriction=np.matrix(1))]),
+              ps.SheafCell(dimension=0,cofaces=[ps.SheafCoface(index=1,orientation=1,restriction=np.matrix(-1)),
+                                                ps.SheafCoface(index=3,orientation=-1,restriction=np.matrix(1))]),
               ps.SheafCell(dimension=1,cofaces=[],stalkDim=1)])
 sec4=ps.Section([ps.SectionCell(0,1)])
 

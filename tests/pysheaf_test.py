@@ -11,11 +11,11 @@ import pysheaf as ps
 if __name__ == '__main__':
     # A circle
     CircSheaf=ps.Sheaf([ps.SheafCell(dimension=0,cofaces=[
-         ps.SheafCoface(index=2,orientation=-1,corestriction=np.matrix(1)),
-         ps.SheafCoface(index=3,orientation=1,corestriction=np.matrix(1))]), # Vertex
+         ps.SheafCoface(index=2,orientation=-1,restriction=np.matrix(1)),
+         ps.SheafCoface(index=3,orientation=1,restriction=np.matrix(1))]), # Vertex
          ps.SheafCell(dimension=0,cofaces=[
-         ps.SheafCoface(index=2,orientation=1,corestriction=np.matrix(1)),
-         ps.SheafCoface(index=3,orientation=-1,corestriction=np.matrix(1))]), # Vertex
+         ps.SheafCoface(index=2,orientation=1,restriction=np.matrix(1)),
+         ps.SheafCoface(index=3,orientation=-1,restriction=np.matrix(1))]), # Vertex
          ps.SheafCell(dimension=1,stalkDim=1), # Edge
          ps.SheafCell(dimension=1,stalkDim=1)]) # Edge
     print 'Circle Betti numbers: ' + str((CircSheaf.betti(0),CircSheaf.betti(1),CircSheaf.betti(2)))
