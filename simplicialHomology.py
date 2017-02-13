@@ -348,3 +348,14 @@ def complex2perseus(filename,toplexes,labels=False):
                 fp.write(str(tp[1])+'\n')
             else:
                 fp.write('1 \n')
+
+def jaccardIndexFaces(face1,face2):
+    """Compute the Jaccard index between two faces"""
+    face1Set=set(face1)
+    face2Set=set(face2)
+    inter=len(face1Set.intersection(face2Set))
+    union=len(face1Set.union(face2Set))
+    if union == 0:
+        return 1
+    else:
+        return float(inter)/float(union)
