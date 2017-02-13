@@ -382,16 +382,32 @@ class SheafCoface(Coface):
             self.restriction=restriction
 
     def __repr__(self):
-        return "(index=" + str(self.index) + ",orientation="+str(self.orientation)+",restriction="+str(self.restriction.matrix)+")"
+        if self.isLinear():
+            return "(index=" + str(self.index) + ",orientation="+str(self.orientation)+",restriction="+str(self.restriction.matrix)+")"
+        else:
+            return "(index=" + str(self.index) + ",orientation="+str(self.orientation)+",restriction="+str(self.restriction.fcn)+")"
+
+    def isLinear(self):
+        """Does this coface relation have a LinearMorphism for a restriction?"""
+        try:
+            getattr(self.restriction,'matrix')
+            return True
+        except AttributeError:
+            return False
         
 class SheafCell(Cell):
-    """A cell in a cell complex with a sheaf over it"""
-    def __init__(self,dimension,cofaces=[],compactClosure=True,stalkDim=1,metric=None):
-        if cofaces:
-            try:
-                self.stalkDim=cofaces[0].restriction.matrix.shape[1]
-            except AttributeError:
-                self.stalkDim=0
+    """A cell in a cell complex with a sheaf over it
+    cofaces = list of SheafCoface instances, one for each coface of this cell
+    stalkDim = dimension of the stalk over this cell (defaults to figuring it out from the cofaces if the restriction is a LinearMorphism) or None if stalk is not a real vector space"""
+    def __init__(self,dimension,cofaces=[],compactClosure=True,stalkDim=None,metric=None):
+        if stalkDim == None and cofaces:
+            if cofaces[0].isLinear():
+                try:  # Try to discern the stalk dimension from the matrix representation. This will fail if the matrix isn't given
+                    self.stalkDim=cofaces[0].restriction.matrix.shape[1]
+                except AttributeError:
+                    self.stalkDim=0
+            else:  # OK, not a LinearMorphism, so the stalk isn't a vector space
+                self.stalkDim=stalkDim
         else:
             self.stalkDim=stalkDim
 
@@ -401,6 +417,22 @@ class SheafCell(Cell):
             self.metric=lambda x,y: np.linalg.norm(x-y)
             
         Cell.__init__(self,dimension,compactClosure,cofaces)
+
+    def isLinear(self):
+        """Is this cell representative of a Sheaf of vector spaces?  (All restrictions are linear maps)"""
+        if stalkDim == None:
+            return False
+        for cf in self.cofaces:
+            if not cf.isLinear():
+                return False
+        return True
+
+    def isNumeric(self):
+        """Is this cell representative of a sheaf of sets in which stalks are all real vector spaces? (restrictions may not be linear maps, though)"""
+        if stalkDim == None:
+            return False
+        else:
+            return True
 
     def __repr__(self):
         string="(dimension="+str(self.dimension)+",compactClosure="+str(self.compactClosure)
@@ -413,6 +445,21 @@ class SheafCell(Cell):
 
 # Sheaf class
 class Sheaf(CellComplex):
+
+    def isLinear(self):
+        """Is this a Sheaf of vector spaces?  (All restrictions are linear maps)"""
+        for c in cells:
+            if not c.isLinear():
+                return False
+        return True
+
+    def isNumeric(self):
+        """Is this a Sheaf of sets in which stalks are all real vector spaces? (restrictions may not be linear maps, though)"""
+        for c in cells:
+            if not c.isNumeric():
+                return False
+        return True
+        
     def cofaces(self,c,cells=[],currentcf=[]):
         """Iterate over cofaces (of all dimensions) of a given cell c; optional argument specifies which cells are permissible cofaces"""
         if c >= len(self.cells):
@@ -991,10 +1038,16 @@ class FlowSheaf(Sheaf,DirectedGraph):
                 
                 cofaces.append(SheafCoface(cf.index,cf.orientation,rest))
                 j+=1
-            
-            sheafcells.append(SheafCell(dimension=c.dimension,
-                                        compactClosure=c.compactClosure,
-                                        cofaces=cofaces))
+
+            if cofaces:
+                sheafcells.append(SheafCell(dimension=c.dimension,
+                                            compactClosure=c.compactClosure,
+                                            cofaces=cofaces))
+            else:
+                sheafcells.append(SheafCell(dimension=c.dimension,
+                                            compactClosure=c.compactClosure,
+                                            cofaces=[],
+                                            stalkDim=1))
 
         Sheaf.__init__(self,sheafcells)
 
@@ -1232,7 +1285,7 @@ def inducedMap(sheaf1,sheaf2,morphism,k,compactSupport=False,tol=1e-5):
     Hk_2=sheaf2.cohomology(k,compactSupport)
 
     if (not Hk_1.size) or (not Hk_2.size):
-        return []
+        return np.matrix([])
 
     # Extract the k-skeleta of each sheaf
     k_1,ksizes_1,kidx_1=sheaf1.kcells(k,compactSupport)
