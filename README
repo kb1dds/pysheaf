@@ -1,0 +1,20 @@
+PySheaf: Sheaf-theoretic toolbox
+=====
+
+This repository consists of Python 2.7 libraries for manipulating cell complexes and data structures on them:
+1. Local and relative homology of abstract simplicial complexes
+2. Sheaves of sets or vector spaces on cell complexes
+
+The pysheaf.py module should be able to duplicate the functionality of simplicialHomology.py, albeit somewhat more slowly because the base space constructions are more general and less efficient.
+
+Sheaves are managed by subclassing from CellComplex, which is a little awkward as SheafCells are subclassed of Cells, etc.  However, the idea is that everything that can be done to the base space of a sheaf is inherited from its underlying CellComplex structure.
+
+Sections of sheaves have their own class.  Truly, the data structure does not self-check for consistency, so really they are more of an "assignment" or "serration" than a section.  However, they do know how to extend themselves.
+
+Finally, this code is under active development, so not everything works as it should.  Stay away from Sheaf.localSectional() and Cell.localPairComplex() as these don't currently work correctly!  If you find anything that you can correct, feel free to send me suggestions!
+
+Thanks!
+Michael Robinson
+American University
+kb1dds@gmail.com
+michaelr@american.edu
