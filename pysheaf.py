@@ -9,6 +9,7 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 import networkx as nx
+import scipy
 
 ## Data structures
 class Coface: 
@@ -667,6 +668,37 @@ class Sheaf(CellComplex):
                     if rad > radius:
                         radius = rad
         return radius
+
+    def fuseAssignment(self,assignment,tol=tol):
+        """Compute the nearest global section to a given assignment"""
+        if  self.isNumeric():
+            # The situation where the stalks are all numeric
+            res=scipy.optimize( fun = lambda sec: self.assignmentMetric(assignment,self.deserializeAssignment(sec)),
+                                x0 = np.zeros((sum([c.stalkDim for c in self.cells]))),
+                                cons = ({'type' : 'eq',
+                                         'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg))}),
+                                tol = tol )
+            globalsection = self.deserializeAssignment(res.x)
+        else:
+            # The fallback situation, where we need to iterate over global sections manually...
+            raise NotImplementedError
+        
+        return globalsection
+
+    def deserializeAssignment(self,vect):
+        """Transform a vector of values for a numeric-valued sheaf into an assignment as a Section instance
+        (Note: this is really a helper method and should generally not be used by external callers)"""
+        if not self.isNumeric():
+            raise TypeError('Cannot deserialize an assignment vector for a non-numeric sheaf')
+
+        scs=[]
+        idx=0
+        for i in range(self.cells):
+            if self.cells[i].stalkDim > 0:
+                scs.append(SectionCell(support=i,value=vect[idx:idx+self.cells[i].stalkDim]))
+                idx+=self.cells[c1].stalkDim
+                       
+        return Section(scs)
         
     def partitionAssignment(self,assignment,tol=1e-5):
         """Take an assignment to some cells of a sheaf and return a collection of disjoint maximal sets of cells on which this assignment is a local section"""
