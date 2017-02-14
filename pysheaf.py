@@ -9,7 +9,7 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 import networkx as nx
-import scipy
+import scipy.optimize
 
 ## Data structures
 class Coface: 
@@ -369,7 +369,10 @@ class LinearMorphism(SetMorphism):
         SetMorphism.__init__(self,lambda x: np.dot(matrix,x))
 
     def __mul__(self,other): # Composition of morphisms
-        return LinearMorphism(np.dot(self.matrix, other.matrix))
+        try: # Try to multiply matrices.  This might fail if the other morphism isn't a LinearMorphism
+            return LinearMorphism(np.dot(self.matrix, other.matrix))
+        except AttributeError:
+            return SetMorphism.__mul__(self,other)
 
 class SheafCoface(Coface):
     """A coface relation, in which the restriction is assumed to be a SetMorphism object
@@ -421,7 +424,7 @@ class SheafCell(Cell):
 
     def isLinear(self):
         """Is this cell representative of a Sheaf of vector spaces?  (All restrictions are linear maps)"""
-        if stalkDim == None:
+        if self.stalkDim == None:
             return False
         for cf in self.cofaces:
             if not cf.isLinear():
@@ -430,7 +433,7 @@ class SheafCell(Cell):
 
     def isNumeric(self):
         """Is this cell representative of a sheaf of sets in which stalks are all real vector spaces? (restrictions may not be linear maps, though)"""
-        if stalkDim == None:
+        if self.stalkDim == None:
             return False
         else:
             return True
@@ -449,14 +452,14 @@ class Sheaf(CellComplex):
 
     def isLinear(self):
         """Is this a Sheaf of vector spaces?  (All restrictions are linear maps)"""
-        for c in cells:
+        for c in self.cells:
             if not c.isLinear():
                 return False
         return True
 
     def isNumeric(self):
         """Is this a Sheaf of sets in which stalks are all real vector spaces? (restrictions may not be linear maps, though)"""
-        for c in cells:
+        for c in self.cells:
             if not c.isNumeric():
                 return False
         return True
@@ -642,7 +645,7 @@ class Sheaf(CellComplex):
         """Take a partial assignment and extend it to a maximal assignment that's non-conflicting (if multiassign=False) or one in which multiple values can be given to a given cell (if multiassign=True)"""
         for i in range(len(assignment.sectionCells)):
             for cf in self.cofaces(assignment.sectionCells[i].support):
-                if not assignment.extend(cf.index,tol) and multiassign:
+                if not assignment.extend(self,cf.index,tol) and multiassign:
                     assignment.sectionCells.append(SectionCell(cf.index,cf.restriction(assignment.sectionCells[i].value)))
         return assignment
 
@@ -653,7 +656,7 @@ class Sheaf(CellComplex):
         for c1 in assignment.sectionCells:
             for c2 in assignment.sectionCells:
                 if c1.support == c2.support:
-                    rad = self.cells[c1].metric(c1.value,c2.value)
+                    rad = self.cells[c1.support].metric(c1.value,c2.value)
                     if rad > radius:
                         radius = rad
         return radius
@@ -664,20 +667,21 @@ class Sheaf(CellComplex):
         for c1 in assignment1.sectionCells:
             for c2 in assignment2.sectionCells:
                 if c1.support == c2.support:
-                    rad = self.cells[c1].metric(c1.value,c2.value)
+                    rad = self.cells[c1.support].metric(c1.value,c2.value)
                     if rad > radius:
                         radius = rad
         return radius
 
-    def fuseAssignment(self,assignment,tol=tol):
+    def fuseAssignment(self,assignment,tol=1e-5):
         """Compute the nearest global section to a given assignment"""
-        if  self.isNumeric():
+        if self.isNumeric():
             # The situation where the stalks are all numeric
-            res=scipy.optimize( fun = lambda sec: self.assignmentMetric(assignment,self.deserializeAssignment(sec)),
-                                x0 = np.zeros((sum([c.stalkDim for c in self.cells]))),
-                                cons = ({'type' : 'eq',
-                                         'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg))}),
-                                tol = tol )
+            res=scipy.optimize.minimize( fun = lambda sec: self.assignmentMetric(assignment,self.deserializeAssignment(sec)),
+                                         x0 = self.serializeAssignment(assignment),#np.zeros((sum([c.stalkDim for c in self.cells]))),
+                                         constraints = ({'type' : 'eq',
+                                                         'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg))}),
+                                         tol = tol )
+            print res.success
             globalsection = self.deserializeAssignment(res.x)
         else:
             # The fallback situation, where we need to iterate over global sections manually...
@@ -693,12 +697,27 @@ class Sheaf(CellComplex):
 
         scs=[]
         idx=0
-        for i in range(self.cells):
+        for i in range(len(self.cells)):
             if self.cells[i].stalkDim > 0:
                 scs.append(SectionCell(support=i,value=vect[idx:idx+self.cells[i].stalkDim]))
-                idx+=self.cells[c1].stalkDim
+                idx+=self.cells[i].stalkDim
                        
         return Section(scs)
+
+    def serializeAssignment(self,assignment):
+        """Transform a partial assignment in a Section instance into a vector of values"""
+        x0 = np.zeros((sum([c.stalkDim for c in self.cells])))
+        idx=0
+        idxarray=[]
+        for i in range(len(self.cells)):
+            if self.cells[i].stalkDim > 0:
+                idxarray.append(idx)
+                idx+=self.cells[i].stalkDim
+        for cell in assignment.sectionCells:
+            if self.cells[cell.support].stalkDim > 0:
+                x0[idxarray[cell.support]:idxarray[cell.support]+self.cells[cell.support].stalkDim]=cell.value
+
+        return x0
         
     def partitionAssignment(self,assignment,tol=1e-5):
         """Take an assignment to some cells of a sheaf and return a collection of disjoint maximal sets of cells on which this assignment is a local section"""
