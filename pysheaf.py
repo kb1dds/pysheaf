@@ -677,11 +677,10 @@ class Sheaf(CellComplex):
         if self.isNumeric():
             # The situation where the stalks are all numeric
             res=scipy.optimize.minimize( fun = lambda sec: self.assignmentMetric(assignment,self.deserializeAssignment(sec)),
-                                         x0 = self.serializeAssignment(assignment),#np.zeros((sum([c.stalkDim for c in self.cells]))),
+                                         x0 = self.serializeAssignment(assignment),
                                          constraints = ({'type' : 'eq',
                                                          'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg))}),
                                          tol = tol )
-            print res.success
             globalsection = self.deserializeAssignment(res.x)
         else:
             # The fallback situation, where we need to iterate over global sections manually...
@@ -706,13 +705,20 @@ class Sheaf(CellComplex):
 
     def serializeAssignment(self,assignment):
         """Transform a partial assignment in a Section instance into a vector of values"""
+        if not self.isNumeric():
+            raise TypeError('Cannot serialize an assignment vector for a non-numeric sheaf')
+
         x0 = np.zeros((sum([c.stalkDim for c in self.cells])))
+
+        # Figure out cell boundaries in vector
         idx=0
         idxarray=[]
         for i in range(len(self.cells)):
             if self.cells[i].stalkDim > 0:
                 idxarray.append(idx)
                 idx+=self.cells[i].stalkDim
+
+        # Pack data into vector.  If there are multiple values assigned, the one appearing last is used
         for cell in assignment.sectionCells:
             if self.cells[cell.support].stalkDim > 0:
                 x0[idxarray[cell.support]:idxarray[cell.support]+self.cells[cell.support].stalkDim]=cell.value

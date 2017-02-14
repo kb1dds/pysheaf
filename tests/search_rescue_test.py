@@ -9,7 +9,7 @@
 import pysheaf as ps
 import numpy as np
 
-# Metrics...
+# Metrics and spherical geometry
 def distance(v1,v2):
     """Compute distance in km between two lat/lon pairs"""
     x1=v1[0]
@@ -89,7 +89,7 @@ def E(vec):
 s1=ps.Sheaf([ps.SheafCell(dimension=0,
                           compactClosure=True,
                           stalkDim=6,
-                          metric=distance_alt, # Should also include velocity...
+                          metric=distance_alt, # Ignores velocity
                           cofaces=[ps.SheafCoface(index=2, 
                                                   orientation=1,
                                                   restriction=ps.LinearMorphism(np.array([[1,0,0,0,0,0],
@@ -114,7 +114,7 @@ s1=ps.Sheaf([ps.SheafCell(dimension=0,
              ps.SheafCell(dimension=1,
                           compactClosure=True,
                           stalkDim=5,
-                          metric=distance_alt, # Should also include velocity
+                          metric=distance_alt, # Ignores velocity
                           cofaces=[ps.SheafCoface(index=1,
                                                   orientation=1,
                                                   restriction=ps.LinearMorphism(np.array([[1,0,0,0,0],
@@ -146,7 +146,7 @@ s1=ps.Sheaf([ps.SheafCell(dimension=0,
                           metric=distance,
                           cofaces=[ps.SheafCoface(index=6,
                                                   orientation=-1,
-                                                  restriction=ps.SetMorphism(C)), #U5->V1
+                                                  restriction=ps.SetMorphism(C)), # U5->V1
                                    ps.SheafCoface(index=7,
                                                   orientation=-1,
                                                   restriction=ps.SetMorphism(D))]), # U5->V2
