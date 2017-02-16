@@ -7,10 +7,10 @@
 
 import pysheaf as ps
 
-complex1=ps.CellComplex([ps.Cell(dimension=0,cofaces=[ps.Coface(index=1,orientation=1),ps.Coface(index=2,orientation=1),ps.Coface(index=3,orientation=1)]),
-                         ps.Cell(dimension=3,cofaces=[ps.Coface(index=2,orientation=1),ps.Coface(index=3,orientation=1)]),
-                         ps.Cell(dimension=1,cofaces=[ps.Coface(index=3,orientation=1)]),
-                         ps.Cell(dimension=2,cofaces=[])])
+complex1=ps.Poset([ps.Cell(dimension=0,cofaces=[ps.Coface(index=1,orientation=1),ps.Coface(index=2,orientation=1),ps.Coface(index=3,orientation=1)]),
+                   ps.Cell(dimension=3,cofaces=[ps.Coface(index=2,orientation=1),ps.Coface(index=3,orientation=1)]),
+                   ps.Cell(dimension=1,cofaces=[ps.Coface(index=3,orientation=1)]),
+                   ps.Cell(dimension=2,cofaces=[])])
 
 complex1.transitiveReduce()
 for c in complex1.cells:
