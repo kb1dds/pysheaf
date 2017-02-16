@@ -16,7 +16,7 @@ def distance(v1,v2):
     y1=v1[1]
     x2=v2[0]
     y2=v2[1]
-    return np.sqrt(((y2-y1)*np.pi/180*6356.752*np.cos((y1+y2)*np.pi/360))**2+((y2-y1)*np.pi/180*6356.752)**2)
+    return np.sqrt(((x2-x1)*np.pi/180*6356.752*np.cos((y1+y2)*np.pi/360))**2+((y2-y1)*np.pi/180*6356.752)**2)
 
 def distance_alt(v1,v2):
     """Compute distance in km between two lat/lon/alt triples"""
@@ -26,7 +26,7 @@ def distance_alt(v1,v2):
     x2=v2[0]
     y2=v2[1]
     z2=v2[2]
-    return np.sqrt(((y2-y1)*np.pi/180*6356.752*np.cos((y1+y2)*np.pi/360))**2+((y2-y1)*np.pi/180*6356.752)**2 + ((z1-z2)/1000.)**2)
+    return np.sqrt(((x2-x1)*np.pi/180*6356.752*np.cos((y1+y2)*np.pi/360))**2+((y2-y1)*np.pi/180*6356.752)**2 + ((z1-z2)/1000.)**2)
 
 def anglemetric(theta1,theta2):
     """Distance between two angles"""
