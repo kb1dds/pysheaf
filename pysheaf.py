@@ -514,7 +514,7 @@ class Sheaf(CellComplex):
             newcells.append(SheafCell(1,
                 compactClosure=self.cells[i].compactClosure and (not set(self.faces(i)).difference(set(cells))),
                 stalkDim=self.cells[i].stalkDim))
-            morphism.append(SheafMorphismCell([i],[np.eye(self.cells[i].stalkDim)]))
+            morphism.append(SheafMorphismCell([i],[LinearMorphism(np.eye(self.cells[i].stalkDim))]))
 
         # Vertices of new sheaf = elements of S with no faces
         vert=list(set(cells).difference(edges))  
@@ -534,9 +534,9 @@ class Sheaf(CellComplex):
             else:
                 newcells.append(SheafCell(0,compactClosure=True,stalkDim=self.cells[i].stalkDim))
                 
-            morphism.append(SheafMorphismCell([i],[np.eye(self.cells[i].stalkDim)]))
+            morphism.append(SheafMorphismCell([i],[LinearMorphism(np.eye(self.cells[i].stalkDim))]))
 
-        return Sheaf(newcells),morphism
+        return Sheaf(newcells),SheafMorphism(morphism)
         
     def localRestriction(self,cells_1,cells_2):
         """Compute the map induced on local sections by restricting from a larger set to a smaller one"""
@@ -563,13 +563,13 @@ class Sheaf(CellComplex):
         for ss in range(H0_1.shape[1]): # Looping over sections in sheaf 1
             for i in range(len(k_2)): # Looping over vertices in sheaf 2
                 # Compute compute preimages of this sheaf 2 vertex
-                ms=[k for k in range(len(mor_1)) if
-                    set(mor_1[k].destinations).intersection(mor_2[k_2[i]].destinations)]
+                ms=[k for k in range(len(mor_1.morphismCells)) if
+                    set(mor_1.morphismCells[k].destinations).intersection(mor_2.morphismCells[k_2[i]].destinations)]
                 if ms:
                     if sheaf_1.cells[ms[0]].dimension==0:
                         ii=ms[0]
                         idx=k_1.index(ii)
-                        map,j1,j2,j3=np.linalg.lstsq(mor_2[i].maps[0],mor_1[ii].maps[0])
+                        map,j1,j2,j3=np.linalg.lstsq(mor_2.morphismCells[i].maps[0].matrix,mor_1.morphismCells[ii].maps[0].matrix)
                         A=np.dot(map,H0_1[kidx_1[idx]:kidx_1[idx+1],ss])
                         sections[kidx_2[i]:kidx_2[i+1],ss]=A
                     else:
@@ -579,9 +579,9 @@ class Sheaf(CellComplex):
                             if cf.index==ms[0]:
                                 cr=cf.restriction
                                 break
-                        A=cr(mor_1[ii].maps[0])
+                        A=cr(mor_1.morphismCells[ii].maps[0].matrix)
                         
-                        map,j1,j2,j3=np.linalg.lstsq(mor_2[i].maps[0],A)
+                        map,j1,j2,j3=np.linalg.lstsq(mor_2.morphismCells[i].maps[0].matrix,A)
                         sections[kidx_2[i]:kidx_2[i+1],ss]=np.dot(map,H0_1[kidx_1[idx]:kidx_1[idx+1],ss])
 
         # Rewrite sections over sheaf 2 in terms of 0-cohomology basis
@@ -779,9 +779,7 @@ class Sheaf(CellComplex):
         if (n==0):
             return 0
         return np.log2(m)/np.log2(n)
-    
-    
-        
+
     def pushForward(self,targetComplex,map):
         """Compute the pushforward sheaf and morphism along a map"""
         
@@ -805,14 +803,14 @@ class Sheaf(CellComplex):
                     cf.orientation,rest))
                     
             mor.append(SheafMorphismCell(bigPreimage,
-                [self.localRestriction(self.starCells(bigPreimage),[d]) for d in bigPreimage]))
+                [LinearMorphism(self.localRestriction(self.starCells(bigPreimage),[d])) for d in bigPreimage]))
             if cfs:
                 sheafCells.append(SheafCell(c.dimension,cfs,c.compactClosure))
             else:
                 ls,m=self.localSectional(self.starCells(bigPreimage))
                 sheafCells.append(SheafCell(c.dimension,[],c.compactClosure,stalkDim=ls.betti(0)))
 
-        return Sheaf(sheafCells),mor
+        return Sheaf(sheafCells),SheafMorphism(mor)
         
     def flowCollapse(self):
         """Compute the sheaf morphism to collapse a sheaf to a flow sheaf over the same space"""
@@ -831,12 +829,12 @@ class Sheaf(CellComplex):
                     cf=c.cofaces[j]
                     map=np.vstack((map,np.sum(cf.restriction.matrix,axis=0)))
 
-                mor.append(SheafMorphismCell([i],[map]))
+                mor.append(SheafMorphismCell([i],[LinearMorphism(map)]))
             else:
                 # If an edge, collapse by summing
-                mor.append(SheafMorphismCell([i],[np.ones((1,c.stalkDim))]))
+                mor.append(SheafMorphismCell([i],[LinearMorphism(np.ones((1,c.stalkDim)))]))
                  
-        return fs,mor
+        return fs,SheafMorphism(mor)
         
 class AmbiguitySheaf(Sheaf):
     def __init__(self,shf1,mor):
@@ -849,12 +847,12 @@ class AmbiguitySheaf(Sheaf):
             # New cell has same dimension, compactness,
             # Stalk is the kernel of the component map there
             # Restrictions come from basis change on each restriction
-            K=kernel(mor[i].map[0])
+            K=kernel(mor.morphismCells[i].maps[0].matrix)
             stalkDim=K.shape[0]
             cfnew=[]
             for cf in shf1.cells[i].cofaces:
                 S=cf.restriction.matrix
-                L=kernel(mor[cf.index].map[0])
+                L=kernel(mor.morphismCells[cf.index].maps[0].matrix)
                 R=np.linalg.lstsq(L,np.dot(S,K))
                 cfnew.append(SheafCoface(index=cf.index,
                     orientation=cf.orientation,
@@ -1178,6 +1176,17 @@ class SheafMorphismCell:
         self.destinations=destinations
         self.maps=maps
 
+class SheafMorphism:
+    def __init__(self,morphismCells):
+        """Construct a sheaf morphism as a list of component maps specified as SheafMorphismCells"""
+        self.morphismCells=morphismCells
+
+    def __mul__(self,other):
+        """Composition of two sheaf morphisms"""
+        morCells=[SheafMorphismCell(destinations=[selfdest for otherdest in mc.destinations for selfdest in self.morphismCells[otherdest].destinations],
+                                    maps=[selfmap*othermap for otherdest,othermap in zip(mc.destinations,mc.maps) for selfdest,selfmap in zip(self.morphismCells[otherdest].destinations,self.morphismCells[otherdest].maps)]) for mc in other.morphismCells]
+        return SheafMorphism(morCells)
+
 # A local section
 class SectionCell:
     def __init__(self,support,value):
@@ -1354,12 +1363,12 @@ def inducedMap(sheaf1,sheaf2,morphism,k,compactSupport=False,tol=1e-5):
     m=np.zeros((rows,cols),dtype=np.complex)
 
     for i in range(len(k_1)):
-        for j,map in zip(morphism[k_1[i]].destinations,morphism[k_1[i]].maps):
+        for j,map in zip(morphism.morphismCells[k_1[i]].destinations,morphism.morphismCells[k_1[i]].maps):
             if sheaf2.cells[j].dimension==k:
                 ridx=[q for q in range(len(k_2)) if k_2[q]==j]
                 if ridx:
                     ridx=ridx[0]
-                    m[kidx_2[ridx]:kidx_2[ridx+1],kidx_1[i]:kidx_1[i+1]]+=map
+                    m[kidx_2[ridx]:kidx_2[ridx+1],kidx_1[i]:kidx_1[i+1]]+=map.matrix
 
     # Map basis for domain sheaf's cohomology through the chain map
     im=np.dot(m,Hk_1)

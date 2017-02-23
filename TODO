@@ -1,0 +1,18 @@
+PySheaf master tasks list:
+=====
+
+1. Implement maximal local sections algorithm as a method in Sheaf.  See
+
+2. Finish implementing and testing local homology for cell complexes:
+ a. CellComplex.inducedMapLocalHomology()
+ b. Clean up CellComplex.localPairComplex()
+
+3. Rebuild unit tests using the Python unittest module
+
+4. Finish implementing and testing AmbiguitySheaf
+
+5. Replace list semantics throughout with dictionaries.  Especially where random accesses are important, for instance in
+ a. CellComplex
+ b. Sheaf
+
+6. Generalize inducedMap to handle categories other than finite dimensional vector spaces

@@ -39,9 +39,9 @@ if __name__ == '__main__':
               ps.SheafCell(dimension=2,stalkDim=1)])
     print 'S^2 Betti numbers: ' + str((SphSheaf.betti(0),SphSheaf.betti(1),SphSheaf.betti(2)))
 
-    MorCirDisk=[ps.SheafMorphismCell(destinations=[0,1,2],maps=[np.matrix(1),np.matrix(1),np.matrix(1)]),
-                ps.SheafMorphismCell(destinations=[3],maps=[np.matrix(1)]),
-                ps.SheafMorphismCell(destinations=[],maps=[])]
+    MorCirDisk=ps.SheafMorphism([ps.SheafMorphismCell(destinations=[0,1,2],maps=[ps.LinearMorphism(np.matrix(1)),ps.LinearMorphism(np.matrix(1)),ps.LinearMorphism(np.matrix(1))]),
+                                 ps.SheafMorphismCell(destinations=[3],maps=[ps.LinearMorphism(np.matrix(1))]),
+                                 ps.SheafMorphismCell(destinations=[],maps=[])])
     print 'degree 0 induced map S^1->D^2: ' + str(ps.inducedMap(DiskSheaf,CircSheaf,MorCirDisk,0))
     print 'degree 1 induced map S^1->D^2:' + str(ps.inducedMap(DiskSheaf,CircSheaf,MorCirDisk,1))
     print 'degree 2 induced map S^1->D^2:' + str(ps.inducedMap(DiskSheaf,CircSheaf,MorCirDisk,2))
@@ -78,22 +78,22 @@ if __name__ == '__main__':
     print 'Betti numbers for straight line: ' + str((LineSheaf.betti(0),LineSheaf.betti(1),LineSheaf.betti(2)))
 
     # Morphism from collapsed loop to loop
-    MorColLoop=[ps.SheafMorphismCell(destinations=[0,1,2,3],
-                                     maps=[np.matrix([[1,0],[0,1]]),
-                                           np.matrix([[1,0],[0,1]]),
-                                           np.matrix([1,0]),
-                                           np.matrix([0,1])]),
-                ps.SheafMorphismCell(destinations=[4],maps=[np.matrix(1)]),
-                ps.SheafMorphismCell(destinations=[5],maps=[np.matrix(1)])]
-
+    MorColLoop=ps.SheafMorphism([ps.SheafMorphismCell(destinations=[0,1,2,3],
+                                                      maps=[ps.LinearMorphism(np.matrix([[1,0],[0,1]])),
+                                                            ps.LinearMorphism(np.matrix([[1,0],[0,1]])),
+                                                            ps.LinearMorphism(np.matrix([1,0])),
+                                                            ps.LinearMorphism(np.matrix([0,1]))]),
+                                 ps.SheafMorphismCell(destinations=[4],maps=[ps.LinearMorphism(np.matrix(1))]),
+                                 ps.SheafMorphismCell(destinations=[5],maps=[ps.LinearMorphism(np.matrix(1))])])
+                                
     print 'degree 0 induced map Collapsed->Loop: ' + str(ps.inducedMap(ColLoopSheaf,LoopSheaf,MorColLoop,0))
     print 'degree 1 induced map Collapsed->Loop: ' + str(ps.inducedMap(ColLoopSheaf,LoopSheaf,MorColLoop,1))
     print 'degree 2 induced map Collapsed->Loop: ' + str(ps.inducedMap(ColLoopSheaf,LoopSheaf,MorColLoop,2))
                 
     # Morphism from collapsed loop to straight line
-    MorColLine=[ps.SheafMorphismCell(destinations=[0],maps=[np.matrix([1,1])]),
-                ps.SheafMorphismCell(destinations=[1],maps=[np.matrix(1)]),
-                ps.SheafMorphismCell(destinations=[2],maps=[np.matrix(1)])]
+    MorColLine=ps.SheafMorphism([ps.SheafMorphismCell(destinations=[0],maps=[ps.LinearMorphism(np.matrix([1,1]))]),
+                                 ps.SheafMorphismCell(destinations=[1],maps=[ps.LinearMorphism(np.matrix(1))]),
+                                 ps.SheafMorphismCell(destinations=[2],maps=[ps.LinearMorphism(np.matrix(1))])])
 
     print 'degree 0 induced map Collapsed->Line: ' + str(ps.inducedMap(ColLoopSheaf,LineSheaf,MorColLine,0))
     print 'degree 1 induced map Collapsed->Line: ' + str(ps.inducedMap(ColLoopSheaf,LineSheaf,MorColLine,1))
