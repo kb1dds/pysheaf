@@ -1,7 +1,7 @@
 PySheaf master tasks list:
 =====
 
-1. Implement maximal local sections algorithm as a method in Sheaf.  See
+1. Implement maximal local sections algorithm as a method in Sheaf.  See https://arxiv.org/abs/1612.00397
 
 2. Finish implementing and testing local homology for cell complexes:
  a. CellComplex.inducedMapLocalHomology()
