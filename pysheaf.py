@@ -23,10 +23,13 @@ class Coface:
 
 class Cell:
     """A cell in a cell complex"""
-    def __init__(self,dimension,compactClosure=True,cofaces=[], name=None):
+    def __init__(self,dimension,compactClosure=True,cofaces=None, name=None):
         self.dimension=dimension
         self.compactClosure=compactClosure
-        self.cofaces=cofaces
+        if cofaces != None:
+            self.cofaces = cofaces
+        else:
+            self.cofaces = []
         self.name = name
 
     def __repr__(self):
