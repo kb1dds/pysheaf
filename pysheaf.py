@@ -10,7 +10,6 @@ import random
 import matplotlib.pyplot as plt
 import networkx as nx
 import scipy.optimize
-import copy
 
 ## Data structures
 class Coface: 
@@ -84,11 +83,10 @@ class CellComplex:
         """Add a coface to the cell complex, referenced by a pair of cell names.  The names argument is assumed to be a pair: (face,coface).  The .index attribute for the coface is ignored.  If the cells aren't present, this will raise KeyError."""
         # Look up which cells are involved...
         source=self.cell_dict[names[0]]
-        cf=copy.deepcopy(coface)
-        cf.index=self.cell_dict[names[1]]
+        coface.index=self.cell_dict[names[1]]
 
         # Drop in the coface
-        self.cells[source].cofaces.append(cf)
+        self.cells[source].cofaces.append(coface)
 
     def add_cofaces_from(self,names_list,cofaces):
         for names,coface in zip(names_list,cofaces):
