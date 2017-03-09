@@ -10,11 +10,12 @@ import random
 import matplotlib.pyplot as plt
 import networkx as nx
 import scipy.optimize
+import copy
 
 ## Data structures
 class Coface: 
     """A coface relation"""
-    def __init__(self,index,orientation):
+    def __init__(self,index=None,orientation=None):
         self.index=index
         self.orientation=orientation
 
@@ -22,7 +23,7 @@ class Coface:
         return "(index=" + str(self.index) + ",orientation="+str(self.orientation)+")"
 
 class Cell:
-    """A cell in a cell complex"""
+    """A cell in a cell complex.  The name attribute can be used as a key to index into the registry of cells or cofaces"""
     def __init__(self,dimension,compactClosure=True,cofaces=None, name=None):
         self.dimension=dimension
         self.compactClosure=compactClosure
@@ -33,12 +34,11 @@ class Cell:
         self.name = name
 
     def __repr__(self):
-#         string= self.name + " (dimension="+str(self.dimension)+",compactClosure="+str(self.compactClosure) 
-#         if self.cofaces:
-#             for cf in self.cofaces:
-#                 string+="," + cf.__repr__()
-#         return string+")"
-        return self.name
+        string= self.name + " (dimension="+str(self.dimension)+",compactClosure="+str(self.compactClosure) 
+        if self.cofaces:
+            for cf in self.cofaces:
+                string+="," + cf.__repr__()
+        return string+")"
 
     def cofaceList(self):
         """Return the list of indicies of the cells which are cofaces of this cell"""
@@ -52,11 +52,49 @@ class Cell:
             return (index,orientation) in [(cf.index,cf.orientation) for cf in self.cofaces]
         
 class CellComplex:
-    def __init__(self,cells=[]):
+    def __init__(self,cells=None):
         """Construct a cell complex from its cells"""
-        self.cells=cells
+        if cells == None:
+            self.cells=[]
+        else:
+            self.cells=cells
+
+        # Register cell names with indices into the self.cells list        
+        self.cell_dict={}
+        self.coface_dict={}
+        for i,c in enumerate(self.cells):
+            if c.name == None: # Build names if not present
+                c.name = str(i)
+            self.cell_dict[c.name]=i
+
+    def add_cell(self,cell):
+        """Add a cell to the cell complex"""
+
+        if cell.name == None: # Construct a name if needed
+            cell.name = str(len(self.cells))
+
+        self.cell_dict[cell.name]=len(self.cells)
+        self.cells.append(cell)
+
+    def add_cells_from(self,cells):
+        for c in cells:
+            self.add_cell(c)
+
+    def add_coface(self,names,coface):
+        """Add a coface to the cell complex, referenced by a pair of cell names.  The names argument is assumed to be a pair: (face,coface).  The .index attribute for the coface is ignored.  If the cells aren't present, this will raise KeyError."""
+        # Look up which cells are involved...
+        source=self.cell_dict[names[0]]
+        cf=copy.deepcopy(coface)
+        cf.index=self.cell_dict[names[1]]
+
+        # Drop in the coface
+        self.cells[source].cofaces.append(cf)
+
+    def add_cofaces_from(self,names_list,cofaces):
+        for names,coface in zip(names_list,cofaces):
+            self.add_coface(names,coface)
         
-    def isFaceOf(self,c,cells=[]):
+    def isFaceOf(self,c,cells=None):
         """Construct a list of all cells that a given cell is a face of"""
         if cells:
             cl=cells
@@ -380,7 +418,7 @@ class LinearMorphism(SetMorphism):
 class SheafCoface(Coface):
     """A coface relation, in which the restriction is assumed to be a SetMorphism object
     If the restriction is instead a matrix, then it gets promoted to a LinearMorphism object automatically"""
-    def __init__(self,index,orientation,restriction):
+    def __init__(self,index=None,orientation=None,restriction=None):
         self.index=index
         self.orientation=orientation
         if isinstance(restriction,np.ndarray):
@@ -406,7 +444,7 @@ class SheafCell(Cell):
     """A cell in a cell complex with a sheaf over it
     cofaces = list of SheafCoface instances, one for each coface of this cell
     stalkDim = dimension of the stalk over this cell (defaults to figuring it out from the cofaces if the restriction is a LinearMorphism) or None if stalk is not a real vector space"""
-    def __init__(self,dimension,cofaces=[],compactClosure=True,stalkDim=None,metric=None):
+    def __init__(self,dimension,cofaces=None,compactClosure=True,stalkDim=None,metric=None,name=None):
         if stalkDim == None and cofaces:
             if cofaces[0].isLinear():
                 try:  # Try to discern the stalk dimension from the matrix representation. This will fail if the matrix isn't given
@@ -423,7 +461,7 @@ class SheafCell(Cell):
         else:
             self.metric=lambda x,y: np.linalg.norm(x-y)
             
-        Cell.__init__(self,dimension,compactClosure,cofaces)
+        Cell.__init__(self,dimension,compactClosure,cofaces,name)
 
     def isLinear(self):
         """Is this cell representative of a Sheaf of vector spaces?  (All restrictions are linear maps)"""
@@ -475,9 +513,9 @@ class Sheaf(CellComplex):
         for cf in self.cells[c].cofaces:
             if cf.index in cells or not cells:
                 if currentcf: # If we've already started the iteration, there's a previous restriction to compose with
-                    cfp=SheafCoface(cf.index,
-                                    cf.orientation*currentcf.orientation,
-                                    cf.restriction*currentcf.restriction)
+                    cfp=SheafCoface(index=cf.index,
+                                    orientation=cf.orientation*currentcf.orientation,
+                                    restriction=cf.restriction*currentcf.restriction)
                 else: # If we're just starting this iteration, there is no restriction before this one
                     cfp=cf
                 for cff in self.cofaces(cfp.index,cells,cfp): # Iterate over all higher dimensional cells
@@ -493,7 +531,9 @@ class Sheaf(CellComplex):
         return Sheaf([SheafCell(dimension=self.cells[i].dimension,
                                 stalkDim=self.cells[i].stalkDim,
                                 compactClosure=self.cells[i].compactClosure and (not set(self.faces(i)).difference(set(cells))),
-                                cofaces=[SheafCoface(cells.index(cf.index),cf.orientation,cf.restriction) for cf in self.cells[i].cofaces]) for i in cells]) 
+                                cofaces=[SheafCoface(index=cells.index(cf.index),
+                                                     orientation=cf.orientation,
+                                                     restriction=cf.restriction) for cf in self.cells[i].cofaces]) for i in cells]) 
 
     def kcells(self,k,compactSupport=False):
         """Extract the compact k-cells and associated components of coboundary matrix"""
@@ -528,9 +568,9 @@ class Sheaf(CellComplex):
             cofaces=list(self.cofaces(i,cells))
             newcofaces=[]
             for cf in cofaces:
-                newcofaces.append(SheafCoface(edges.index(cf.index),
-                    cf.orientation,
-                    cf.restriction))
+                newcofaces.append(SheafCoface(index=edges.index(cf.index),
+                    orientation=cf.orientation,
+                    restriction=cf.restriction))
             
             if cofaces:
                 newcells.append(SheafCell(0,compactClosure=True,cofaces=newcofaces))
@@ -802,8 +842,8 @@ class Sheaf(CellComplex):
                 smallPreimage=[d for d,r in map if r==cf.index]
                 rest=self.localRestriction(self.starCells(bigPreimage),
                     self.starCells(smallPreimage))
-                cfs.append(SheafCoface(cf.index,
-                    cf.orientation,rest))
+                cfs.append(SheafCoface(index=cf.index,
+                    orientation=cf.orientation,restriction=rest))
                     
             mor.append(SheafMorphismCell(bigPreimage,
                 [LinearMorphism(self.localRestriction(self.starCells(bigPreimage),[d])) for d in bigPreimage]))
@@ -1094,7 +1134,7 @@ class FlowSheaf(Sheaf,DirectedGraph):
                 else:
                     rest=np.matrix([cf.orientation for cf in c.cofaces][0:-1])
                 
-                cofaces.append(SheafCoface(cf.index,cf.orientation,rest))
+                cofaces.append(SheafCoface(index=cf.index,orientation=cf.orientation,restriction=rest))
                 j+=1
 
             if cofaces:
@@ -1145,12 +1185,12 @@ class TransLineSheaf(Sheaf,DirectedGraph):
                                          dtype=complex)
                         rest[0,m]-=1
                         rest[0,:]*=np.exp(1j*wavenumber*graph.cells[c.cofaces[m].index].length)
-                    cofaces.append(SheafCoface(c.cofaces[m].index,
-                                               c.cofaces[m].orientation,
-                                               rest))
+                    cofaces.append(SheafCoface(index=c.cofaces[m].index,
+                                               orientation=c.cofaces[m].orientation,
+                                               restriction=rest))
             else: # All other faces have trivial restrictions
                 n=2
-                cofaces=[SheafCoface(cf.index,cf.orientation,[]) for cf in c.cofaces]
+                cofaces=[SheafCoface(index=cf.index,orientation=cf.orientation,restriction=LinearMorphism([])) for cf in c.cofaces]
             sheafcells.append(SheafCell(dimension=c.dimension,
                                         compactClosure=c.compactClosure,
                                         cofaces=cofaces,
@@ -1163,9 +1203,9 @@ class ConstantSheaf(Sheaf):
         """Construct a constant sheaf over a CellComplex"""
         sheafcells=[SheafCell(dimension=c.dimension,
                               compactClosure=c.compactClosure,
-                              cofaces=[SheafCoface(cf.index, 
-                                                   cf.orientation,
-                                                   np.matrix(1))
+                              cofaces=[SheafCoface(index=cf.index, 
+                                                   orientation=cf.orientation,
+                                                   restriction=np.matrix(1))
                                        for cf in c.cofaces],
                               stalkDim=1)
                     for c in cells]
@@ -1174,7 +1214,7 @@ class ConstantSheaf(Sheaf):
         return
 
 class SheafMorphismCell:
-    def __init__(self,destinations=[],maps=[]):
+    def __init__(self,destinations=None,maps=None):
         """Specify destinations and maps for this cell's stalk under a morphism"""
         self.destinations=destinations
         self.maps=maps
@@ -1219,12 +1259,12 @@ class Section:
                     val=cf.restriction(s.value)
 
                     # Check for consistency
-                    if value != None and np.any(np.abs(val - value)>tol):
+                    if value is not None and np.any(np.abs(val - value)>tol):
                         return False
                     value = val
                             
         # Are there are any cofaces for the desired cell in the support?
-        if value == None: # Attempt to assign a new value...
+        if value is None: # Attempt to assign a new value...
             
             # Stack the restrictions and values associated to existing support
             lst=[(cf.restriction.matrix,s.value) 
@@ -1254,7 +1294,7 @@ class Section:
         
         # A value was successfully assigned (if no value was assigned, 
         # do nothing, but it's still possible to extend)
-        if value != None:
+        if value is not None:
             self.sectionCells.append(SectionCell(cell,value))
 
         return True
@@ -1274,9 +1314,9 @@ class PersistenceSheaf(Sheaf):
             cofaces=[]
             for (s,d,mor) in morphisms:
                 if s==i:
-                    cofaces.append(SheafCoface(d,
-                                               1,
-                                               inducedMap(sheaves[i],sheaves[d],mor,k)))
+                    cofaces.append(SheafCoface(index=d,
+                                               orientation=1,
+                                               restriction=inducedMap(sheaves[i],sheaves[d],mor,k)))
             if cofaces:
                 persheaf.append(SheafCell(dimension=0,
                                           compactClosure=True,
