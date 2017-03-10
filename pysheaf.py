@@ -65,6 +65,9 @@ class CellComplex:
             if c.name == None: # Build names if not present
                 c.name = str(i)
             self.cell_dict[c.name]=i
+            if c.cofaces is not None: # Register cofaces if present
+                for j,cf in enumerate(c.cofaces):
+                    self.coface_dict[(i,cf.index)]=j
 
     def add_cell(self,cell):
         """Add a cell to the cell complex"""
@@ -72,7 +75,15 @@ class CellComplex:
         if cell.name == None: # Construct a name if needed
             cell.name = str(len(self.cells))
 
+        # Register the cell
         self.cell_dict[cell.name]=len(self.cells)
+
+        # Register its cofaces, if any
+        if cell.cofaces is not None:
+            for j,cf in enumerate(cell.cofaces):
+                self.coface_dict[(len(self.cells),cf.index)]=j
+
+        # Store the cell
         self.cells.append(cell)
 
     def add_cells_from(self,cells):
@@ -86,6 +97,7 @@ class CellComplex:
         coface.index=self.cell_dict[names[1]]
 
         # Drop in the coface
+        self.coface_dict[(source,coface.index)]=len(self.cells[source].cofaces)
         self.cells[source].cofaces.append(coface)
 
     def add_cofaces_from(self,names_list,cofaces):
