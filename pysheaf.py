@@ -26,7 +26,7 @@ class Cell:
     def __init__(self,dimension,compactClosure=True,cofaces=None, name=None):
         self.dimension=dimension
         self.compactClosure=compactClosure
-        if cofaces != None:
+        if cofaces is not None:
             self.cofaces = cofaces
         else:
             self.cofaces = []
@@ -53,7 +53,7 @@ class Cell:
 class CellComplex:
     def __init__(self,cells=None):
         """Construct a cell complex from its cells"""
-        if cells == None:
+        if cells is None:
             self.cells=[]
         else:
             self.cells=cells
@@ -62,7 +62,7 @@ class CellComplex:
         self.cell_dict={}
         self.coface_dict={}
         for i,c in enumerate(self.cells):
-            if c.name == None: # Build names if not present
+            if c.name is None: # Build names if not present
                 c.name = str(i)
             self.cell_dict[c.name]=i
             if c.cofaces is not None: # Register cofaces if present
@@ -72,7 +72,7 @@ class CellComplex:
     def add_cell(self,cell):
         """Add a cell to the cell complex"""
 
-        if cell.name == None: # Construct a name if needed
+        if cell.name is None: # Construct a name if needed
             cell.name = str(len(self.cells))
 
         # Register the cell
@@ -383,7 +383,7 @@ class AbstractSimplicialComplex(CellComplex):
         Beware: this should not be constructed for complexes involving high-dimensional simplices!
         Simplices are sorted from greatest dimension to least"""
         
-        if maxdim == None:
+        if maxdim is None:
             maxdim=max([len(tplx)-1 for tplx in toplexes])
             
         self.cells=[]
@@ -455,7 +455,7 @@ class SheafCell(Cell):
     cofaces = list of SheafCoface instances, one for each coface of this cell
     stalkDim = dimension of the stalk over this cell (defaults to figuring it out from the cofaces if the restriction is a LinearMorphism) or None if stalk is not a real vector space"""
     def __init__(self,dimension,cofaces=None,compactClosure=True,stalkDim=None,metric=None,name=None):
-        if stalkDim == None and cofaces:
+        if stalkDim is None and cofaces:
             if cofaces[0].isLinear():
                 try:  # Try to discern the stalk dimension from the matrix representation. This will fail if the matrix isn't given
                     self.stalkDim=cofaces[0].restriction.matrix.shape[1]
@@ -466,7 +466,7 @@ class SheafCell(Cell):
         else:
             self.stalkDim=stalkDim
 
-        if metric != None:
+        if metric is not None:
             self.metric=metric
         else:
             self.metric=lambda x,y: np.linalg.norm(x-y)
@@ -475,7 +475,7 @@ class SheafCell(Cell):
 
     def isLinear(self):
         """Is this cell representative of a Sheaf of vector spaces?  (All restrictions are linear maps)"""
-        if self.stalkDim == None:
+        if self.stalkDim is None:
             return False
         for cf in self.cofaces:
             if not cf.isLinear():
@@ -484,7 +484,7 @@ class SheafCell(Cell):
 
     def isNumeric(self):
         """Is this cell representative of a sheaf of sets in which stalks are all real vector spaces? (restrictions may not be linear maps, though)"""
-        if self.stalkDim == None:
+        if self.stalkDim is None:
             return False
         else:
             return True
@@ -966,9 +966,9 @@ class DirectedGraph(CellComplex):
         for ed in graph:
             s=ed[0]
             d=ed[1]
-            if s != None:
+            if s is not None:
                 verts.append(s)
-            if d != None:
+            if d is not None:
                 verts.append(d)
         verts=list(set(verts))
 
@@ -1475,6 +1475,6 @@ def ksimplices(toplexes,k,relative=None):
     simplices=[]
     for toplex in toplexes:
         for spx in ksublists(toplex,k+1):
-            if not spx in simplices and (relative == None or not spx in relative):
+            if not spx in simplices and (relative is None or not spx in relative):
                 simplices.append(spx)
     return simplices 
