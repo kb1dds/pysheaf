@@ -22,10 +22,11 @@ class Coface:
         return "(index=" + str(self.index) + ",orientation="+str(self.orientation)+")"
 
 class Cell:
-    """A cell in a cell complex.  The name attribute can be used as a key to index into the registry of cells or cofaces"""
-    def __init__(self,dimension,compactClosure=True,cofaces=None, name=None):
+    """A cell in a cell complex.  The id attribute can be used as a key to index into the registry of cells or cofaces"""
+    def __init__(self,dimension,compactClosure=True,cofaces=None, name=None, id=None):
         self.dimension=dimension
         self.compactClosure=compactClosure
+        self.id=id
         if cofaces is not None:
             self.cofaces = cofaces
         else:
@@ -58,25 +59,25 @@ class CellComplex:
         else:
             self.cells=cells
 
-        # Register cell names with indices into the self.cells list        
+        # Register cell IDs with indices into the self.cells list        
         self.cell_dict={}
         self.coface_dict={}
         for i,c in enumerate(self.cells):
-            if c.name is None: # Build names if not present
-                c.name = str(i)
-            self.cell_dict[c.name]=i
+            if c.id is None: # Build IDs if not present
+                c.id = str(i)
+            self.cell_dict[c.id]=i
             if c.cofaces is not None: # Register cofaces if present
                 for j,cf in enumerate(c.cofaces):
                     self.coface_dict[(i,cf.index)]=j
 
     def add_cell(self,cell):
-        """Add a cell to the cell complex"""
+        """Add a cell to the cell complex, using the id attribute for registering the cell.  Returns the id attribute for later use"""
 
-        if cell.name is None: # Construct a name if needed
-            cell.name = str(len(self.cells))
+        if cell.id is None: # Construct an ID if needed
+            cell.id = str(len(self.cells))
 
         # Register the cell
-        self.cell_dict[cell.name]=len(self.cells)
+        self.cell_dict[cell.id]=len(self.cells)
 
         # Register its cofaces, if any
         if cell.cofaces is not None:
@@ -86,12 +87,14 @@ class CellComplex:
         # Store the cell
         self.cells.append(cell)
 
+        return cell.id
+
     def add_cells_from(self,cells):
         for c in cells:
             self.add_cell(c)
 
     def add_coface(self,cellpair,orientation):
-        """Add a coface to the cell complex, referenced by a pair of cell names.  The cellpair argument is assumed to be a pair: (face,coface).  If the cells aren't present, this will raise KeyError."""
+        """Add a coface to the cell complex, referenced by a pair of cell IDs.  The cellpair argument is assumed to be a pair: (face,coface).  If the cells aren't present, this will raise KeyError."""
         # Look up which cells are involved...
         source=self.cell_dict[cellpair[0]]
         target=self.cell_dict[cellpair[1]]
@@ -454,7 +457,7 @@ class SheafCell(Cell):
     """A cell in a cell complex with a sheaf over it
     cofaces = list of SheafCoface instances, one for each coface of this cell
     stalkDim = dimension of the stalk over this cell (defaults to figuring it out from the cofaces if the restriction is a LinearMorphism) or None if stalk is not a real vector space"""
-    def __init__(self,dimension,cofaces=None,compactClosure=True,stalkDim=None,metric=None,name=None):
+    def __init__(self,dimension,cofaces=None,compactClosure=True,stalkDim=None,metric=None,name=None,id=None):
         if stalkDim is None and cofaces:
             if cofaces[0].isLinear():
                 try:  # Try to discern the stalk dimension from the matrix representation. This will fail if the matrix isn't given
@@ -471,7 +474,7 @@ class SheafCell(Cell):
         else:
             self.metric=lambda x,y: np.linalg.norm(x-y)
             
-        Cell.__init__(self,dimension,compactClosure,cofaces,name)
+        Cell.__init__(self,dimension,compactClosure,cofaces,name,id)
 
     def isLinear(self):
         """Is this cell representative of a Sheaf of vector spaces?  (All restrictions are linear maps)"""
