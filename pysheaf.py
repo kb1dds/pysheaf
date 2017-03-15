@@ -70,11 +70,15 @@ class CellComplex:
                 for j,cf in enumerate(c.cofaces):
                     self.coface_dict[(i,cf.index)]=j
 
+        # Attribute for counting cells later on...
+        self.cell_counter=len(self.cells)
+        
     def add_cell(self,cell):
         """Add a cell to the cell complex, using the id attribute for registering the cell.  Returns the id attribute for later use"""
 
         if cell.id is None: # Construct an ID if needed
-            cell.id = str(len(self.cells))
+            cell.id = str(self.cell_counter)
+            self.cell_counter += 1
 
         # Register the cell
         self.cell_dict[cell.id]=len(self.cells)
@@ -87,6 +91,7 @@ class CellComplex:
         # Store the cell
         self.cells.append(cell)
 
+        # Return the cell's ID for later use
         return cell.id
 
     def add_cells_from(self,cells):
@@ -100,7 +105,7 @@ class CellComplex:
         target=self.cell_dict[cellpair[1]]
 
         # Drop in the coface
-        self.coface_dict[(source,coface.index)]=len(self.cells[source].cofaces)
+        self.coface_dict[(source,target)]=len(self.cells[source].cofaces)
         self.cells[source].cofaces.append(Coface(index=target,orientation=orientation))
 
     def add_cofaces_from(self,cellpairs,orientations):
@@ -511,7 +516,7 @@ class Sheaf(CellComplex):
         target=self.cell_dict[cellpair[1]]
 
         # Drop in the coface
-        self.coface_dict[(source,coface.index)]=len(self.cells[source].cofaces)
+        self.coface_dict[(source,target)]=len(self.cells[source].cofaces)
         self.cells[source].cofaces.append(SheafCoface(index=target,orientation=orientation,restriction=restriction))
 
     def add_cofaces_from(self,cellpairs,orientations,restrictions):
