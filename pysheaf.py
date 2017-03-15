@@ -93,16 +93,16 @@ class CellComplex:
     def add_coface(self,cellpair,orientation):
         """Add a coface to the cell complex, referenced by a pair of cell names.  The cellpair argument is assumed to be a pair: (face,coface).  If the cells aren't present, this will raise KeyError."""
         # Look up which cells are involved...
-        source=self.cell_dict[names[0]]
-        target=self.cell_dict[names[1]]
+        source=self.cell_dict[cellpair[0]]
+        target=self.cell_dict[cellpair[1]]
 
         # Drop in the coface
         self.coface_dict[(source,coface.index)]=len(self.cells[source].cofaces)
         self.cells[source].cofaces.append(Coface(index=target,orientation=orientation))
 
-    def add_cofaces_from(self,names_list,orientations):
-        for names,orientation in zip(names_list,orientations):
-            self.add_coface(names,orientation)
+    def add_cofaces_from(self,cellpairs,orientations):
+        for cellpair,orientation in zip(cellpairs,orientations):
+            self.add_coface(cellpair,orientation)
         
     def isFaceOf(self,c,cells=None):
         """Construct a list of all cells that a given cell is a face of"""
@@ -502,18 +502,18 @@ class SheafCell(Cell):
 class Sheaf(CellComplex):
 
     def add_coface(self,cellpair,orientation,restriction):
-        """Add a coface to the sheaf, referenced by a pair of cell names.  The cellpair argument is assumed to be a pair: (face,coface).  If the cells aren't present, this will raise KeyError."""
+        """Add a coface to the sheaf, referenced by a pair of cell cellpair.  The cellpair argument is assumed to be a pair: (face,coface).  If the cells aren't present, this will raise KeyError."""
         # Look up which cells are involved...
-        source=self.cell_dict[names[0]]
-        target=self.cell_dict[names[1]]
+        source=self.cell_dict[cellpair[0]]
+        target=self.cell_dict[cellpair[1]]
 
         # Drop in the coface
         self.coface_dict[(source,coface.index)]=len(self.cells[source].cofaces)
         self.cells[source].cofaces.append(SheafCoface(index=target,orientation=orientation,restriction=restriction))
 
-    def add_cofaces_from(self,names_list,orientations,restrictions):
-        for names,orientation,restriction in zip(names_list,orientations,restriction):
-            self.add_coface(names,orientation,restriction)
+    def add_cofaces_from(self,cellpairs,orientations,restrictions):
+        for cellpair,orientation,restriction in zip(cellpairs,orientations,restriction):
+            self.add_coface(cellpair,orientation,restriction)
 
     def isLinear(self):
         """Is this a Sheaf of vector spaces?  (All restrictions are linear maps)"""
