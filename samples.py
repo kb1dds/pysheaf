@@ -31,7 +31,7 @@ ex7x6 = [a,c,e,k,t,u,v,mkcell(a,c),mkcell(a,e),mkcell(a,k),mkcell(a,u),
            mkcell(a,v),mkcell(c,e),mkcell(c,k),mkcell(k,u),mkcell(k,v),
            mkcell(u,v),mkcell(t,u),mkcell(a,c,k),mkcell(a,k,u),mkcell(a,k,v),mkcell(a,u,v),mkcell(k,u,v),mkcell(a,k,u,v)]
 
-example = exWF
+example = ex7x6
 exidx = dict( zip(example,range(len(example))) )
 
 if __name__ == '__main__':
@@ -73,8 +73,7 @@ if __name__ == '__main__':
         cdx = exidx[cell.name]
         namedList = list( map( lambda fc: exCells[fc].name, exCmplx.faces(cdx) ) )
         print "faces of ",cell.name, namedList
-
-# 
+ 
 
         
         
