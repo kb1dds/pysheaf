@@ -2,8 +2,8 @@ PySheaf: Sheaf-theoretic toolbox
 =====
 
 This repository consists of Python 2.7 libraries for manipulating cell complexes and data structures on them:
-1. Local and relative homology of abstract simplicial complexes
-2. Sheaves of sets or vector spaces on cell complexes
+1. Local and relative homology of abstract simplicial complexes [0]
+2. Sheaves of sets or vector spaces on cell complexes [1--6]
 
 The pysheaf.py module should be able to duplicate the functionality of simplicialHomology.py, albeit somewhat more slowly because the base space constructions are more general and less efficient.
 
@@ -18,3 +18,12 @@ Michael Robinson
 American University
 kb1dds@gmail.com
 michaelr@american.edu
+
+References:
+[0] Alan Hatcher, "Algebraic Topology", Cambridge, 2002, https://www.math.cornell.edu/~hatcher/AT/ATpage.html
+[1] http://www.drmichaelrobinson.net/sheaftutorial/index.html
+[2] https://www.youtube.com/user/drmichaelrobinson
+[3] Cliff Joslyn, Emilie Hogan, Michael Robinson, "Towards a topological framework for integrating semantic information sources," Semantic Technologies for Intelligence, Defense, and Security (STIDS), 2014. http://ceur-ws.org/Vol-1304/STIDS2014_P2_JoslynEtAl.pdf
+[4] Michael Robinson, "Sheaves are the canonical datastructure for information integration," Information Fusion, 36 (2017), pp. 208-224. (preprint version is http://arxiv.org/abs/1603.01446)
+[5] Michael Robinson, "Sheaf and cosheaf methods for analyzing multi-model systems," http://arXiv.org/abs/1604.04647
+[6] Michael Robinson, Topological Signal Processing, Springer, 2014.
