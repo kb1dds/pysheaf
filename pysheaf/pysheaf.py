@@ -42,7 +42,7 @@ class Cell:
 
     def isCoface(self,index,orientation=None):
         """Check if a given cell index is a coface of this cell. Optionally check that the orientation is as given."""
-        if orientation==None:
+        if orientation is None:
             return index in [cf.index for cf in self.cofaces]
         else:
             return (index,orientation) in [(cf.index,cf.orientation) for cf in self.cofaces]
@@ -373,7 +373,7 @@ class Poset(CellComplex):
             for j in range(len(self.cells)):
                 try:
                     idx=self.meet(i,j)
-                    if func==None:
+                    if func is None:
                         mat[i,j]=1
                     else:
                         mat[i,j]=func(idx)
@@ -995,7 +995,7 @@ class DirectedGraph(CellComplex):
         compcells=[]
         for i in range(len(graph)):
             compcells.append(Cell(dimension=1,
-                                  compactClosure=(graph[i][0]!=None) and (graph[i][1]!=None)))
+                                  compactClosure=(graph[i][0] is not None) and (graph[i][1] is not None)))
             compcells[-1].vertex_label=None
             try: # Add capacity if specified
                 compcells[-1].capacity = graph[i][2]
@@ -1146,7 +1146,7 @@ def erdosRenyiDirectedGraph(nvert,prob):
     """Create a random graph with nvert vertices and probability of an edge prob"""
     return DirectedGraph([(a,b) for a in range(nvert)+[None]
                           for b in range(nvert)+[None]
-                          if random.random() < prob and (a!=None or b!=None)])
+                          if random.random() < prob and (a is not None or b is not None)])
         
 class FlowSheaf(Sheaf,DirectedGraph):
     def __init__(self,graph):
