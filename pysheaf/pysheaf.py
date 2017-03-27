@@ -41,7 +41,7 @@ class Cell:
         return string+")"
 
     def isCoface(self,index,orientation=None):
-        """Check if a given cell index is a coface of this cell. Optionally check that the orientation is as given."""
+        """Check if a given cell index is a *listed* coface of this cell. Optionally check that the orientation is as given."""
         if orientation is None:
             return index in [cf.index for cf in self.cofaces]
         else:
@@ -114,7 +114,7 @@ class CellComplex:
             cl=cells
         else:
             cl=range(len(self.cells))
-        return [i for i in cl if self.cells[i].isCoface(c)]
+        return [i for i in cl if c in self.cofaces(i)]
     
     def skeleton(self,k,compactSupport=False):
         """Return the k-skeleton of a cell complex.  Optionally ensure that the complex returned is closed."""
@@ -123,7 +123,7 @@ class CellComplex:
                 
     def faces(self,c):
         """Compute a list of all faces of a cell"""
-        return [i for i in range(len(self.cells)) if self.cells[i].isCoface(c)]
+        return [i for i in range(len(self.cells)) if c in self.cofaces(i)]
 
     def closure(self,cells):
         """Compute the closure of a collection of cells"""
