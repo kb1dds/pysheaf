@@ -40,10 +40,6 @@ class Cell:
                 string+="," + cf.__repr__()
         return string+")"
 
-    def cofaceList(self):
-        """Return the list of indicies of the cells which are cofaces of this cell"""
-        return [cf.index for cf in self.cofaces]    
-    
     def isCoface(self,index,orientation=None):
         """Check if a given cell index is a coface of this cell. Optionally check that the orientation is as given."""
         if orientation==None:
@@ -175,10 +171,11 @@ class CellComplex:
 
     def connectedTo(self,start,cells=[]):
         """Which cells is a cell connected to? Optional argument specifies permissible cells"""
+        cflist=[cf.index for cf in self.cofaces(start)]
         if not cells:
-            return list(set(self.faces(start) + self.cells[start].cofaceList()))
+            return list(set(self.faces(start) + cflist))
         else:
-	    return list(set.intersection(set(self.faces(start) + self.cells[start].cofaceList()),cells))
+	    return list(set.intersection(set(self.faces(start) + cflist),cells))
     
     def starCells(self,cells):
         """Cells in star over a subset of a cell complex"""
