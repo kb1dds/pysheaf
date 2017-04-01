@@ -3,6 +3,10 @@ Created on Mar 17, 2017
 
 @author: bpraggastis
 '''
+import sys
+
+sys.path.insert(0,'/Users/prag717/documents/tdm/gitrepos/pysheaf/pysheaf')
+
 import unittest
 import pysheaf as ps
 import numpy as np
