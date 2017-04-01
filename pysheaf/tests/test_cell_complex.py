@@ -68,11 +68,6 @@ class TestCoface(unittest.TestCase):
         self.assertTrue(self.cell1.isCoface(3))
         self.assertTrue(self.cell1.isCoface(2,1))
 
-    def test_cell_cofaceList(self):
-        '''Test for cell cofaceList'''
-        self.assertTrue(set(self.cell1.cofaceList()) == set([2,3]) )
-
-
     def tearDown(self):
         unittest.TestCase.tearDown(self)
 
@@ -80,16 +75,17 @@ class TestCoface(unittest.TestCase):
 class TestCellComplex(unittest.TestCase):
     def setUp(self):
         ### complex is: {A,C,E,K,AC,AE,AK,ACK}
-        self.cellA = ps.Cell(0,name='A',id=0,cofaces=[ps.Coface(4),ps.Coface(5),ps.Coface(6),ps.Coface(7)])
-        self.cellC = ps.Cell(0,name='C',id=1,cofaces=[ps.Coface(4),ps.Coface(7)])
-        self.cellE = ps.Cell(0,name='E',id=2,cofaces=[ps.Coface(5)])
-        self.cellK = ps.Cell(0,name='K',id=3,cofaces=[ps.Coface(6),ps.Coface(7)])
+        self.cellA = ps.Cell(0,name='A',id=0,cofaces=[ps.Coface(4),ps.Coface(5),ps.Coface(6)])
+        self.cellC = ps.Cell(0,name='C',id=1,cofaces=[ps.Coface(4),ps.Coface(8),ps.Coface(9)])
+        self.cellE = ps.Cell(0,name='E',id=2,cofaces=[ps.Coface(5),ps.Coface(8)])
+        self.cellK = ps.Cell(0,name='K',id=3,cofaces=[ps.Coface(6),ps.Coface(9)])
         self.cellAC = ps.Cell(1,name='AC',id=4,cofaces=[ps.Coface(7)])
         self.cellAE = ps.Cell(1,name='AE',id=5)
         self.cellAK = ps.Cell(1,name='AK',id=6,cofaces=[ps.Coface(7)])
         self.cellACK = ps.Cell(2,name='ACK',id=7)
-        self.cmplx = ps.CellComplex([self.cellA,self.cellC,self.cellE,self.cellK,self.cellAC,self.cellAE,self.cellAK,self.cellACK])
-        self.cmplx2 = ps.CellComplex([self.cellA,self.cellC])
+        self.cellCE = ps.Cell(1,name='CK',id=8)
+        self.cellCK = ps.Cell(1,name='CE',id=9,cofaces=[ps.Coface(7)])
+        self.cmplx = ps.CellComplex([self.cellA,self.cellC,self.cellE,self.cellK,self.cellAC,self.cellAE,self.cellAK,self.cellACK,self.cellCE, self.cellCK])
         return
 
     def test_cellComplex_instance(self):
@@ -98,7 +94,7 @@ class TestCellComplex(unittest.TestCase):
 
     def test_cellComplex_attribute_assignment(self):
         '''Test for cell complex attributes'''
-        self.assertEqual(len(self.cmplx.cells),8)
+        self.assertEqual(len(self.cmplx.cells),10)
 
     def test_cellComplex_add_cell(self):
         '''Test for cell complex add a single cell by instance returns cell id'''
@@ -116,38 +112,40 @@ class TestCellComplex(unittest.TestCase):
         pass
 
     def test_isFaceOf(self):
-        self.assertEqual(len(self.cmplx.isFaceOf(0)),4)
+        self.assertEqual(set(self.cmplx.isFaceOf(0)),set([4,5,6,7]))
 
     def test_skeleton(self):
-        self.assertEqual(self.cmplx.skeleton(1),[4,5,6])
-        self.assertEqual(self.cmplx.skeleton(2),[7])
+        self.assertEqual(set(self.cmplx.skeleton(1)),set([4,5,6,8,9]))
+        self.assertEqual(set(self.cmplx.skeleton(2)),set([7]))
 
     def test_faces(self):
-        self.assertEqual(self.cmplx.faces(6),[0,3])
+        self.assertEqual(set(self.cmplx.faces(7)),set([0, 1, 3, 4, 6, 9]))
+        self.assertEqual(set(self.cmplx.faces(6)),set([0,3]))
 
     def test_closure(self):
-        self.assertEqual(self.cmplx.closure([6]),[0,3,6])
+        self.assertEqual(set(self.cmplx.closure([6])),set([0,3,6]))
         self.assertEqual(self.cmplx.closure([0]),[0])
 
-    def test_cofaces(self):
+    def test_cofaces(self):  
         output = []
         for c in self.cmplx.cofaces(0):
             output.append(c)
-        self.assertEqual(len(output),6)
+        self.assertEqual(len(output),5)
 
     def test_components(self):
         self.assertEqual(len(self.cmplx.components()),1)
-        self.assertEqual(len(self.cmplx2.components()),2)
+        self.assertEqual(len(self.cmplx.components([0,6,8])),2)
 
     def test_connectedTo(self):
-        self.assertEqual(self.cmplx.connectedTo(0),[4,5,6,7])
-        self.assertEqual(self.cmplx.connectedTo(2),[5])
+        self.assertEqual(set(self.cmplx.connectedTo(0)),set([4,5,6,7]))
+        self.assertEqual(set(self.cmplx.connectedTo(6)),set([0,3,7]))
+        self.assertEqual(set(self.cmplx.connectedTo(6,[0,4,5])),set([0]))
+        self.assertEqual(set(self.cmplx.connectedTo(0,[0,5,8,3])),set([5]))
 
     def test_expandComponent(self):
-        self.assertEqual(self.cmplx.expandComponent(0),[0,1,2,3,4,5,6,7])
-        self.assertEqual(self.cmplx.expandComponent(2),[0,1,2,3,4,5,6,7])
-        self.assertEqual(len(self.cmplx.expandComponent(2,[7])),0)
-
+        self.assertEqual(len(self.cmplx.expandComponent(0)),len(self.cmplx.cells))
+        self.assertEqual(set(self.cmplx.expandComponent(0,[0])),set([0]))
+        self.assertEqual(set(self.cmplx.expandComponent(0,[0,2,5,8,9])),set([0,2,5,8]))
 
     def test_starCells(self):
         pass

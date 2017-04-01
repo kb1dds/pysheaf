@@ -109,12 +109,8 @@ class CellComplex:
             self.add_coface(cellpair,orientation)
         
     def isFaceOf(self,c,cells=None):
-        """Construct a list of all cells that a given cell is a face of"""
-        if cells:
-            cl=cells
-        else:
-            cl=range(len(self.cells))
-        return [i for i in cl if c in self.cofaces(i)]
+        """Construct a list of indices of all cells that a given cell is a face of = indices of all cofaces"""
+        return list(set(cf.index for cf in self.cofaces(c,cells)))
     
     def skeleton(self,k,compactSupport=False):
         """Return the k-skeleton of a cell complex.  Optionally ensure that the complex returned is closed."""
@@ -122,8 +118,8 @@ class CellComplex:
                 if ((compactSupport or self.cells[i].compactClosure) and self.cells[i].dimension==k)]
                 
     def faces(self,c):
-        """Compute a list of all faces of a cell"""
-        return [i for i in range(len(self.cells)) if c in self.cofaces(i)]
+        """Compute a list of indices all faces of a cell"""
+        return [i for i in range(len(self.cells)) if c in set(cf.index for cf in self.cofaces(i))]
 
     def closure(self,cells):
         """Compute the closure of a collection of cells"""
@@ -133,6 +129,7 @@ class CellComplex:
     def cofaces(self,c,cells=[]):
         """Iterate over cofaces (of all dimensions) of a given cell; optional argument specifies which cells are permissible cofaces
         Warning: duplicates are possible!"""
+        cells = cells or []
         for cf in self.cells[c].cofaces:
             if cf.index in cells or not cells:
                 for cff in self.cofaces(cf.index,cells):
@@ -156,6 +153,7 @@ class CellComplex:
 
     def expandComponent(self,start,cells=[],current_cpt=[]):
         """Compute the connected component started from a given cell.  Optional argument specifies permissible cells"""
+        current_cpt = current_cpt or [start]
         if not cells:
             cellsleft=list(set(range(len(self.cells))).difference(current_cpt))
         else:
