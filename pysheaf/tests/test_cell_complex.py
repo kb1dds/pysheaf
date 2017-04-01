@@ -5,6 +5,7 @@ Created on Mar 17, 2017
 '''
 import unittest
 import pysheaf as ps
+import numpy as np
 
 
 class TestCell(unittest.TestCase):
@@ -75,16 +76,16 @@ class TestCoface(unittest.TestCase):
 class TestCellComplex(unittest.TestCase):
     def setUp(self):
         ### complex is: {A,C,E,K,AC,AE,AK,ACK}
-        self.cellA = ps.Cell(0,name='A',id=0,cofaces=[ps.Coface(4),ps.Coface(5),ps.Coface(6)])
-        self.cellC = ps.Cell(0,name='C',id=1,cofaces=[ps.Coface(4),ps.Coface(8),ps.Coface(9)])
-        self.cellE = ps.Cell(0,name='E',id=2,cofaces=[ps.Coface(5),ps.Coface(8)])
-        self.cellK = ps.Cell(0,name='K',id=3,cofaces=[ps.Coface(6),ps.Coface(9)])
-        self.cellAC = ps.Cell(1,name='AC',id=4,cofaces=[ps.Coface(7)])
+        self.cellA = ps.Cell(0,name='A',id=0,cofaces=[ps.Coface(4,-1),ps.Coface(5, -1),ps.Coface(6, -1)])
+        self.cellC = ps.Cell(0,name='C',id=1,cofaces=[ps.Coface(4, 1),ps.Coface(8, -1),ps.Coface(9, -1)])
+        self.cellE = ps.Cell(0,name='E',id=2,cofaces=[ps.Coface(5, 1),ps.Coface(8, 1)])
+        self.cellK = ps.Cell(0,name='K',id=3,cofaces=[ps.Coface(6, 1),ps.Coface(9, 1)])
+        self.cellAC = ps.Cell(1,name='AC',id=4,cofaces=[ps.Coface(7, 1)])
         self.cellAE = ps.Cell(1,name='AE',id=5)
-        self.cellAK = ps.Cell(1,name='AK',id=6,cofaces=[ps.Coface(7)])
+        self.cellAK = ps.Cell(1,name='AK',id=6,cofaces=[ps.Coface(7, -1)])
         self.cellACK = ps.Cell(2,name='ACK',id=7)
-        self.cellCE = ps.Cell(1,name='CK',id=8)
-        self.cellCK = ps.Cell(1,name='CE',id=9,cofaces=[ps.Coface(7)])
+        self.cellCE = ps.Cell(1,name='CE',id=8)
+        self.cellCK = ps.Cell(1,name='CK',id=9,cofaces=[ps.Coface(7, 1)])
         self.cmplx = ps.CellComplex([self.cellA,self.cellC,self.cellE,self.cellK,self.cellAC,self.cellAE,self.cellAK,self.cellACK,self.cellCE, self.cellCK])
         return
 
@@ -148,10 +149,13 @@ class TestCellComplex(unittest.TestCase):
         self.assertEqual(set(self.cmplx.expandComponent(0,[0,2,5,8,9])),set([0,2,5,8]))
 
     def test_starCells(self):
-        pass
+        self.assertEqual(set(self.cmplx.starCells([0])),set([0,4,5,6,7]))
+        self.assertEqual(set(self.cmplx.starCells([4])),set([4,7]))
+        self.assertEqual(set(self.cmplx.starCells([1,3])),set([1,3,4,6,7,8,9]))
 
     def test_homology(self):
-        pass
+        self.assertEqual(self.cmplx.homology(1).shape[1],1)
+        self.assertEqual(self.cmplx.homology(2).shape[1],0)
 
     def test_localPairComplex(self):
         pass
@@ -160,7 +164,8 @@ class TestCellComplex(unittest.TestCase):
         pass
 
     def test_boundary(self):
-        pass
+        mat = self.cmplx.boundary(1)    
+        self.assertTrue((mat[0] == [-1,-1,-1,0,0]).all())
 
     def test_inducedMapLocalHomology(self):
         pass
