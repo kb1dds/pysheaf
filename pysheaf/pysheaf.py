@@ -3,16 +3,16 @@
 # Copyright (c) 2013-2017, Michael Robinson
 # Distribution of unaltered copies permitted for noncommercial use only
 # All other uses require express permission of the author
-# This software comes with no warrantees express or implied 
+# This software comes with no warrantees express or implied
 
 import numpy as np
 import random
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import networkx as nx
 import scipy.optimize
 
 ## Data structures
-class Coface: 
+class Coface:
     """A coface relation"""
     def __init__(self,index=None,orientation=None):
         self.index=index
@@ -34,7 +34,7 @@ class Cell:
         self.name = name
 
     def __repr__(self):
-        string= self.name + " (dimension="+str(self.dimension)+",compactClosure="+str(self.compactClosure) 
+        string= self.name + " (dimension="+str(self.dimension)+",compactClosure="+str(self.compactClosure)
         if self.cofaces:
             for cf in self.cofaces:
                 string+="," + cf.__repr__()
@@ -46,7 +46,7 @@ class Cell:
             return index in [cf.index for cf in self.cofaces]
         else:
             return (index,orientation) in [(cf.index,cf.orientation) for cf in self.cofaces]
-        
+
 class CellComplex:
     def __init__(self,cells=None):
         """Construct a cell complex from its cells"""
@@ -55,7 +55,7 @@ class CellComplex:
         else:
             self.cells=cells
 
-        # Register cell IDs with indices into the self.cells list        
+        # Register cell IDs with indices into the self.cells list
         self.cell_dict={}
         self.coface_dict={}
         for i,c in enumerate(self.cells):
@@ -68,7 +68,7 @@ class CellComplex:
 
         # Attribute for counting cells later on...
         self.cell_counter=len(self.cells)
-        
+
     def add_cell(self,cell):
         """Add a cell to the cell complex, using the id attribute for registering the cell.  Returns the id attribute for later use"""
 
@@ -107,16 +107,16 @@ class CellComplex:
     def add_cofaces_from(self,cellpairs,orientations):
         for cellpair,orientation in zip(cellpairs,orientations):
             self.add_coface(cellpair,orientation)
-        
+
     def isFaceOf(self,c,cells=None):
         """Construct a list of indices of all cells that a given cell is a face of = indices of all cofaces"""
         return list(set(cf.index for cf in self.cofaces(c,cells)))
-    
+
     def skeleton(self,k,compactSupport=False):
         """Return the k-skeleton of a cell complex.  Optionally ensure that the complex returned is closed."""
-        return [i for i in range(len(self.cells)) 
+        return [i for i in range(len(self.cells))
                 if ((compactSupport or self.cells[i].compactClosure) and self.cells[i].dimension==k)]
-                
+
     def faces(self,c):
         """Compute a list of indices all faces of a cell"""
         return [i for i in range(len(self.cells)) if c in set(cf.index for cf in self.cofaces(i))]
@@ -135,7 +135,7 @@ class CellComplex:
                 for cff in self.cofaces(cf.index,cells):
                     yield cff
                 yield cf
-                
+
     def components(self,cells=[]):
         """Compute connected components; optional argument specifies permissible cells"""
         if not cells:
@@ -174,19 +174,19 @@ class CellComplex:
             return list(set(self.faces(start) + cflist))
         else:
 	    return list(set.intersection(set(self.faces(start) + cflist),cells))
-    
+
     def starCells(self,cells):
         """Cells in star over a subset of a cell complex"""
         return list(set(cells+[cf.index for c in cells for cf in self.cofaces(c)]))
 
     def homology(self,k,subcomplex=None,compactSupport=False,tol=1e-5):
         """Compute (relative) homology of the cell complex"""
-                
+
         # Obtain boundary matrices for the complex
         d=self.boundary(k,subcomplex,compactSupport)
         dp1=self.boundary(k+1,subcomplex,compactSupport)
         dp1=np.compress(np.any(abs(dp1)>tol,axis=0),dp1,axis=1)
-        
+
         # Compute kernel
         if d.size:
             ker=kernel(d,tol);
@@ -216,14 +216,14 @@ class CellComplex:
         cplx = CellComplex(starcells + bndrycells)
         bndryind = [cplx.cells.index(bdcell) for bdcell in bndrycells]
         return (cplx,bndryind)
-        
+
     def localHomology(self,k,cells):
         """Compute local homology localized at the star over a list of cells"""
         cplx,bndry=self.localPairComplex(cells)
 
         # Compute the relative homology of the proxy complex
         return cplx.homology(k,subcomplex=bndry)   #######ERROR bndry are indicies of self not thet4r cmplx
-        
+
     def boundary(self,k,subcomplex=None,compactSupport=False):
         """Compute the boundary map for the complex"""
         # Collect the k-cells and k-1-cells
@@ -248,7 +248,7 @@ class CellComplex:
                 # Loop over faces with compact closure
 #                print "cofaces=", [cf.index for cf in self.cells[km1[i]].cofaces]
                 for cf in self.cells[km1[i]].cofaces:
-                    
+
 #                    print cf.index, self.cells[cf.index], cf.orientation,
 #                    if self.cells[cf.index].compactClosure or compactSupport:
                     if self.cells[cf.index].compactClosure and cf.orientation != 0:
@@ -263,38 +263,38 @@ class CellComplex:
         # Compute local homology basis centered on each cell
         pass
 
-    def attachDiagram(self):
-        """Draw the attachment diagram using NetworkX"""
-        G=nx.DiGraph()
-
-        G.add_nodes_from(range(len(self.cells)))
-
-        G.add_edges_from([(i,cf.index) 
-                          for i in range(len(self.cells)) 
-                          for cf in self.cells[i].cofaces])
-        nx.draw(G)
-        plt.show()
-        return G
+    # def attachDiagram(self):
+    #     """Draw the attachment diagram using NetworkX"""
+    #     G=nx.DiGraph()
+    #
+    #     G.add_nodes_from(range(len(self.cells)))
+    #
+    #     G.add_edges_from([(i,cf.index)
+    #                       for i in range(len(self.cells))
+    #                       for cf in self.cells[i].cofaces])
+    #     nx.draw(G)
+    #     #plt.show()
+    #     return G
 
 class Poset(CellComplex):
     def hasseDiagram(self):
         """Convert a poset to a directed graph"""
 
         # Internal edges
-        graph=[(i,cf.index) for i in range(len(self.cells)) 
+        graph=[(i,cf.index) for i in range(len(self.cells))
                for cf in self.cells[i].cofaces]
 
         # Attach external inputs to minimal elements
-        graph += [(None,i) for i in range(len(self.cells)) 
+        graph += [(None,i) for i in range(len(self.cells))
                   if not self.faces(i)]
 
         # Attach external outputs to maximal elements
-        graph += [(i,None) for i in range(len(self.cells)) 
+        graph += [(i,None) for i in range(len(self.cells))
                   if not self.cells[i].cofaces]
 
         return DirectedGraph(graph)
 
-    def transitiveReduce(self):    
+    def transitiveReduce(self):
         """Remove coface relations that are redundant
         From Harry Hsu. "An algorithm for finding a minimal equivalent graph of a digraph.", Journal of the ACM, 22(1):11-16, January 1975"""
 
@@ -302,13 +302,13 @@ class Poset(CellComplex):
             for cf in c1.cofaces:
                 c2=self.cells[cf.index] # j
                 for cf2 in c2.cofaces: # k
-                    c1.cofaces=[cf3 for cf3 in c1.cofaces 
+                    c1.cofaces=[cf3 for cf3 in c1.cofaces
                                 if cf3.index != cf2.index]
 
     def maximalChains(self,start,history=[]):
         """Compute a list of maximal chains beginning at a cell"""
         if self.cells[start].cofaces:
-            chains=[self.maximalChains(cf.index,history+[start]) 
+            chains=[self.maximalChains(cf.index,history+[start])
                     for cf in self.cells[start].cofaces]
             lst=[]
             for ch in chains:
@@ -338,7 +338,7 @@ class Poset(CellComplex):
                 mb-=self.mobius(x,z)
 
         return mb
-        
+
     def meet(self,c1,c2):
         """Compute the meet of two elements, if it exists"""
         if c1==c2:
@@ -362,11 +362,11 @@ class Poset(CellComplex):
                     if cf1.index==cf2.index:
                         return cf1.index
         raise ValueError('No meet exists between elements ' + str(c1) + ' and ' + str(c2))
-        
+
     def meetMatrix(self,func=None,default=0):
         """Form the meet matrix of a poset and a function, in which pairs with no meet have a default value."""
         mat=np.zeros((len(self.cells),len(self.cells)))
-        
+
         for i in range(len(self.cells)):
             for j in range(len(self.cells)):
                 try:
@@ -377,7 +377,7 @@ class Poset(CellComplex):
                         mat[i,j]=func(idx)
                 except ValueError:
                     mat[i,j]=default
-                    
+
         return mat
 
 class AbstractSimplicialComplex(CellComplex):
@@ -385,14 +385,14 @@ class AbstractSimplicialComplex(CellComplex):
         """An abstract simplicial complex defined as a list of lists; it's only necessary to pass a generating set of toplexes
         Beware: this should not be constructed for complexes involving high-dimensional simplices!
         Simplices are sorted from greatest dimension to least"""
-        
+
         if maxdim is None:
             maxdim=max([len(tplx)-1 for tplx in toplexes])
-            
+
         self.cells=[]
         upsimplices=[] # Simplices of greater dimension than currently being added
         upindices=[]
-        for k in range(maxdim,-1,-1): 
+        for k in range(maxdim,-1,-1):
             simplices=ksimplices(toplexes,k) # Simplices to be added
             startindex=len(self.cells)
             for s in simplices:
@@ -452,7 +452,7 @@ class SheafCoface(Coface):
             return True
         except AttributeError:
             return False
-        
+
 class SheafCell(Cell):
     """A cell in a cell complex with a sheaf over it
     cofaces = list of SheafCoface instances, one for each coface of this cell
@@ -473,7 +473,7 @@ class SheafCell(Cell):
             self.metric=metric
         else:
             self.metric=lambda x,y: np.linalg.norm(x-y)
-            
+
         Cell.__init__(self,dimension,compactClosure,cofaces,name,id)
 
     def isLinear(self):
@@ -531,7 +531,7 @@ class Sheaf(CellComplex):
             if not c.isNumeric():
                 return False
         return True
-        
+
     def cofaces(self,c,cells=[],currentcf=[]):
         """Iterate over cofaces (of all dimensions) of a given cell c; optional argument specifies which cells are permissible cofaces"""
         if c >= len(self.cells):
@@ -551,16 +551,16 @@ class Sheaf(CellComplex):
 
     def star(self,cells):
         """Restrict a sheaf to the star over a subset of the base space"""
-    
+
         # Extract a list of all relevant cells in the star
         cells=CellComplex.starCells(self,cells)
-        
+
         return Sheaf([SheafCell(dimension=self.cells[i].dimension,
                                 stalkDim=self.cells[i].stalkDim,
                                 compactClosure=self.cells[i].compactClosure and (not set(self.faces(i)).difference(set(cells))),
                                 cofaces=[SheafCoface(index=cells.index(cf.index),
                                                      orientation=cf.orientation,
-                                                     restriction=cf.restriction) for cf in self.cells[i].cofaces]) for i in cells]) 
+                                                     restriction=cf.restriction) for cf in self.cells[i].cofaces]) for i in cells])
 
     def kcells(self,k,compactSupport=False):
         """Extract the compact k-cells and associated components of coboundary matrix"""
@@ -568,18 +568,18 @@ class Sheaf(CellComplex):
         ksizes=[self.cells[i].stalkDim for i in k]
         kidx=list(cumulative_sum(ksizes))
         return k,ksizes,kidx
-        
+
     def localSectional(self,cells=[]):
         """Construct a new sheaf whose global sections are the local sections of the current sheaf over the given cells, and a morphism from this new sheaf to the current one."""
-        
+
         if not cells:
             cells=range(len(self.cells))
-            
+
         # Edges of new sheaf = elements of S with at least one face in the list of cells
         edges=[i for i in cells if self.isFaceOf(i,cells)]
 
         morphism=[]
-        newcells=[]                                        
+        newcells=[]
         for i in edges:
             newcells.append(SheafCell(1,
                 compactClosure=self.cells[i].compactClosure and (not set(self.faces(i)).difference(set(cells))),
@@ -587,7 +587,7 @@ class Sheaf(CellComplex):
             morphism.append(SheafMorphismCell([i],[LinearMorphism(np.eye(self.cells[i].stalkDim))]))
 
         # Vertices of new sheaf = elements of S with no faces
-        vert=list(set(cells).difference(edges))  
+        vert=list(set(cells).difference(edges))
 
         # Restrictions of new sheaf = compositions of restrictions
         for i in vert:
@@ -598,19 +598,19 @@ class Sheaf(CellComplex):
                 newcofaces.append(SheafCoface(index=edges.index(cf.index),
                     orientation=cf.orientation,
                     restriction=cf.restriction))
-            
+
             if cofaces:
                 newcells.append(SheafCell(0,compactClosure=True,cofaces=newcofaces))
             else:
                 newcells.append(SheafCell(0,compactClosure=True,stalkDim=self.cells[i].stalkDim))
-                
+
             morphism.append(SheafMorphismCell([i],[LinearMorphism(np.eye(self.cells[i].stalkDim))]))
 
         return Sheaf(newcells),SheafMorphism(morphism)
-        
+
     def localRestriction(self,cells_1,cells_2):
         """Compute the map induced on local sections by restricting from a larger set to a smaller one"""
-        
+
         # Obtain sheaves and morphisms of local sections for both sets
         sheaf_1,mor_1=self.localSectional(cells_1)
         sheaf_2,mor_2=self.localSectional(cells_2)
@@ -623,8 +623,8 @@ class Sheaf(CellComplex):
         # Extend sections of sheaf 1 to vertices of sheaf 2, if needed
         # Observe that value at each vertex of sheaf 2 either
         #  (1) comes from value at a vertex of sheaf 1 or
-        #  (2) comes from value at an edge of sheaf 1, 
-        #      in which case a single restriction map obtains it 
+        #  (2) comes from value at an edge of sheaf 1,
+        #      in which case a single restriction map obtains it
         #      from the value at a vertex of sheaf 1
         k_1,ksizes_1,kidx_1=sheaf_1.kcells(0)
         k_2,ksizes_2,kidx_2=sheaf_2.kcells(0)
@@ -650,12 +650,12 @@ class Sheaf(CellComplex):
                                 cr=cf.restriction
                                 break
                         A=cr(mor_1.morphismCells[ii].maps[0].matrix)
-                        
+
                         map,j1,j2,j3=np.linalg.lstsq(mor_2.morphismCells[i].maps[0].matrix,A)
                         sections[kidx_2[i]:kidx_2[i+1],ss]=np.dot(map,H0_1[kidx_1[idx]:kidx_1[idx+1],ss])
 
         # Rewrite sections over sheaf 2 in terms of 0-cohomology basis
-                
+
         map,j1,j2,j3 = np.linalg.lstsq(sections,sheaf_2.cohomology(0))
         return map.conj().T
 
@@ -666,7 +666,7 @@ class Sheaf(CellComplex):
         # Collect the k-cells and k+1-cells
         ks,ksizes,kidx=self.kcells(k,compactSupport)
         kp1,kp1sizes,kp1idx=self.kcells(k+1,compactSupport)
-        
+
         # Allocate output matrix
         rows=sum(kp1sizes)
         cols=sum(ksizes)
@@ -686,12 +686,12 @@ class Sheaf(CellComplex):
 
     def cohomology(self,k,compactSupport=False,tol=1e-5):
         """Compute basis for k-th cohomology of the sheaf"""
-        
+
         # Obtain coboundary matrices for the sheaf
         dm1=self.coboundary(k-1,compactSupport)
         dm1=np.compress(np.any(abs(dm1)>tol,axis=0),dm1,axis=1)
         d=self.coboundary(k,compactSupport)
-        
+
         # Compute kernel
         if d.size:
             ker=kernel(d,tol);
@@ -706,7 +706,7 @@ class Sheaf(CellComplex):
             Hk=ker
 
         return Hk
-        
+
     def betti(self,k,compactSupport=False,tol=1e-5):
         """Compute the k-th Betti number of the sheaf"""
         return self.cohomology(k,compactSupport).shape[1]
@@ -755,7 +755,7 @@ class Sheaf(CellComplex):
         else:
             # The fallback situation, where we need to iterate over global sections manually...
             raise NotImplementedError
-        
+
         return globalsection
 
     def deserializeAssignment(self,vect):
@@ -770,7 +770,7 @@ class Sheaf(CellComplex):
             if self.cells[i].stalkDim > 0:
                 scs.append(SectionCell(support=i,value=vect[idx:idx+self.cells[i].stalkDim]))
                 idx+=self.cells[i].stalkDim
-                       
+
         return Section(scs)
 
     def serializeAssignment(self,assignment):
@@ -794,12 +794,12 @@ class Sheaf(CellComplex):
                 x0[idxarray[cell.support]:idxarray[cell.support]+self.cells[cell.support].stalkDim]=cell.value
 
         return x0
-        
+
     def partitionAssignment(self,assignment,tol=1e-5):
         """Take an assignment to some cells of a sheaf and return a collection of disjoint maximal sets of cells on which this assignment is a local section"""
         # Extend assignment to all cofaces
         assignment=self.maximalExtend(self,assignment,multiassign=False)
-       
+
         # Filter the cofaces into a cell complex in which the only attachments that are included as those whose data in the sheaf are consistent
         cells=[]
         for i,c in enumerate(self.cells):
@@ -817,16 +817,16 @@ class Sheaf(CellComplex):
                         if s.support == cf.index and np.all(np.abs(vv-s.value)) < tol:
                             cofaces.append(cf)
                             break
-                             
+
                 cells.append(Cell(c.dimension,c.compactClosure,cofaces))
             else:
                 cells.append(Cell(c.dimension,c.compactClosure,cofaces=[]))
 
         cplx=CellComplex(cells)
-        
+
         # Compute the components of the complex
         return cplx.components()
-    
+
     def smoothness(self,assignment):
         """ returns the open world smoothness Entropy/log2(number of sections) """
         partition = self.partitionAssignment(assignment)
@@ -852,16 +852,16 @@ class Sheaf(CellComplex):
 
     def pushForward(self,targetComplex,map):
         """Compute the pushforward sheaf and morphism along a map"""
-        
+
         sheafCells=[]
         mor=[]
         # Loop over cells in the target cell complex
         for cidx in range(len(targetComplex.cells)):
             c=targetComplex.cells[cidx]
-            
+
             # Compute which cells are in the preimage of this cell
             bigPreimage=[d for d,r in map if r==cidx]
-            
+
             # For each cell, compute map on global sections over the star
             # along each attachment
             cfs=[]
@@ -871,7 +871,7 @@ class Sheaf(CellComplex):
                     self.starCells(smallPreimage))
                 cfs.append(SheafCoface(index=cf.index,
                     orientation=cf.orientation,restriction=rest))
-                    
+
             mor.append(SheafMorphismCell(bigPreimage,
                 [LinearMorphism(self.localRestriction(self.starCells(bigPreimage),[d])) for d in bigPreimage]))
             if cfs:
@@ -881,17 +881,17 @@ class Sheaf(CellComplex):
                 sheafCells.append(SheafCell(c.dimension,[],c.compactClosure,stalkDim=ls.betti(0)))
 
         return Sheaf(sheafCells),SheafMorphism(mor)
-        
+
     def flowCollapse(self):
         """Compute the sheaf morphism to collapse a sheaf to a flow sheaf over the same space"""
-         
+
         # Generate the flow sheaf
         fs=FlowSheaf(self)
-         
+
         mor=[]
         for i in range(len(self.cells)):
             c=self.cells[i]
-             
+
             # If a vertex, collapse by composing edge morphism with restrictions
             if c.dimension==0:
                 map=np.zeros((0,c.stalkDim))
@@ -903,17 +903,17 @@ class Sheaf(CellComplex):
             else:
                 # If an edge, collapse by summing
                 mor.append(SheafMorphismCell([i],[LinearMorphism(np.ones((1,c.stalkDim)))]))
-                 
+
         return fs,SheafMorphism(mor)
-        
+
 class AmbiguitySheaf(Sheaf):
     def __init__(self,shf1,mor):
         """Construct an ambiguity sheaf from two sheaves (over the same base) and a morphism between them"""
-        
+
         cellsnew=[]
         for i in range(len(shf1.cells)):
             c=shf1.cells[i]
-            
+
             # New cell has same dimension, compactness,
             # Stalk is the kernel of the component map there
             # Restrictions come from basis change on each restriction
@@ -927,12 +927,12 @@ class AmbiguitySheaf(Sheaf):
                 cfnew.append(SheafCoface(index=cf.index,
                     orientation=cf.orientation,
                     restriction=R))
-                    
+
             cellsnew.append(SheafCell(dimension=c.dimension,
                 compactClosure=c.compactClosure,
-                stalkDim=stalkDim,       
+                stalkDim=stalkDim,
                 cofaces=cfnew))
-                
+
         Sheaf.__init__(self,cellsnew)
 
 class LocalHomologySheaf(Sheaf):
@@ -948,12 +948,12 @@ class LocalHomologySheaf(Sheaf):
                                                           restriction=cellcomplex.inducedMapLocalHomology(k,i,cf.index))
                                               for cf in c.cofaces]))
         Sheaf.__init__(self,shcells)
-        
+
 # Poset sheaves
 class ChainSheaf(Poset,Sheaf):
     def __init__(self,poset):
         """Sheaf of chains of a poset or directed graph"""
-        
+
         shcells=[]
         for i,c in enumerate(poset.cells):
             chains=poset.maximalChains(i)
@@ -963,7 +963,7 @@ class ChainSheaf(Poset,Sheaf):
                                      cofaces=[SheafCoface(index=cf.index,
                                                           orientation=cf.orientation,
                                                           restriction=subchainMatrix(chains,
-                                                                                       poset.maximalChains(cf.index))) 
+                                                                                       poset.maximalChains(cf.index)))
                                               for cf in c.cofaces]))
 
         Sheaf.__init__(self,shcells)
@@ -974,7 +974,7 @@ class DirectedGraph(CellComplex):
         """Create a cell complex from a directed graph description, which is a list of pairs (src,dest) or triples (src,dest,capacity) of numbers representing vertices.
         The vertex labeled None is an external connection
         Cells are labeled as follows:
-         First all of the edges (in the order given), 
+         First all of the edges (in the order given),
          then all vertices (in the order they are given; not by their numerical
          values)"""
 
@@ -1013,7 +1013,7 @@ class DirectedGraph(CellComplex):
                 else:
                     orient.append(1)
                 cofaces.append(Coface(cfs[j],orient[j]))
-            
+
             compcells.append(Cell(dimension=0,
                                   compactClosure=True,
                                   cofaces=cofaces))
@@ -1027,7 +1027,7 @@ class DirectedGraph(CellComplex):
 Cell attribute .capacity_left specifes whether the cell can be used"""
         if start == end:
             return history+[end]
-            
+
         # Initialize the capacities used, if unavailable
         for c in self.cells:
             if not hasattr(c,'capacity_left'):
@@ -1038,7 +1038,7 @@ Cell attribute .capacity_left specifes whether the cell can be used"""
             for cf in self.cells[start].cofaces:
                 if cf.orientation == -1 and cf.index not in history and self.cells[cf.index].capacity_left:
                     ch=self.findPath(cf.index,end,history+[start])
-                       
+
                     if ch:
                        return ch
             return None
@@ -1062,11 +1062,11 @@ Cell attribute .capacity_left specifes whether the cell can be used"""
                     c.capacity_left=-1
                 else: # Edges get capacity 1
                     c.capacity_left = 1
-                
+
         # Initialize start/end cell capacities to be infinite
         self.cells[start].capacity_left=-1
         self.cells[end].capacity_left=-1
-        
+
         # Search for paths
         chains=[]
         ch=self.findPath(start,end)
@@ -1088,10 +1088,10 @@ Cell attribute .capacity_left specifes whether the cell can be used"""
 
         if self.cells[start].dimension == 0:
             # Compute list of outgoing edges
-            cfs=[cf for cf in self.cells[start].cofaces 
+            cfs=[cf for cf in self.cells[start].cofaces
                 if cf.orientation == -1 and not cf.index in history]
             if cfs: # There are outgoing edges, loop over them
-                chains=[self.maximalChains(cf.index,history+[start]) 
+                chains=[self.maximalChains(cf.index,history+[start])
                         for cf in cfs]
                 lst=[]
                 for ch in chains:
@@ -1113,7 +1113,7 @@ Cell attribute .capacity_left specifes whether the cell can be used"""
         # Construct new edge set
         edges=[c for c in self.cells if c.dimension == 1]
         newcells=edges*sheets
-        edgeidx=[idx for idx in range(0,len(self.cells)) 
+        edgeidx=[idx for idx in range(0,len(self.cells))
                  if self.cells[idx].dimension==1]
 
         # Decompactify edges on request
@@ -1145,11 +1145,11 @@ def erdosRenyiDirectedGraph(nvert,prob):
     return DirectedGraph([(a,b) for a in range(nvert)+[None]
                           for b in range(nvert)+[None]
                           if random.random() < prob and (a is not None or b is not None)])
-        
+
 class FlowSheaf(Sheaf,DirectedGraph):
     def __init__(self,graph):
         """Create a flow sheaf from a directed graph"""
-        
+
         sheafcells=[]
         for c in graph.cells:
             cofaces=[]
@@ -1160,7 +1160,7 @@ class FlowSheaf(Sheaf,DirectedGraph):
                     rest=np.matrix([m==j for m in range(len(c.cofaces)-1)],dtype=int)
                 else:
                     rest=np.matrix([cf.orientation for cf in c.cofaces][0:-1])
-                
+
                 cofaces.append(SheafCoface(index=cf.index,orientation=cf.orientation,restriction=rest))
                 j+=1
 
@@ -1190,7 +1190,7 @@ class TransLineSheaf(Sheaf,DirectedGraph):
                         c.length=1
                 except:
                     c.length=1
-        
+
         sheafcells=[]
 
         for c in graph.cells:
@@ -1230,7 +1230,7 @@ class ConstantSheaf(Sheaf):
         """Construct a constant sheaf over a CellComplex"""
         sheafcells=[SheafCell(dimension=c.dimension,
                               compactClosure=c.compactClosure,
-                              cofaces=[SheafCoface(index=cf.index, 
+                              cofaces=[SheafCoface(index=cf.index,
                                                    orientation=cf.orientation,
                                                    restriction=np.matrix(1))
                                        for cf in c.cofaces],
@@ -1276,7 +1276,7 @@ class Section:
         """Extend the section to another cell; returns True if successful"""
         # If the desired cell is already in the support, do nothing
         if cell in self.support():
-            return 
+            return
 
         # Is the desired cell a coface of a cell in the support?
         for s in self.sectionCells:
@@ -1289,24 +1289,24 @@ class Section:
                     if value is not None and np.any(np.abs(val - value)>tol):
                         return False
                     value = val
-                            
+
         # Are there are any cofaces for the desired cell in the support?
         if value is None: # Attempt to assign a new value...
-            
+
             # Stack the restrictions and values associated to existing support
-            lst=[(cf.restriction.matrix,s.value) 
-                 for cf in sheaf.cells[cell].cofaces 
+            lst=[(cf.restriction.matrix,s.value)
+                 for cf in sheaf.cells[cell].cofaces
                  for s in self.sectionCells
                  if isinstance(cf.restriction,LinearMorphism) and (cf.index == s.support)]
             if lst:
                 crs=np.vstack([e[0] for e in lst])
                 vals=np.vstack([e[1] for e in lst])
 
-                # If the problem of solving for the value at this cell is 
+                # If the problem of solving for the value at this cell is
                 # underdetermined, refrain from solving it
                 if matrixrank(crs,tol) < crs.shape[1]:
                     return True
-            
+
                 # Attempt to solve for the value at desired cell
                 val,res,j2,j3=np.linalg.lstsq(crs,vals)
                 if np.any(np.abs(res)>tol):
@@ -1318,8 +1318,8 @@ class Section:
                     if s.support == cf.index:
                         if np.any(np.abs(cf.restriction(value)-s.value)>tol):
                             return False
-        
-        # A value was successfully assigned (if no value was assigned, 
+
+        # A value was successfully assigned (if no value was assigned,
         # do nothing, but it's still possible to extend)
         if value is not None:
             self.sectionCells.append(SectionCell(cell,value))
@@ -1332,7 +1332,7 @@ class PersistenceSheaf(Sheaf):
     #        list of triples: source sheaf index, destination sheaf index, sheaf morphism data
     def __init__(self,sheaves,morphisms,k):
         """Compute the k-th degree persistence sheaf over a graph"""
-    
+
         persheaf=[]
 
         # Loop over sheaves
@@ -1350,12 +1350,12 @@ class PersistenceSheaf(Sheaf):
                                           cofaces=cofaces))
             else: # If cell does not have cofaces, compute stalk from Betti number
                 persheaf.append(SheafCell(dimension=1,
-                                          compactClosure=len([d for (s,d,mor) in morphisms 
+                                          compactClosure=len([d for (s,d,mor) in morphisms
                                                               if d==i])>1,
                                           stalkDim=sheaves[i].betti(k)))
         # Initialize the sheaf
         Sheaf.__init__(self,persheaf)
-            
+
 ## Functions
 
 def cumulative_sum(values, start=0):
@@ -1411,11 +1411,11 @@ def subchainMatrix(chainsCols,chainsRows):
 # Input: domain sheaf
 #        range sheaf
 #        list of sheaf morphism data, one for each cell
-#        k 
+#        k
 # Output: matrix
 def inducedMap(sheaf1,sheaf2,morphism,k,compactSupport=False,tol=1e-5):
     """Compute k-th induced map on cohomology for a sheaf morphism"""
-    
+
     # Compute cohomology basis for each sheaf
     Hk_1=sheaf1.cohomology(k,compactSupport)
     Hk_2=sheaf2.cohomology(k,compactSupport)
@@ -1442,7 +1442,7 @@ def inducedMap(sheaf1,sheaf2,morphism,k,compactSupport=False,tol=1e-5):
 
     # Map basis for domain sheaf's cohomology through the chain map
     im=np.dot(m,Hk_1)
-    
+
     # Expand output in new basis
     map,j1,j2,j3 = np.linalg.lstsq(im,Hk_2)
 
@@ -1466,7 +1466,7 @@ def simplexOrientation(s1,s2):
 
 def perm_parity(lst):
     '''\
-    Given a permutation of the digits 0..N in order as a list, 
+    Given a permutation of the digits 0..N in order as a list,
     returns its parity (or sign): +1 for even parity; -1 for odd.
     '''
     parity = 1
@@ -1484,7 +1484,7 @@ def ksublists(lst,n,sublist=[]):
     else:
         for idx in range(len(lst)):
             item=lst[idx]
-            for tmp in ksublists(lst[idx+1:],n-1,sublist+[item]): 
+            for tmp in ksublists(lst[idx+1:],n-1,sublist+[item]):
                 yield tmp
 
 def ksimplices(toplexes,k,relative=None):
@@ -1494,4 +1494,4 @@ def ksimplices(toplexes,k,relative=None):
         for spx in ksublists(toplex,k+1):
             if not spx in simplices and (relative is None or not spx in relative):
                 simplices.append(spx)
-    return simplices 
+    return simplices
