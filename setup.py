@@ -1,14 +1,14 @@
 # Persistence-capable sheaf manipulation library setup script
 #
 # Copyright (c) 2017, Michael Robinson
-# This software comes with no warrantees express or implied 
+# This software comes with no warrantees express or implied
 
 from setuptools import setup
 
 def readme():
     with open('README') as f:
         return f.read()
-    
+
 setup(name='pysheaf',
       version='0.1',
       description='Python applied sheaf computation library',
@@ -17,7 +17,7 @@ setup(name='pysheaf',
       author_email='michaelr@american.edu',
       license='MIT',
       packages=['pysheaf'],
-      install_requires=['numpy','matplotlib','networkx','scipy'],
+      install_requires=['numpy','networkx','scipy'],
       classifiers=[
         'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: MIT License',
