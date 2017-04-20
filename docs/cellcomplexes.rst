@@ -1,0 +1,125 @@
+The CellComplex type
+====================
+
+The :py:class:`CellComplex` class consists of a list of :py:class:`Cell` instances and methods that manipulate the complex as a whole.  It is also the base class for the :py:class:`Sheaf` class.  The indices into the list of :py:class:`Cell` instances are used throughout the PySheaf, and are the usual way to refer to individual :py:class:`Cell` instances when they are in context in a :py:class:`CellComplex`.  Because the indices are necessary to construct the :py:class:`Cofaces` as well, it is usually necessary to determine the necessary cells ahead of time, and then build the :py:class:`CellComplex` instance all at once. 
+
+.. py:class:: CellComplex
+
+   .. py:attribute:: cells
+
+   List of :py:class:`Cell` instances that form this cell.  Indices into this list are used throughout PySheaf, and they are generally expected to be static once created.
+
+   .. py:method:: homology(k,subcomplex=None,compactSupport=False,tol=1e-5)
+
+   Compute the :math:`k` homology of the :py:class:`CellComplex`.  If you want relative homology, the `subcomplex` field specifies a list of cell indices for the relative subcomplex.  If you want compactly supported homology (if you don't know what that means, you don't) then set `compactSupport=True`.  The `tol` argument sets the tolerance below which a singular value is said to be zero, and thus is to be considered part of the kernel. 
+
+   .. py:method:: boundary(k,subcomplex=None,compactSupport=False)
+
+   Compute the :math:`k` boundary map of the :py:class:`CellComplex`.   If you want relative homology, the `subcomplex` field specifies a list of cell indices for the relative subcomplex.  If you want compactly supported homology (if you don't know what that means, you don't) then set `compactSupport=True`.
+
+   .. py:method:: components(cells=[])
+		  
+   Compute connected components of the :py:class:`CellComplex`.   The optional argument `cells` specifies list of permissible indices into :py:attr:`CellComplex.cells`.
+   
+   .. py:method:: star(cells)
+
+   Compute the star of a list of cells (specified as a list of indices into :py:attr:`CellComplex.cells`) in the topology of the :py:class:`CellComplex`. 
+
+   .. py:method:: closure(cells)
+
+   Compute the closure of a list of cells (specified as a list of indices into :py:attr:`CellComplex.cells`) in the topology of the :py:class:`CellComplex`. 
+
+   .. py:method:: skeleton(k)
+
+   Compute the :math:`k` skeleton of the :py:class:`CellComplex`.
+
+Constructing :py:class:`CellComplex` instances
+----------------------------------------------
+
+A :py:class:`Cell` represents a single topological disk that is present in a given :py:class:`CellComplex`.  Mostly, it contains references to other cells (by their respective indices) in the :py:class:`CellComplex`.
+
+.. py:class:: Cell
+
+   Base class representing a topological disk of a definite dimension.
+
+   .. py:attribute:: dimension
+
+      The dimension of the disk that this :py:class:`Cell` represents.  The actual points of the disk are *not* represented, merely its dimension.  (Note: this is *not* the dimension of the stalk over the cell in a :py:class:`SheafCell`)
+
+   .. py:attribute:: compactClosure
+
+      Flag that specifies if the topological closure of the :py:class:`Cell` in the :py:class:`CellComplex` is compact.  Usually this should be `True`, as only those cells with compact closure are included in a homology calculation.
+
+   .. py:attribute:: name
+
+      An optional name for the :py:class:`Cell`, which is generally not used by PySheaf.
+
+   .. py:attribute:: cofaces
+
+      A list of :py:class:`Coface` instances, specifying each coface of this cell.  It is assumed that this coface points to a strictly higher-dimensional cell, and you will encounter endless loops if this assumption is violated.  It is *not* assumed that the cofaces are all *one* dimension higher, though.  It is not necessary to specify a transitive closure -- all cofaces -- as this can be determined by the containing :py:class:`CellComplex`.
+
+The :py:class:`Coface` class specifies a single coface relation, in the context of a :py:class:`CellComplex`.
+
+.. py:class:: Coface
+   
+   Class representing a coface relation between two :py:class:`Cell` instances.  The lower-dimension cell is implied to be the one holding this instance as its :py:attr:`Cell.cofaces` attribute, so this class *only* refers to the higher-dimension cell.
+
+   .. py:attribute:: index
+
+   The index of the higher-dimension cell in the containing :py:class:`CellComplex`.  
+
+   .. py:attribute:: orientation
+
+   The orientation of this coface relation, usually either +1 or -1.
+
+:py:class:`CellComplex` instances are best built all at once.  So for instance, a cell complex consisting of four vertices, named `A`, `B`, `C`, `D`, five edges `AB`, `AC`, `BC`, `BD`, `CD`, and one triangle `ABC` is constructed thusly::
+
+      pysheaf.CellComplex([pysheaf.Cell(dimension=0,
+                                        compactClosure=True,
+					name='A',
+					cofaces=[pysheaf.Coface(index=4,orientation=1),   # Index 4 = 'AB'
+                                                 pysheaf.Coface(index=5,orientation=1)]), # Index 5 = 'AC'
+                           pysheaf.Cell(dimension=0,
+                                        compactClosure=True,
+					name='B',
+					cofaces=[pysheaf.Coface(index=4,orientation=-1),  # Index 4 = 'AB'
+				                 pysheaf.Coface(index=6,orientation=1),   # Index 6 = 'BC'
+						 pysheaf.Coface(index=7,orientation=1)]), # Index 7 = 'BD'
+ 			   pysheaf.Cell(dimension=0,
+			                compactClosure=True,
+                                        name='C',
+   					cofaces=[pysheaf.Coface(index=5,orientation=-1),  # Index 5 = 'AC'
+			                         pysheaf.Coface(index=6,orientation=-1),  # Index 6 = 'BC'
+						 pysheaf.Coface(index=8,orientation=1)]), # Index 8 = 'CD'
+			   pysheaf.Cell(dimension=0,
+                                        compactClosure=True,
+					name='D',
+					cofaces=[pysheaf.Coface(index=7,orientation=-1),  # Index 7 = 'BD'
+				                 pysheaf.Coface(index=8,orientation=-1)]),# Index 4 = 'CD'
+			   pysheaf.Cell(dimension=1,
+			                compactClosure=True,
+					name='AB',
+					cofaces=[pysheaf.Coface(index=9,orientation=1)]), # Index 9 = 'ABC'
+			   pysheaf.Cell(dimension=1,
+                                        compactClosure=True,
+					name='AC',
+					cofaces=[pysheaf.Coface(index=9,orientation=-1)]),# Index 9 = 'ABC' 
+			   pysheaf.Cell(dimension=1,
+                                        compactClosure=True,
+					name='BC',
+					cofaces=[pysheaf.Coface(index=9,orientation=1)]), # Index 9 = 'ABC'
+			   pysheaf.Cell(dimension=1,
+                                        compactClosure=True,
+					name='BD',
+					cofaces=[]),
+			   pysheaf.Cell(dimension=1,
+                                        compactClosure=True,
+					name='CD',
+					cofaces=[]),
+			   pysheaf.Cell(dimension=2,
+                                        compactClosure=True,
+                                        name='ABC',
+ 					cofaces=[])])
+
+
+    
