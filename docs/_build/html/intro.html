@@ -1,0 +1,118 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Introduction &#8212; PySheaf 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="The CellComplex type" href="cellcomplexes.html" />
+    <link rel="prev" title="Welcome to PySheaf’s documentation!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<p>PySheaf is a Python module that implements cellular sheaves with a view towards computing useful invariants such as cohomology, consistency radius, and induced maps.  It is based on the idea that cell complexes are topological spaces, and that sheaves on cell complexes have at least that structure with some additional information as well.  The design follows the principles set out in the following book, which might be helpful to consult:</p>
+<p>Michael Robinson, <em>Topological Signal Processing</em>, Springer, 2014.</p>
+<p>Although PySheaf can compute (co)homology of sheaves and cell complexes, the primary workflow for sheaves is</p>
+<ol class="arabic simple">
+<li>Construct the <a class="reference internal" href="sheaves.html#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> instance, which involves defining lists of <a class="reference internal" href="sheaves.html#SheafCell" title="SheafCell"><code class="xref py py-class docutils literal"><span class="pre">SheafCell</span></code></a> and <a class="reference internal" href="sheaves.html#SheafCoface" title="SheafCoface"><code class="xref py py-class docutils literal"><span class="pre">SheafCoface</span></code></a> instances.  Presently, the <a class="reference internal" href="sheaves.html#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> instance will remain fixed once constructed.  Therefore, make sure to have all stalks and restrictions defined at this point!</li>
+<li>If you want to compute cohomology of the <a class="reference internal" href="sheaves.html#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a>, you can do so using the <a class="reference internal" href="sheaves.html#Sheaf.cohomology" title="Sheaf.cohomology"><code class="xref py py-meth docutils literal"><span class="pre">Sheaf.cohomology()</span></code></a> or <a class="reference internal" href="sheaves.html#Sheaf.betti" title="Sheaf.betti"><code class="xref py py-meth docutils literal"><span class="pre">Sheaf.betti()</span></code></a></li>
+<li>Construct various <a class="reference internal" href="sections.html#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> instances for the data you have.  Key point: a <a class="reference internal" href="sections.html#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> refers to a <em>local</em> section.  Its <a class="reference internal" href="sections.html#SectionCell" title="SectionCell"><code class="xref py py-class docutils literal"><span class="pre">SectionCell</span></code></a> members refer to the <a class="reference internal" href="sheaves.html#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> you&#8217;ve just finished building, so you must built the <a class="reference internal" href="sheaves.html#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> first!</li>
+<li>Process the data using the <a class="reference internal" href="sheaves.html#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> and <a class="reference internal" href="sections.html#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> instances:<ol class="loweralpha">
+<li>You can measure the consistency using <a class="reference internal" href="sections.html#Sheaf.consistencyRadius" title="Sheaf.consistencyRadius"><code class="xref py py-meth docutils literal"><span class="pre">Sheaf.consistencyRadius()</span></code></a></li>
+<li>You can fit a nearest global section using <a class="reference internal" href="sections.html#Sheaf.fuseAssignment" title="Sheaf.fuseAssignment"><code class="xref py py-meth docutils literal"><span class="pre">Sheaf.fuseAssignment()</span></code></a></li>
+<li>You may also use <a class="reference internal" href="sections.html#Section.extend" title="Section.extend"><code class="xref py py-meth docutils literal"><span class="pre">Section.extend()</span></code></a></li>
+</ol>
+</li>
+<li>If you want to relate your <a class="reference internal" href="sheaves.html#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> to others, you may construct a <a class="reference internal" href="sheaves.html#SheafMorphism" title="SheafMorphism"><code class="xref py py-class docutils literal"><span class="pre">SheafMorphism</span></code></a> instance, which incidentally may <em>also</em> be used as a restriction morphism if you want to build a <a class="reference internal" href="sheaves.html#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> <em>of</em> sheaves!</li>
+</ol>
+<p>For cell complexes, you can do steps (1) and (2).  Instead of a <a class="reference internal" href="sheaves.html#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a>, you define a <a class="reference internal" href="cellcomplexes.html#CellComplex" title="CellComplex"><code class="xref py py-class docutils literal"><span class="pre">CellComplex</span></code></a> built from lists of <a class="reference internal" href="cellcomplexes.html#Cell" title="Cell"><code class="xref py py-class docutils literal"><span class="pre">Cell</span></code></a> and <a class="reference internal" href="cellcomplexes.html#Coface" title="Coface"><code class="xref py py-class docutils literal"><span class="pre">Coface</span></code></a> instances.</p>
+<p>PySheaf is very much under active development and exploration, since there aren&#8217;t well-established ways of computing using sheaves to process data.  Expect some rough edges, but feel free to suggest improvements!</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to PySheaf&#8217;s documentation!</a></li>
+      <li>Next: <a href="cellcomplexes.html" title="next chapter">The CellComplex type</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/intro.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Michael Robinson.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/intro.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
