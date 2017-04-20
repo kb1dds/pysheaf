@@ -18,6 +18,6 @@ Although PySheaf can compute (co)homology of sheaves and cell complexes, the pri
 
 5. If you want to relate your :py:class:`Sheaf` to others, you may construct a :py:class:`SheafMorphism` instance, which incidentally may *also* be used as a restriction morphism if you want to build a :py:class:`Sheaf` *of* sheaves!
 
-For cell complexes, you only can do steps (1) and (2).  Instead of a :py:class:`Sheaf`, you define a :py:class:`CellComplex` built from lists of :py:class:`Cell` and :py:class:`Coface` instances.  
+For cell complexes, you can do steps (1) and (2).  Instead of a :py:class:`Sheaf`, you define a :py:class:`CellComplex` built from lists of :py:class:`Cell` and :py:class:`Coface` instances.  
    
 PySheaf is very much under active development and exploration, since there aren't well-established ways of computing using sheaves to process data.  Expect some rough edges, but feel free to suggest improvements!

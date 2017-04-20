@@ -44,39 +44,63 @@
             
   <div class="section" id="the-section-class">
 <h1>The <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> class<a class="headerlink" href="#the-section-class" title="Permalink to this headline">¶</a></h1>
-<p>A <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> represents a local section, which are instances of data stored in sheaves.  They are constructed with a <a class="reference internal" href="sheaves.html#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> instance in mind, and therefore contain indices that refer into the <code class="xref py py-attr docutils literal"><span class="pre">Sheaf.cells</span></code> list.  A given <a class="reference internal" href="sheaves.html#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> might have several <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> instances.</p>
+<p>A <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> represents a local section, which is an instance of data stored in a sheaf.  A <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> is constructed with a <a class="reference internal" href="sheaves.html#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> instance in mind, and therefore contains indices that refer into the <code class="xref py py-attr docutils literal"><span class="pre">Sheaf.cells</span></code> list.  A given <a class="reference internal" href="sheaves.html#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> might have several <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> instances.</p>
 <dl class="class">
 <dt id="Section">
 <em class="property">class </em><code class="descname">Section</code><a class="headerlink" href="#Section" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="attribute">
 <dt id="Section.sectionCells">
 <code class="descname">sectionCells</code><a class="headerlink" href="#Section.sectionCells" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The list of <a class="reference internal" href="#SectionCell" title="SectionCell"><code class="xref py py-class docutils literal"><span class="pre">SectionCell</span></code></a> instances corresponding to this local section.  Although mathematically local sections are not multi-valued, it is possible that duplicates are present as there are no checks for this.</p>
+</dd></dl>
 
-<p>The list of <a class="reference internal" href="#SectionCell" title="SectionCell"><code class="xref py py-class docutils literal"><span class="pre">SectionCell</span></code></a> instances corresponding to this local section.  Although mathematically local sections are not multi-valued, it is possible that duplicates are present.</p>
+<dl class="method">
+<dt id="Section.support">
+<code class="descname">support</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Section.support" title="Permalink to this definition">¶</a></dt>
+<dd><p>List the <code class="xref py py-attr docutils literal"><span class="pre">Sheaf.cells</span></code> indices in the support of this <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a></p>
+</dd></dl>
+
 <dl class="method">
 <dt id="Section.extend">
-<code class="descname">extend</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Section.extend" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="descname">extend</code><span class="sig-paren">(</span><em>sheaf</em>, <em>cell</em>, <em>value=None</em>, <em>tol=1e-5</em><span class="sig-paren">)</span><a class="headerlink" href="#Section.extend" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extend this <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> to another cell whose index is <cite>cell</cite> in the <code class="xref py py-attr docutils literal"><span class="pre">Sheaf.cells</span></code> list of the <cite>sheaf</cite> and returns <cite>True</cite> if this can be done consistently according to the tolerance <cite>tol</cite>.  You can optionally specify a <cite>value</cite> from the stalk over that cell; in this case the method can be used to test if this is a consistent choice or not.</p>
+</dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="SectionCell">
 <em class="property">class </em><code class="descname">SectionCell</code><a class="headerlink" href="#SectionCell" title="Permalink to this definition">¶</a></dt>
+<dd><p>A single value from the stalk over a given cell, consisting of the</p>
+<dl class="attribute">
+<dt id="SectionCell.value">
+<code class="descname">value</code><a class="headerlink" href="#SectionCell.value" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<p>itself, which ought to be of the appropriate type (can be passed to the functions <a class="reference internal" href="sheaves.html#SheafCell.metric" title="SheafCell.metric"><code class="xref py py-attr docutils literal"><span class="pre">SheafCell.metric</span></code></a> and/or <a class="reference internal" href="sheaves.html#SheafCoface.restriction" title="SheafCoface.restriction"><code class="xref py py-attr docutils literal"><span class="pre">SheafCoface.restriction</span></code></a>).  One also needs to specify</p>
+<dl class="attribute">
+<dt id="SectionCell.support">
+<code class="descname">support</code><a class="headerlink" href="#SectionCell.support" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>which records the <code class="xref py py-attr docutils literal"><span class="pre">Sheaf.cells</span></code> index of the cell whose stalk from which this value was taken.</p>
+</dd></dl>
 
 <div class="section" id="data-fusion-with-section-and-sheaf-instances">
 <h2>Data fusion with <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> and <a class="reference internal" href="sheaves.html#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> instances<a class="headerlink" href="#data-fusion-with-section-and-sheaf-instances" title="Permalink to this headline">¶</a></h2>
+<p>Given some data in a <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> for a <a class="reference internal" href="sheaves.html#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> you can measure the overall consistency radius with</p>
 <dl class="method">
 <dt id="Sheaf.consistencyRadius">
-<code class="descclassname">Sheaf.</code><code class="descname">consistencyRadius</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Sheaf.consistencyRadius" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="descclassname">Sheaf.</code><code class="descname">consistencyRadius</code><span class="sig-paren">(</span><em>assignment</em>, <em>tol=1e-5</em><span class="sig-paren">)</span><a class="headerlink" href="#Sheaf.consistencyRadius" title="Permalink to this definition">¶</a></dt>
+<dd><p>where <cite>assignment</cite> is the <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> to be tested.  The optional <cite>tol</cite> specifies the tolerance for consistency, to be used in conjunction with each <a class="reference internal" href="sheaves.html#SheafCell.metric" title="SheafCell.metric"><code class="xref py py-attr docutils literal"><span class="pre">SheafCell.metric</span></code></a> in the <a class="reference internal" href="sheaves.html#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a>.</p>
+</dd></dl>
 
+<p>Similarly, if you want the nearest global section to your data, you can call</p>
 <dl class="method">
 <dt id="Sheaf.fuseAssignment">
-<code class="descclassname">Sheaf.</code><code class="descname">fuseAssignment</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Sheaf.fuseAssignment" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="descclassname">Sheaf.</code><code class="descname">fuseAssignment</code><span class="sig-paren">(</span><em>assignment</em>, <em>tol=1e-5</em><span class="sig-paren">)</span><a class="headerlink" href="#Sheaf.fuseAssignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>which returns a new <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> instance that is the global section nearest to your <cite>assignment</cite>.  In this case, the tolerance <cite>tol</cite> is passed to <code class="xref py py-func docutils literal"><span class="pre">scipy.optimize.minimize()</span></code>.</p>
+</dd></dl>
 
 </div>
 </div>
