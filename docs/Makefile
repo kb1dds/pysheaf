@@ -14,6 +14,14 @@ help:
 
 .PHONY: help Makefile
 
+github:
+	@$(SPHINXBUILD) -b html "$(SOURCEDIR)" $(BUILDDIR)
+	touch $(BUILDDIR)/html/.nojekyll
+	ghp-import $(BUILDDIR)/html/
+	git push -u origin gh-pages
+	@echo
+	@echo "Published to Github"
+
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
