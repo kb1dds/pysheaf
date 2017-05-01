@@ -515,7 +515,7 @@ class Sheaf(CellComplex):
         self.cells[source].cofaces.append(SheafCoface(index=target,orientation=orientation,restriction=restriction))
 
     def add_cofaces_from(self,cellpairs,orientations,restrictions):
-        for cellpair,orientation,restriction in zip(cellpairs,orientations,restriction):
+        for cellpair,orientation,restriction in zip(cellpairs,orientations,restrictions):
             self.add_coface(cellpair,orientation,restriction)
 
     def isLinear(self):

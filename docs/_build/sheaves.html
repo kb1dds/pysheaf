@@ -1,0 +1,259 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>The Sheaf type &#8212; PySheaf 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="The Section class" href="sections.html" />
+    <link rel="prev" title="The CellComplex type" href="cellcomplexes.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="the-sheaf-type">
+<h1>The <a class="reference internal" href="#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> type<a class="headerlink" href="#the-sheaf-type" title="Permalink to this headline">¶</a></h1>
+<p>The <a class="reference internal" href="#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> class derives from <a class="reference internal" href="cellcomplexes.html#CellComplex" title="CellComplex"><code class="xref py py-class docutils literal"><span class="pre">CellComplex</span></code></a> to describe its base space.  The additional attributes and methods of <a class="reference internal" href="#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> describe the &#8220;vertical fiber&#8221; structure of the sheaf.</p>
+<dl class="class">
+<dt id="Sheaf">
+<em class="property">class </em><code class="descname">Sheaf</code><span class="sig-paren">(</span><em>CellComplex</em><span class="sig-paren">)</span><a class="headerlink" href="#Sheaf" title="Permalink to this definition">¶</a></dt>
+<dd><p>The base sheaf class in PySheaf consists of a list <code class="xref py py-attr docutils literal"><span class="pre">cell</span></code> of <a class="reference internal" href="#SheafCell" title="SheafCell"><code class="xref py py-class docutils literal"><span class="pre">SheafCell</span></code></a> instances, describing the cells and the stalks over them.  Restriction maps are built into <a class="reference internal" href="#SheafCoface" title="SheafCoface"><code class="xref py py-class docutils literal"><span class="pre">SheafCoface</span></code></a> instances that are stored with each <a class="reference internal" href="#SheafCell" title="SheafCell"><code class="xref py py-class docutils literal"><span class="pre">SheafCell</span></code></a>.</p>
+<dl class="method">
+<dt id="Sheaf.coboundary">
+<code class="descname">coboundary</code><span class="sig-paren">(</span><em>k</em>, <em>compactSupport=False</em><span class="sig-paren">)</span><a class="headerlink" href="#Sheaf.coboundary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the degree <cite>k</cite> coboundary map of the <a class="reference internal" href="#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a>, returning it as a <code class="xref py py-class docutils literal"><span class="pre">numpy.ndarray</span></code>.   If you want compactly supported cohomology (if you don&#8217;t know what that means, you don&#8217;t) then set <cite>compactSupport=True</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Sheaf.cohomology">
+<code class="descname">cohomology</code><span class="sig-paren">(</span><em>k</em>, <em>compactSupport=False</em><span class="sig-paren">)</span><a class="headerlink" href="#Sheaf.cohomology" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the degree <cite>k</cite> sheaf cohomology for the <a class="reference internal" href="#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a>.   If you want compactly supported cohomology (if you don&#8217;t know what that means, you don&#8217;t) then set <cite>compactSupport=True</cite>.  This returns a <code class="xref py py-class docutils literal"><span class="pre">numpy.ndarray</span></code> whose columns are the generators for cohomology.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Sheaf.betti">
+<code class="descname">betti</code><span class="sig-paren">(</span><em>k</em><span class="sig-paren">)</span><a class="headerlink" href="#Sheaf.betti" title="Permalink to this definition">¶</a></dt>
+<dd><p>The dimension of the degree <cite>k</cite> sheaf cohomology space.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This is not the dimension of the <a class="reference internal" href="cellcomplexes.html#CellComplex.homology" title="CellComplex.homology"><code class="xref py py-meth docutils literal"><span class="pre">CellComplex.homology()</span></code></a>, which is inherited into <a class="reference internal" href="#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a>!</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SheafCell">
+<em class="property">class </em><code class="descname">SheafCell</code><span class="sig-paren">(</span><em>Cell</em><span class="sig-paren">)</span><a class="headerlink" href="#SheafCell" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="SheafCell.stalkDim">
+<code class="descname">stalkDim</code><a class="headerlink" href="#SheafCell.stalkDim" title="Permalink to this definition">¶</a></dt>
+<dd><p>The dimension of the stalk over this cell.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This has nothing to do with <code class="xref py py-attr docutils literal"><span class="pre">SheafCell.dimension</span></code> inherited from <a class="reference internal" href="cellcomplexes.html#Cell" title="Cell"><code class="xref py py-attr docutils literal"><span class="pre">Cell</span></code></a>.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="SheafCell.metric">
+<code class="descname">metric</code><a class="headerlink" href="#SheafCell.metric" title="Permalink to this definition">¶</a></dt>
+<dd><p>The metric on the stalk, used to measure distances between values in that stalk.  This must by a function object that takes two arguments, each of which is a <code class="xref py py-class docutils literal"><span class="pre">numpy.ndarray</span></code> and produces a numerical value.  By default, it is the Euclidean distance given by <code class="xref py py-func docutils literal"><span class="pre">numpy.linalg.norm()</span></code>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="SheafCell.cofaces">
+<code class="descname">cofaces</code><a class="headerlink" href="#SheafCell.cofaces" title="Permalink to this definition">¶</a></dt>
+<dd><p>Like <a class="reference internal" href="cellcomplexes.html#Cell" title="Cell"><code class="xref py py-class docutils literal"><span class="pre">Cell</span></code></a>, this should be a list of coface relations, but unlike <a class="reference internal" href="cellcomplexes.html#Cell" title="Cell"><code class="xref py py-class docutils literal"><span class="pre">Cell</span></code></a>, they must be <a class="reference internal" href="#SheafCoface" title="SheafCoface"><code class="xref py py-class docutils literal"><span class="pre">SheafCoface</span></code></a> instances!</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SheafCoface">
+<em class="property">class </em><code class="descname">SheafCoface</code><span class="sig-paren">(</span><em>Coface</em><span class="sig-paren">)</span><a class="headerlink" href="#SheafCoface" title="Permalink to this definition">¶</a></dt>
+<dd><p>A coface relation in a sheaf on a cell complex is built just like a <a class="reference internal" href="cellcomplexes.html#Coface" title="Coface"><code class="xref py py-class docutils literal"><span class="pre">Coface</span></code></a> in a <a class="reference internal" href="cellcomplexes.html#CellComplex" title="CellComplex"><code class="xref py py-class docutils literal"><span class="pre">CellComplex</span></code></a>, but with the addition of a <a class="reference internal" href="#SheafCoface.restriction" title="SheafCoface.restriction"><code class="xref py py-attr docutils literal"><span class="pre">restriction</span></code></a>.</p>
+<dl class="attribute">
+<dt id="SheafCoface.restriction">
+<code class="descname">restriction</code><a class="headerlink" href="#SheafCoface.restriction" title="Permalink to this definition">¶</a></dt>
+<dd><p>A restriction in a sheaf generally needs to be a morphism in some category.   It must be an object that supports <em>composition</em>, namely a class that implements a multiplication operator.  In most examples, this is one of <a class="reference internal" href="#SetMorphism" title="SetMorphism"><code class="xref py py-class docutils literal"><span class="pre">SetMorphism</span></code></a> (for functions between sets), <a class="reference internal" href="#LinearMorphism" title="LinearMorphism"><code class="xref py py-class docutils literal"><span class="pre">LinearMorphism</span></code></a> (for linear maps), or a <a class="reference internal" href="#SheafMorphism" title="SheafMorphism"><code class="xref py py-class docutils literal"><span class="pre">SheafMorphism</span></code></a> (for a <a class="reference internal" href="#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> of sheaves).  Note that if you construct a <a class="reference internal" href="#SheafCoface" title="SheafCoface"><code class="xref py py-class docutils literal"><span class="pre">SheafCoface</span></code></a> by passing a <code class="xref py py-class docutils literal"><span class="pre">numpy.ndarray</span></code>, PySheaf will construct a <a class="reference internal" href="#LinearMorphism" title="LinearMorphism"><code class="xref py py-class docutils literal"><span class="pre">LinearMorphism</span></code></a> restriction automatically.</p>
+</dd></dl>
+
+</dd></dl>
+
+<div class="section" id="morphisms-setmorphism-linearmorphism-and-sheafmorphism">
+<h2>Morphisms: <a class="reference internal" href="#SetMorphism" title="SetMorphism"><code class="xref py py-class docutils literal"><span class="pre">SetMorphism</span></code></a>, <a class="reference internal" href="#LinearMorphism" title="LinearMorphism"><code class="xref py py-class docutils literal"><span class="pre">LinearMorphism</span></code></a>, and <a class="reference internal" href="#SheafMorphism" title="SheafMorphism"><code class="xref py py-class docutils literal"><span class="pre">SheafMorphism</span></code></a><a class="headerlink" href="#morphisms-setmorphism-linearmorphism-and-sheafmorphism" title="Permalink to this headline">¶</a></h2>
+<p>Since cellular sheaves are special functors from the face category of a cell complex to some other <em>data category</em>, PySheaf supports three kinds of <em>data categories</em>:</p>
+<ol class="arabic simple">
+<li>Sets,</li>
+<li>Finite dimensional vector spaces (via <code class="xref py py-mod docutils literal"><span class="pre">numpy</span></code>), and</li>
+<li>Sheaves (of some of other type).</li>
+</ol>
+<p>The restrictions in a given <a class="reference internal" href="#SheafCoface" title="SheafCoface"><code class="xref py py-class docutils literal"><span class="pre">SheafCoface</span></code></a> instance are therefore of a corresponding morphism class:</p>
+<ol class="arabic simple">
+<li><a class="reference internal" href="#SetMorphism" title="SetMorphism"><code class="xref py py-class docutils literal"><span class="pre">SetMorphism</span></code></a>,</li>
+<li><a class="reference internal" href="#LinearMorphism" title="LinearMorphism"><code class="xref py py-class docutils literal"><span class="pre">LinearMorphism</span></code></a>, and</li>
+<li><a class="reference internal" href="#SheafMorphism" title="SheafMorphism"><code class="xref py py-class docutils literal"><span class="pre">SheafMorphism</span></code></a>.</li>
+</ol>
+<p>The simplest of these is <a class="reference internal" href="#SetMorphism" title="SetMorphism"><code class="xref py py-class docutils literal"><span class="pre">SetMorphism</span></code></a>.</p>
+<dl class="class">
+<dt id="SetMorphism">
+<em class="property">class </em><code class="descname">SetMorphism</code><a class="headerlink" href="#SetMorphism" title="Permalink to this definition">¶</a></dt>
+<dd><p>This represents a <em>set</em> morphism, otherwise known as a <em>function</em> between sets.  This is implemented by a single attribute</p>
+<dl class="attribute">
+<dt id="SetMorphism.fcn">
+<code class="descname">fcn</code><a class="headerlink" href="#SetMorphism.fcn" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>which is a function object taking one argument.</p>
+<p><a class="reference internal" href="#SetMorphism" title="SetMorphism"><code class="xref py py-class docutils literal"><span class="pre">SetMorphism</span></code></a> objects support a multiplication operator, which composes their respective <a class="reference internal" href="#SetMorphism.fcn" title="SetMorphism.fcn"><code class="xref py py-attr docutils literal"><span class="pre">fcn</span></code></a> attributes to form a new function object.  They also support call semantics, so you can simply call a <a class="reference internal" href="#SetMorphism" title="SetMorphism"><code class="xref py py-class docutils literal"><span class="pre">SetMorphism</span></code></a> object as a function to access its <a class="reference internal" href="#SetMorphism.fcn" title="SetMorphism.fcn"><code class="xref py py-attr docutils literal"><span class="pre">fcn</span></code></a> attribute.</p>
+</dd></dl>
+
+<p>Namely, if you say:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">foo</span> <span class="o">=</span> <span class="n">pysheaf</span><span class="o">.</span><span class="n">SetMorphism</span><span class="p">(</span> <span class="k">lambda</span> <span class="n">x</span> <span class="p">:</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span>
+<span class="n">bar</span> <span class="o">=</span> <span class="n">pysheaf</span><span class="o">.</span><span class="n">SetMorphism</span><span class="p">(</span> <span class="k">lambda</span> <span class="n">y</span> <span class="p">:</span> <span class="mi">3</span><span class="o">*</span><span class="n">y</span> <span class="p">)</span>
+</pre></div>
+</div>
+<p>then:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">foo</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>returns 9 and:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">baaz</span> <span class="o">=</span> <span class="n">foo</span> <span class="o">*</span> <span class="n">bar</span>
+<span class="n">baaz</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>is also 9.</p>
+<p>A <a class="reference internal" href="#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> with only <a class="reference internal" href="#SetMorphism" title="SetMorphism"><code class="xref py py-class docutils literal"><span class="pre">SetMorphism</span></code></a> restrictions does not allow you to compute <a class="reference internal" href="#Sheaf.cohomology" title="Sheaf.cohomology"><code class="xref py py-meth docutils literal"><span class="pre">Sheaf.cohomology()</span></code></a>.  For that, you need linearity, which is implemented by the following subclass of <a class="reference internal" href="#SetMorphism" title="SetMorphism"><code class="xref py py-class docutils literal"><span class="pre">SetMorphism</span></code></a>.</p>
+<dl class="class">
+<dt id="LinearMorphism">
+<em class="property">class </em><code class="descname">LinearMorphism</code><span class="sig-paren">(</span><em>SetMorphism</em><span class="sig-paren">)</span><a class="headerlink" href="#LinearMorphism" title="Permalink to this definition">¶</a></dt>
+<dd><p>This implements a linear map, encoded as a <code class="xref py py-class docutils literal"><span class="pre">numpy.ndarray</span></code>.  Since it subclasses <a class="reference internal" href="#SetMorphism" title="SetMorphism"><code class="xref py py-class docutils literal"><span class="pre">SetMorphism</span></code></a>, it inherits composition (as multiplication, which is of course <em>also</em> matrix multiplication) and call semantics.  It also stores the matrix as a new attribute</p>
+<dl class="attribute">
+<dt id="LinearMorphism.matrix">
+<code class="descname">matrix</code><a class="headerlink" href="#LinearMorphism.matrix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>as you might expect.</p>
+</dd></dl>
+
+<p>When constructing a <a class="reference internal" href="#SheafCoface" title="SheafCoface"><code class="xref py py-class docutils literal"><span class="pre">SheafCoface</span></code></a>, if you pass an <code class="xref py py-class docutils literal"><span class="pre">numpy.ndarray</span></code> as the <cite>restriction</cite> argument, PySheaf will automatically create <a class="reference internal" href="#LinearMorphism" title="LinearMorphism"><code class="xref py py-class docutils literal"><span class="pre">LinearMorphism</span></code></a> objects as the restriction.</p>
+<p>The final kind of morphism that is supported is <a class="reference internal" href="#SheafMorphism" title="SheafMorphism"><code class="xref py py-class docutils literal"><span class="pre">SheafMorphism</span></code></a>, which supports composition by implementing a multiplication operator, but <em>not</em> call semantics since sheaf morphisms are <em>not</em> functions.  (It is true that they induce functions of various kinds, but PySheaf refrains from demanding that any particular kind of induced maps be computed by default.)</p>
+<dl class="class">
+<dt id="SheafMorphism">
+<em class="property">class </em><code class="descname">SheafMorphism</code><a class="headerlink" href="#SheafMorphism" title="Permalink to this definition">¶</a></dt>
+<dd><p>A sheaf morphism from one sheaf to another consists of lists <a class="reference internal" href="#SheafMorphism.destinations" title="SheafMorphism.destinations"><code class="xref py py-attr docutils literal"><span class="pre">destinations</span></code></a> and <a class="reference internal" href="#SheafMorphism.maps" title="SheafMorphism.maps"><code class="xref py py-attr docutils literal"><span class="pre">maps</span></code></a> which correspond to the <code class="xref py py-attr docutils literal"><span class="pre">Sheaf.cells</span></code> list in the domain sheaf.</p>
+<dl class="attribute">
+<dt id="SheafMorphism.destinations">
+<code class="descname">destinations</code><a class="headerlink" href="#SheafMorphism.destinations" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of indices into the codomain sheaf&#8217;s <code class="xref py py-attr docutils literal"><span class="pre">Sheaf.cells</span></code> list for each component map of the sheaf morphism.  Entries correspond to the <code class="xref py py-attr docutils literal"><span class="pre">Sheaf.cells</span></code> list in the domain sheaf.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="SheafMorphism.maps">
+<code class="descname">maps</code><a class="headerlink" href="#SheafMorphism.maps" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of component maps (each of which may be any morphism class, like <a class="reference internal" href="#SetMorphism" title="SetMorphism"><code class="xref py py-class docutils literal"><span class="pre">SetMorphism</span></code></a>, <a class="reference internal" href="#LinearMorphism" title="LinearMorphism"><code class="xref py py-class docutils literal"><span class="pre">LinearMorphism</span></code></a>, or even <a class="reference internal" href="#SetMorphism" title="SetMorphism"><code class="xref py py-class docutils literal"><span class="pre">SetMorphism</span></code></a>) corresponding to the <code class="xref py py-attr docutils literal"><span class="pre">Sheaf.cells</span></code> list in the domain sheaf.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="constructing-sheaf-instances">
+<h2>Constructing <a class="reference internal" href="#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> instances<a class="headerlink" href="#constructing-sheaf-instances" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> objects are constructed in essentially the same way as <a class="reference internal" href="cellcomplexes.html#CellComplex" title="CellComplex"><code class="xref py py-class docutils literal"><span class="pre">CellComplex</span></code></a> objects.  Determining the indices for the <code class="xref py py-attr docutils literal"><span class="pre">Sheaf.cells</span></code> list is crucial, as each <code class="xref py py-attr docutils literal"><span class="pre">SheafCoface.index</span></code> will refer into it.  Changes to the base space &#8211; the inherited structure from <a class="reference internal" href="cellcomplexes.html#CellComplex" title="CellComplex"><code class="xref py py-class docutils literal"><span class="pre">CellComplex</span></code></a> &#8211; are not easy and will generally involve many updates.  Additionally, each <a class="reference internal" href="#SheafCoface.restriction" title="SheafCoface.restriction"><code class="xref py py-attr docutils literal"><span class="pre">SheafCoface.restriction</span></code></a> ought to be known beforehand, though these can be changed at run time if needed.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">The <code class="docutils literal"><span class="pre">Sheaf</span></code> type</a><ul>
+<li><a class="reference internal" href="#morphisms-setmorphism-linearmorphism-and-sheafmorphism">Morphisms: <code class="docutils literal"><span class="pre">SetMorphism</span></code>, <code class="docutils literal"><span class="pre">LinearMorphism</span></code>, and <code class="docutils literal"><span class="pre">SheafMorphism</span></code></a></li>
+<li><a class="reference internal" href="#constructing-sheaf-instances">Constructing <code class="docutils literal"><span class="pre">Sheaf</span></code> instances</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="cellcomplexes.html" title="previous chapter">The CellComplex type</a></li>
+      <li>Next: <a href="sections.html" title="next chapter">The <code class="docutils literal"><span class="pre">Section</span></code> class</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/sheaves.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Michael Robinson.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/sheaves.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
