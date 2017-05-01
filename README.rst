@@ -5,7 +5,7 @@ This repository consists of Python 2.7 libraries for manipulating cell complexes
 
 1. Local and relative homology of abstract simplicial complexes [0]_
 
-   2. Sheaves of sets or vector spaces on cell complexes [1]_, [2]_, [3]_, [4]_, [5]_, [6]_
+2. Sheaves of sets or vector spaces on cell complexes [1]_, [2]_, [3]_, [4]_, [5]_, [6]_
 
 Documentation:
 --------------
@@ -47,11 +47,11 @@ The pysheaf.py module should be able to duplicate the functionality of simplicia
 
 Finally, this code is under active development, so not everything works as it should.  Stay away from `Sheaf.localSectional()` and `Cell.localPairComplex()` as these don't currently work correctly!  If you find anything that you can correct, feel free to send me suggestions!
 
-|Thanks!
-|Michael Robinson
-|American University
-|kb1dds@gmail.com
-|michaelr@american.edu
+| Thanks!
+| Michael Robinson
+| American University
+| kb1dds@gmail.com
+| michaelr@american.edu
 
 .. [0] Alan Hatcher, "Algebraic Topology", Cambridge, 2002, https://www.math.cornell.edu/~hatcher/AT/ATpage.html
 
