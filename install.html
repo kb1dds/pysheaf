@@ -1,0 +1,205 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Installation instructions for PySheaf using a conda environment &#8212; PySheaf 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="The CellComplex type" href="cellcomplexes.html" />
+    <link rel="prev" title="Introduction" href="intro.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="installation-instructions-for-pysheaf-using-a-conda-environment">
+<h1>Installation instructions for PySheaf using a conda environment<a class="headerlink" href="#installation-instructions-for-pysheaf-using-a-conda-environment" title="Permalink to this headline">¶</a></h1>
+<p>PySheaf is written for python 2.7. To install and test PySheaf we recommend using a virtual environment. The instructions below will walk you through the following steps:</p>
+<ol class="arabic simple">
+<li>Download and install miniconda (or anaconda if you prefer)</li>
+<li>Create a <code class="xref py py-mod docutils literal"><span class="pre">conda</span></code> environment</li>
+<li>Download and install the PySheaf repository</li>
+<li>Run unit tests</li>
+</ol>
+<div class="section" id="download-and-install-miniconda">
+<h2>Download and install miniconda:<a class="headerlink" href="#download-and-install-miniconda" title="Permalink to this headline">¶</a></h2>
+<p><em>If you already have an anaconda or miniconda distribution you may skip this part.</em></p>
+<p>Anaconda and Miniconda are source distributions of Python used by the mathematics and scientific communities that simplify package management and version control.  Both use the <code class="xref py py-mod docutils literal"><span class="pre">conda</span></code> package management system and both provide environments to isolate python packages and their dependencies. Anaconda includes <code class="xref py py-mod docutils literal"><span class="pre">conda</span></code>, <code class="xref py py-mod docutils literal"><span class="pre">conda-build</span></code>, <code class="xref py py-mod docutils literal"><span class="pre">python</span></code> and over 150 python packages. Miniconda is a smaller version that only includes <code class="xref py py-mod docutils literal"><span class="pre">conda</span></code>, <code class="xref py py-mod docutils literal"><span class="pre">python</span></code>, and the packages they depend on. For our purposes we will install miniconda to create a minimal environment adequate for testing and using pysheaf.</p>
+<p>To download miniconda go to <a class="reference external" href="http://www.continuum.io/downloads">http://www.continuum.io/downloads</a> and chose your operating system. Both Anaconda and Miniconda install multiple Python versions. The python version you choose will be used by default but in a virtual environment we will specify the version. Installation instructions are described on the site.</p>
+<p>You can test that your installation was successful by entering:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="nb">list</span>
+</pre></div>
+</div>
+<p>on the command line. To view the python versions available enter:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">search</span> <span class="n">python</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="create-a-conda-environment">
+<h2>Create a <code class="xref py py-mod docutils literal"><span class="pre">conda</span></code> environment<a class="headerlink" href="#create-a-conda-environment" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="xref py py-mod docutils literal"><span class="pre">conda</span></code> environment will expose only the version of python and the python packages that you choose. On the command line enter:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">--</span><span class="n">name</span> <span class="n">pysheafenv</span> <span class="n">python</span><span class="o">=</span><span class="mf">2.7</span>
+</pre></div>
+</div>
+<p>Conda environments are stored within your miniconda (anaconda) directory in the envs folder. To see a list of your environments enter:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">info</span> <span class="o">-</span><span class="n">e</span>
+</pre></div>
+</div>
+<p>To remove the pysheafenv environment enter:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">remove</span> <span class="o">--</span><span class="n">name</span> <span class="n">pysheafenv</span> <span class="o">--</span><span class="nb">all</span>
+</pre></div>
+</div>
+<p>To use the environment you must activate it. On Windows:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">activate</span> <span class="n">pysheafenv</span>
+</pre></div>
+</div>
+<p>On OS X or Linux:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="n">activate</span> <span class="n">pysheafenv</span>
+</pre></div>
+</div>
+<p>This will add (pysheafenv) to your command prompt.</p>
+<p>To deactivate the environment on Windows:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">deactivate</span>
+</pre></div>
+</div>
+<p>On OS X or Linux:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="n">deactivate</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="download-and-install-the-pysheaf-repository">
+<h2>Download and install the PySheaf repository<a class="headerlink" href="#download-and-install-the-pysheaf-repository" title="Permalink to this headline">¶</a></h2>
+<p>Activate pysheafenv as described above. To see what packages were installed enter:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="nb">list</span>
+</pre></div>
+</div>
+<p>Change to the directory where you wish PySheaf to be installed.</p>
+<p>The <code class="xref py py-mod docutils literal"><span class="pre">pip</span></code> package was installed automatically with python 2.7. We will need the <code class="xref py py-mod docutils literal"><span class="pre">pip</span></code> package manager to install PySheaf directly from github.</p>
+<p>Because we wish to test the installation using the <code class="xref py py-mod docutils literal"><span class="pre">unittest</span></code> module we will use the -e for editable option. This will also permit us to review the code from the current directory:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="n">git</span><span class="o">+</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">kb1dds</span><span class="o">/</span><span class="n">pysheaf</span><span class="o">.</span><span class="n">git</span><span class="c1">#egg=pysheaf</span>
+</pre></div>
+</div>
+<p>Depending on your system (Windows in particular) this may or may not install all of the dependencies. If you get an error message that something is missing you can install the missing dependencies using <code class="xref py py-mod docutils literal"><span class="pre">conda</span></code>.  PySheaf requires <code class="xref py py-mod docutils literal"><span class="pre">numpy</span></code>, <code class="xref py py-mod docutils literal"><span class="pre">networkx</span></code>, and <code class="xref py py-mod docutils literal"><span class="pre">scipy</span></code>.
+To install these using <code class="xref py py-mod docutils literal"><span class="pre">conda</span></code>:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="n">numpy</span> <span class="n">networkx</span> <span class="n">scipy</span>
+</pre></div>
+</div>
+<p><strong>Note:</strong> If you only wish to install the PySheaf package for purposes of imports and do not wish to run the tests or review the source code then use the following for pip install:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">git</span><span class="o">+</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">kb1dds</span><span class="o">/</span><span class="n">pysheaf</span><span class="o">.</span><span class="n">git</span>
+</pre></div>
+</div>
+<p>If you look at the installed packages for this environment:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="nb">list</span>
+</pre></div>
+</div>
+<p>you will see PySheaf has been added to the packages. (If your default python installation is python 2.7 and you do not wish to use a virtual environment you may try this pip command directly without the use of <code class="xref py py-mod docutils literal"><span class="pre">conda</span></code>. Success will depend on your system&#8217;s installed packages and configuration.)</p>
+</div>
+<div class="section" id="run-unit-tests">
+<h2>Run unit tests<a class="headerlink" href="#run-unit-tests" title="Permalink to this headline">¶</a></h2>
+<p>Assuming you have installed the package into PySheaf you will now change to that directory and run the tests:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">src</span><span class="o">/</span><span class="n">pysheaf</span>
+<span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">unittest</span> <span class="n">discover</span>
+</pre></div>
+</div>
+<p>If everything is working you will get a bunch of warnings and a line that looks something like:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Ran</span> <span class="mi">49</span> <span class="n">tests</span> <span class="ow">in</span> <span class="mf">0.006</span><span class="n">s</span>
+<span class="n">OK</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Installation instructions for PySheaf using a conda environment</a><ul>
+<li><a class="reference internal" href="#download-and-install-miniconda">Download and install miniconda:</a></li>
+<li><a class="reference internal" href="#create-a-conda-environment">Create a <code class="docutils literal"><span class="pre">conda</span></code> environment</a></li>
+<li><a class="reference internal" href="#download-and-install-the-pysheaf-repository">Download and install the PySheaf repository</a></li>
+<li><a class="reference internal" href="#run-unit-tests">Run unit tests</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="intro.html" title="previous chapter">Introduction</a></li>
+      <li>Next: <a href="cellcomplexes.html" title="next chapter">The CellComplex type</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/install.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Michael Robinson.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/install.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
