@@ -2,12 +2,15 @@ PySheaf: Sheaf-theoretic toolbox
 ================================
 
 This repository consists of Python 2.7 libraries for manipulating cell complexes and data structures on them:
+
 1. Local and relative homology of abstract simplicial complexes [0]_
-2. Sheaves of sets or vector spaces on cell complexes [1]_, [2]_, [3]_, [4]_, [5]_, [6]_
+
+   2. Sheaves of sets or vector spaces on cell complexes [1]_, [2]_, [3]_, [4]_, [5]_, [6]_
 
 Documentation:
+--------------
 
-`<http://kb1dds.github.io/pysheaf/>`_
+Full documentation is at `<http://kb1dds.github.io/pysheaf/>`_
 
 Download:
 ---------
