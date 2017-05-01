@@ -58,8 +58,18 @@ class TestSheaf(unittest.TestCase):
                        [ 0,  0,  0,  0,  0,  0,  3,  0,  0, -3,  0],
                        [ 0,  0,  0,  0,  0,  2,  0,  0,  0,  0, -2],
                        [ 0,  0,  0,  0,  0,  1,  0,  0,  0,  0, -1],
-                       [ 0,  0,  1, -1,  0,  0,  0, -1,  1,  0,  0]]) 
+                       [ 0,  0,  1, -1,  0,  0,  0, -1,  1,  0,  0]])
         self.assertEqual(np.sum(d==gt),m*n)
+
+    def test_cohomology(self):
+        d = self.sheaf.cohomology(0).transpose()
+        hk = np.matrix('0 0 1 0 0 0 0;1 0 0 0 0 0 0;0 1 0 1 -1 0 0;0 1 0 0 0 0 0;0 0 1 0 0 0 0;0 0 0 0 0 0 1; 0 0 0 0 0 1 0;0 0 0 1 0 0 0 ;0 0 0 0 1 0 0; 0 0 0 0 0 1 0; 0 0 0 0 0 0 1')
+        gt = np.array(hk).transpose()
+        tmat = np.concatenate((d,gt))
+
+        self.assertEqual(d.shape,gt.shape)
+        self.assertEqual(matrix_rank(d),matrix_rank(gt))
+        self.assertEqual(matrix_rank(gt),matrix_rank(tmat))
 
     def test_betti(self):
         d = self.sheaf.coboundary(0)
@@ -72,7 +82,7 @@ class TestSheaf(unittest.TestCase):
 
 
     def tearDown(self):
-        pass   
+        pass
 
 
 if __name__ == "__main__":
