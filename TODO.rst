@@ -5,16 +5,16 @@ PySheaf master tasks list:
 
 2. Finish implementing and testing local homology for cell complexes:
    
- a. `CellComplex.inducedMapLocalHomology()`
+   a. `CellComplex.inducedMapLocalHomology()`
     
- b. Clean up `CellComplex.localPairComplex()`
+   b. Clean up `CellComplex.localPairComplex()`
 
 3. Finish implementing and testing `AmbiguitySheaf`
 
 4. Replace list semantics throughout with dictionaries.  Especially where random accesses are important, for instance in
    
- a. `CellComplex`
-    
- b. `Sheaf`
+   a. `CellComplex`
+      
+   b. `Sheaf`
 
 5. Generalize `inducedMap` to handle categories other than finite dimensional vector spaces
