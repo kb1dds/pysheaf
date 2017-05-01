@@ -2,8 +2,8 @@ PySheaf: Sheaf-theoretic toolbox
 ================================
 
 This repository consists of Python 2.7 libraries for manipulating cell complexes and data structures on them:
-1. Local and relative homology of abstract simplicial complexes [0]
-2. Sheaves of sets or vector spaces on cell complexes [1--6]
+1. Local and relative homology of abstract simplicial complexes [0]_
+2. Sheaves of sets or vector spaces on cell complexes [1]_, [2]_, [3]_, [4]_, [5]_, [6]_
 
 Documentation:
 
@@ -12,12 +12,12 @@ Documentation:
 Download:
 ---------
 
-In brief you can install by cloning this repo (there is no PyPI package).  For Linux, you can do::
+You can install by cloning this repo (there is no PyPI package).  For Linux, you can do::
 
   $ git clone https://github.com/kb1dds/pysheaf.git
   $ pip install pysheaf
 
-but see the `documentation <http://kb1dds.github.io/pysheaf/install.html>`_ for full details!
+See the `documentation <http://kb1dds.github.io/pysheaf/install.html>`_ for full details!
 
 Usage:
 ------
@@ -44,24 +44,22 @@ The pysheaf.py module should be able to duplicate the functionality of simplicia
 
 Finally, this code is under active development, so not everything works as it should.  Stay away from `Sheaf.localSectional()` and `Cell.localPairComplex()` as these don't currently work correctly!  If you find anything that you can correct, feel free to send me suggestions!
 
-Thanks!
-Michael Robinson
-American University
-kb1dds@gmail.com
-michaelr@american.edu
+|Thanks!
+|Michael Robinson
+|American University
+|kb1dds@gmail.com
+|michaelr@american.edu
 
-References:
------------
-[0] Alan Hatcher, "Algebraic Topology", Cambridge, 2002, https://www.math.cornell.edu/~hatcher/AT/ATpage.html
+.. [0] Alan Hatcher, "Algebraic Topology", Cambridge, 2002, https://www.math.cornell.edu/~hatcher/AT/ATpage.html
 
-[1] http://www.drmichaelrobinson.net/sheaftutorial/index.html
+.. [1] http://www.drmichaelrobinson.net/sheaftutorial/index.html
 
-[2] https://www.youtube.com/user/drmichaelrobinson
+.. [2] https://www.youtube.com/user/drmichaelrobinson
 
-[3] Cliff Joslyn, Emilie Hogan, Michael Robinson, "Towards a topological framework for integrating semantic information sources," Semantic Technologies for Intelligence, Defense, and Security (STIDS), 2014. http://ceur-ws.org/Vol-1304/STIDS2014_P2_JoslynEtAl.pdf
+.. [3] Cliff Joslyn, Emilie Hogan, Michael Robinson, "Towards a topological framework for integrating semantic information sources," Semantic Technologies for Intelligence, Defense, and Security (STIDS), 2014. http://ceur-ws.org/Vol-1304/STIDS2014_P2_JoslynEtAl.pdf
 
-[4] Michael Robinson, "Sheaves are the canonical datastructure for information integration," Information Fusion, 36 (2017), pp. 208-224. (preprint version is http://arxiv.org/abs/1603.01446)
+.. [4] Michael Robinson, "Sheaves are the canonical datastructure for information integration," Information Fusion, 36 (2017), pp. 208-224. (preprint version is http://arxiv.org/abs/1603.01446)
 
-[5] Michael Robinson, "Sheaf and cosheaf methods for analyzing multi-model systems," http://arXiv.org/abs/1604.04647
+.. [5] Michael Robinson, "Sheaf and cosheaf methods for analyzing multi-model systems," http://arXiv.org/abs/1604.04647
 
-[6] Michael Robinson, *Topological Signal Processing*, Springer, 2014.
+.. [6] Michael Robinson, *Topological Signal Processing*, Springer, 2014.
