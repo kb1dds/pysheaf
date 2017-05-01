@@ -23,11 +23,17 @@ Usage:
 ------
 
 The general plan of usage is
+
 1. First (usually on paper!) lay out the cell complex that will serve as the base for your sheaf.  *Label each cell with a unique index, starting from zero.*  
+
 2. Determine all of the stalks over each cell, and the restriction maps from lower dimension to higher.  Restriction maps can be a mixture of `numpy` matrices or instances of `LinearMorphism`, `SetMorphism`, or `SheafMorphism`.
+   
 3. Construct a `Sheaf` instance from a list of `SheafCell` instances, all at once using the information from the previous two steps.
+   
 4. Analyze the resulting sheaf:
+   
    a. If you have data, you can build `Section` instances whose list of `SectionCell` instances refer to your sheaf.
+      
    b. You can compute cohomology of the `Sheaf` instance as well.
 
 Have a look at the `pysheaf/tests` folder for some examples!  
@@ -47,9 +53,15 @@ michaelr@american.edu
 References:
 -----------
 [0] Alan Hatcher, "Algebraic Topology", Cambridge, 2002, https://www.math.cornell.edu/~hatcher/AT/ATpage.html
+
 [1] http://www.drmichaelrobinson.net/sheaftutorial/index.html
+
 [2] https://www.youtube.com/user/drmichaelrobinson
+
 [3] Cliff Joslyn, Emilie Hogan, Michael Robinson, "Towards a topological framework for integrating semantic information sources," Semantic Technologies for Intelligence, Defense, and Security (STIDS), 2014. http://ceur-ws.org/Vol-1304/STIDS2014_P2_JoslynEtAl.pdf
+
 [4] Michael Robinson, "Sheaves are the canonical datastructure for information integration," Information Fusion, 36 (2017), pp. 208-224. (preprint version is http://arxiv.org/abs/1603.01446)
+
 [5] Michael Robinson, "Sheaf and cosheaf methods for analyzing multi-model systems," http://arXiv.org/abs/1604.04647
-[6] Michael Robinson, Topological Signal Processing, Springer, 2014.
+
+[6] Michael Robinson, *Topological Signal Processing*, Springer, 2014.
