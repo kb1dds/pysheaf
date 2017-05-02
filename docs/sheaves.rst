@@ -43,61 +43,8 @@ The :py:class:`Sheaf` class derives from :py:class:`CellComplex` to describe its
 	      
    .. py:attribute:: restriction
 
-      A restriction in a sheaf generally needs to be a morphism in some category.   It must be an object that supports *composition*, namely a class that implements a multiplication operator.  In most examples, this is one of :py:class:`SetMorphism` (for functions between sets), or :py:class:`LinearMorphism` (for linear maps).  Note that if you construct a :py:class:`SheafCoface` by passing a :py:class:`numpy.ndarray`, PySheaf will construct a :py:class:`LinearMorphism` restriction automatically.
+      A restriction in a sheaf generally needs to be a morphism in some category.   It must be an object that supports *composition*, namely a class that implements a multiplication operator.  In most examples, this is a :py:class:`numpy.ndarray`.
 
-Morphisms: :py:class:`SetMorphism` and :py:class:`LinearMorphism`
------------------------------------------------------------------
-
-Since cellular sheaves are special functors from the face category of a cell complex to some other *data category*, PySheaf supports three kinds of *data categories*:
-
-1. Sets, and
-2. Finite dimensional vector spaces (via :py:mod:`numpy`).
-
-The restrictions in a given :py:class:`SheafCoface` instance are therefore of a corresponding morphism class:
-
-1. :py:class:`SetMorphism`,
-2. :py:class:`LinearMorphism`, and
-
-The simplest of these is :py:class:`SetMorphism`.
-
-.. py:class:: SetMorphism
-	      
-   This represents a *set* morphism, otherwise known as a *function* between sets.  This is implemented by a single attribute
-
-   .. py:attribute:: fcn
-
-   which is a function object taking one argument.
-
-   :py:class:`SetMorphism` objects support a multiplication operator, which composes their respective :py:attr:`fcn` attributes to form a new function object.  They also support call semantics, so you can simply call a :py:class:`SetMorphism` object as a function to access its :py:attr:`fcn` attribute.
-
-Namely, if you say::
-
-  foo = pysheaf.SetMorphism( lambda x : x**2 )
-  bar = pysheaf.SetMorphism( lambda y : 3*y )
-
-then::
-
-  foo(3)
-
-returns 9 and::
-
-  baaz = foo * bar
-  baaz(1)
-
-is also 9.
-
-A :py:class:`Sheaf` with only :py:class:`SetMorphism` restrictions does not allow you to compute :py:meth:`Sheaf.cohomology()`.  For that, you need linearity, which is implemented by the following subclass of :py:class:`SetMorphism`.
-
-.. py:class:: LinearMorphism(SetMorphism)
-
-   This implements a linear map, encoded as a :py:class:`numpy.ndarray`.  Since it subclasses :py:class:`SetMorphism`, it inherits composition (as multiplication, which is of course *also* matrix multiplication) and call semantics.  It also stores the matrix as a new attribute
-
-   .. py:attribute:: matrix
-
-   as you might expect.
-
-When constructing a :py:class:`SheafCoface`, if you pass an :py:class:`numpy.ndarray` as the `restriction` argument, PySheaf will automatically create :py:class:`LinearMorphism` objects as the restriction.
-	 
 Constructing :py:class:`Sheaf` instances
 ----------------------------------------
 
