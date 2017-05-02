@@ -1,5 +1,5 @@
-The CellComplex type
-====================
+The :py:class:`CellComplex` class
+=================================
 
 The :py:class:`CellComplex` class consists of a list of :py:class:`Cell` instances and methods that manipulate the complex as a whole.  It is also the base class for the :py:class:`Sheaf` class.  The indices into the list of :py:class:`Cell` instances are used throughout PySheaf, and are the usual way to refer to individual :py:class:`Cell` instances when they are in context in a :py:class:`CellComplex`.  Because the indices are necessary to construct the :py:class:`Cofaces` as well, it is usually necessary to determine the necessary cells ahead of time, and then build the :py:class:`CellComplex` instance all at once. 
 
@@ -126,28 +126,3 @@ The :py:class:`Coface` class specifies a single coface relation, in the context 
                                         compactClosure=True,
                                         name='ABC',
  					cofaces=[])])
-
-Subclasses of :py:class:`CellComplex`
--------------------------------------
-
-Since certain kinds of cell complex are specified combinatorially, PySheaf provides subclasses of :py:class:`CellComplex` whose constructors are a bit less verbose.
-
-.. py:class:: AbstractSimplicialComplex(CellComplex)
-
-   An abstract simplicial complex is defined as a list of lists.  Each list specifies a top dimensional simplex (a *toplex*).
-
-   .. py:method:: __init__(toplexes,maxdim=None)
-
-      It is only necessary to pass the constructor a generating set of `toplexes`, as all other simplices will be generated as :py:class:`Cell` instances as appropriate.  Because of this, an :py:class:`AbstractSimplicialComplex` should not be constructed with high-dimensional simplices!  To avoid problems, you may need to set the `maxdim` to be the largest dimension you want to have constructed.  Simplices are sorted from greatest dimension to least in the resulting :py:attr:`AbstractSimplicialComplex.cells` list.
-
-.. py:class:: DirectedGraph(CellComplex)
-
-   A directed graph consists of a list of ordered pairs of vertices.  Strictly speaking, this is a directed, weighted *multi* graph, since duplicate edges are allowed.
-   
-   .. py:method:: __init__(graph,vertex_capacity=-1)
-		  
-        Create a cell complex from a directed graph, where `graph` is a list of pairs (src,dest) or triples (src,dest,capacity) of numbers representing vertices.  The optional `vertex_capacity` sets all the weights to the same value.  Orientations of the resulting :py:class:`Coface` instances are taken from the ordering of the vertices in the tuples in `graph`.
-	
-        The vertex labeled `None` in any of these tuples is an external connection.  In the resulting :py:class:`DirectedGraph.cells`, the cells are indexed as follows:
-        1. First all of the edges (in the order given),
-        2. then all vertices (in the order they are given; not by their numerical values)

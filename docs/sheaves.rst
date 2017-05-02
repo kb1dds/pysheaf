@@ -1,5 +1,5 @@
-The :py:class:`Sheaf` type
-==========================
+The :py:class:`Sheaf` class
+===========================
 
 The :py:class:`Sheaf` class derives from :py:class:`CellComplex` to describe its base space.  The additional attributes and methods of :py:class:`Sheaf` describe the "vertical fiber" structure of the sheaf.
 
@@ -43,22 +43,20 @@ The :py:class:`Sheaf` class derives from :py:class:`CellComplex` to describe its
 	      
    .. py:attribute:: restriction
 
-      A restriction in a sheaf generally needs to be a morphism in some category.   It must be an object that supports *composition*, namely a class that implements a multiplication operator.  In most examples, this is one of :py:class:`SetMorphism` (for functions between sets), :py:class:`LinearMorphism` (for linear maps), or a :py:class:`SheafMorphism` (for a :py:class:`Sheaf` of sheaves).  Note that if you construct a :py:class:`SheafCoface` by passing a :py:class:`numpy.ndarray`, PySheaf will construct a :py:class:`LinearMorphism` restriction automatically.
+      A restriction in a sheaf generally needs to be a morphism in some category.   It must be an object that supports *composition*, namely a class that implements a multiplication operator.  In most examples, this is one of :py:class:`SetMorphism` (for functions between sets), or :py:class:`LinearMorphism` (for linear maps).  Note that if you construct a :py:class:`SheafCoface` by passing a :py:class:`numpy.ndarray`, PySheaf will construct a :py:class:`LinearMorphism` restriction automatically.
 
-Morphisms: :py:class:`SetMorphism`, :py:class:`LinearMorphism`, and :py:class:`SheafMorphism`
----------------------------------------------------------------------------------------------
+Morphisms: :py:class:`SetMorphism` and :py:class:`LinearMorphism`
+-----------------------------------------------------------------
 
 Since cellular sheaves are special functors from the face category of a cell complex to some other *data category*, PySheaf supports three kinds of *data categories*:
 
-1. Sets,
-2. Finite dimensional vector spaces (via :py:mod:`numpy`), and
-3. Sheaves (of some of other type).
+1. Sets, and
+2. Finite dimensional vector spaces (via :py:mod:`numpy`).
 
 The restrictions in a given :py:class:`SheafCoface` instance are therefore of a corresponding morphism class:
 
 1. :py:class:`SetMorphism`,
 2. :py:class:`LinearMorphism`, and
-3. :py:class:`SheafMorphism`.
 
 The simplest of these is :py:class:`SetMorphism`.
 
@@ -99,20 +97,6 @@ A :py:class:`Sheaf` with only :py:class:`SetMorphism` restrictions does not allo
    as you might expect.
 
 When constructing a :py:class:`SheafCoface`, if you pass an :py:class:`numpy.ndarray` as the `restriction` argument, PySheaf will automatically create :py:class:`LinearMorphism` objects as the restriction.
-
-The final kind of morphism that is supported is :py:class:`SheafMorphism`, which supports composition by implementing a multiplication operator, but *not* call semantics since sheaf morphisms are *not* functions.  (It is true that they induce functions of various kinds, but PySheaf refrains from demanding that any particular kind of induced maps be computed by default.)
-
-.. py:class:: SheafMorphism
-
-   A sheaf morphism from one sheaf to another consists of lists :py:attr:`destinations` and :py:attr:`maps` which correspond to the :py:attr:`Sheaf.cells` list in the domain sheaf.
-
-   .. py:attribute:: destinations
-
-      List of indices into the codomain sheaf's :py:attr:`Sheaf.cells` list for each component map of the sheaf morphism.  Entries correspond to the :py:attr:`Sheaf.cells` list in the domain sheaf.
-
-   .. py:attribute:: maps
-
-      List of component maps (each of which may be any morphism class, like :py:class:`SetMorphism`, :py:class:`LinearMorphism`, or even :py:class:`SetMorphism`) corresponding to the :py:attr:`Sheaf.cells` list in the domain sheaf.
 	 
 Constructing :py:class:`Sheaf` instances
 ----------------------------------------
