@@ -778,7 +778,7 @@ class Sheaf(CellComplex):
         if not self.isNumeric():
             raise TypeError('Cannot serialize an assignment vector for a non-numeric sheaf')
 
-        x0 = np.zeros((sum([c.stalkDim for c in self.cells])))
+        x0 = np.zeros((sum([c.stalkDim for c in self.cells])),dtype=assignment.sectionCells[0].value.dtype)
 
         # Figure out cell boundaries in vector
         idx=0
