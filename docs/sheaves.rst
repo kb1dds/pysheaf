@@ -37,6 +37,10 @@ The :py:class:`Sheaf` class derives from :py:class:`CellComplex` to describe its
 
       Like :py:class:`Cell`, this should be a list of coface relations, but unlike :py:class:`Cell`, they must be :py:class:`SheafCoface` instances!
 
+   .. py:attribute:: bounds
+		     
+      The portion of the stalk in which legal values live.  This is used by the optimizer in :py:meth:`Sheaf.fuseAssignment` to set bounds on which values are used.  This should either be :py:`None` (in which the stalk represents the entire vector space) or a list of :py:`(min,max)` pairs of length :py:attr:`SheafCell.stalkDim`.  Use :py:`None` for any bound you wish to ignore. 
+
 .. py:class:: SheafCoface(Coface)
 
    A coface relation in a sheaf on a cell complex is built just like a :py:class:`Coface` in a :py:class:`CellComplex`, but with the addition of a :py:attr:`restriction`.
