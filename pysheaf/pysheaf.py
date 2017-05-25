@@ -990,14 +990,6 @@ class ChainSheaf(Poset,Sheaf):
 
         Sheaf.__init__(self,shcells)
 
-#Sheaf for COGs
-class UndirectedGraph(CellComplex):
-    def __init__(self, graph):
-        "Create an Cell Complex from an undirected graph, and creating cells from any n fully connected components"
-        #Store the original graph
-        self.origGraph = graph
-        
-        #Construct a 
 
 # Flow sheaves
 class DirectedGraph(CellComplex):
