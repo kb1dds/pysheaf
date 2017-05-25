@@ -986,6 +986,7 @@ class ChainSheaf(Poset,Sheaf):
 
         Sheaf.__init__(self,shcells)
 
+
 # Flow sheaves
 class DirectedGraph(CellComplex):
     def __init__(self,graph,vertex_capacity=-1):
@@ -1304,7 +1305,8 @@ class Section:
                     val=cf.restriction(s.value)
 
                     # Check for consistency
-                    if value is not None and np.any(np.abs(val - value)>tol):
+                    if value is not None and sheaf.cells[cf.index].metric(val, value)>tol:
+                    #if value is not None and np.any(np.abs(val - value)>tol):
                         return False
                     value = val
 

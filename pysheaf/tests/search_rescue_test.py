@@ -190,9 +190,10 @@ input_data=[ps.Section([ps.SectionCell(support=0,value=np.array([-70.649,42.753,
 
 # Exhibit the consistency radius of the partially-filled Section with the input data
 consistency_radii=[s1.consistencyRadius(case) for case in input_data]
-
+print consistency_radii
 # Perform data fusion
 fused_data=[s1.fuseAssignment(case) for case in input_data]
-
+print fused_data
 # Exhibit the consistency radius of the fused data and output the final fused values
 fused_consistency_radii=[s1.consistencyRadius(case) for case in fused_data]
+print fused_consistency_radii
