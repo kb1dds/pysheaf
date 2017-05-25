@@ -717,7 +717,7 @@ class Sheaf(CellComplex):
         """Take a partial assignment and extend it to a maximal assignment that's non-conflicting (if multiassign=False) or one in which multiple values can be given to a given cell (if multiassign=True)"""
         for i in range(len(assignment.sectionCells)):
             for cf in self.cofaces(assignment.sectionCells[i].support):
-                if not assignment.extend(self,cf.index,tol) and multiassign:
+                if not assignment.extend(self,cf.index,tol=tol) and multiassign:
                     assignment.sectionCells.append(SectionCell(cf.index,cf.restriction(assignment.sectionCells[i].value)))
         return assignment
 
@@ -754,7 +754,8 @@ class Sheaf(CellComplex):
                                          bounds = bounds,
                                          constraints = ({'type' : 'eq',
                                                          'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg))}),
-                                         tol = tol )
+                                         tol = tol, 
+                                         options = {'maxiter' : 100})
             globalsection = self.deserializeAssignment(res.x)
         else:
             # The fallback situation, where we need to iterate over global sections manually...
@@ -801,10 +802,13 @@ class Sheaf(CellComplex):
                 idxarray.append(idx)
                 idx+=self.cells[i].stalkDim
                 if bounded:
-                    if self.cells[i] is None:
+                    if self.cells[i].bounds is None:
                         bounds+= [(None,None)]*self.cells[i].stalkDim
                     else:
-                        bounds.append(bounds)
+                        bounds.extend(self.cells[0].bounds)
+        
+        if bounded:
+            bounds = tuple(bounds)
 
         # Pack data into vector.  If there are multiple values assigned, the one appearing last is used
         for cell in assignment.sectionCells:
@@ -986,6 +990,14 @@ class ChainSheaf(Poset,Sheaf):
 
         Sheaf.__init__(self,shcells)
 
+#Sheaf for COGs
+class UndirectedGraph(CellComplex):
+    def __init__(self, graph):
+        "Create an Cell Complex from an undirected graph, and creating cells from any n fully connected components"
+        #Store the original graph
+        self.origGraph = graph
+        
+        #Construct a 
 
 # Flow sheaves
 class DirectedGraph(CellComplex):
