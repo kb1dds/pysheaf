@@ -457,7 +457,7 @@ class SheafCell(Cell):
     """A cell in a cell complex with a sheaf over it
     cofaces = list of SheafCoface instances, one for each coface of this cell
     stalkDim = dimension of the stalk over this cell (defaults to figuring it out from the cofaces if the restriction is a LinearMorphism) or None if stalk is not a real vector space"""
-    def __init__(self,dimension,cofaces=None,compactClosure=True,stalkDim=None,metric=None,name=None,id=None):
+    def __init__(self,dimension,cofaces=None,compactClosure=True,stalkDim=None,metric=None,name=None,id=None,bounds=None):
         if stalkDim is None and cofaces:
             if cofaces[0].isLinear():
                 try:  # Try to discern the stalk dimension from the matrix representation. This will fail if the matrix isn't given
@@ -468,6 +468,8 @@ class SheafCell(Cell):
                 self.stalkDim=stalkDim
         else:
             self.stalkDim=stalkDim
+
+        self.bounds=bounds
 
         if metric is not None:
             self.metric=metric
@@ -715,7 +717,7 @@ class Sheaf(CellComplex):
         """Take a partial assignment and extend it to a maximal assignment that's non-conflicting (if multiassign=False) or one in which multiple values can be given to a given cell (if multiassign=True)"""
         for i in range(len(assignment.sectionCells)):
             for cf in self.cofaces(assignment.sectionCells[i].support):
-                if not assignment.extend(self,cf.index,tol) and multiassign:
+                if not assignment.extend(self,cf.index,tol=tol) and multiassign:
                     assignment.sectionCells.append(SectionCell(cf.index,cf.restriction(assignment.sectionCells[i].value)))
         return assignment
 
@@ -746,11 +748,14 @@ class Sheaf(CellComplex):
         """Compute the nearest global section to a given assignment"""
         if self.isNumeric():
             # The situation where the stalks are all numeric
+            initial_guess, bounds = self.serializeAssignment(assignment)
             res=scipy.optimize.minimize( fun = lambda sec: self.assignmentMetric(assignment,self.deserializeAssignment(sec)),
-                                         x0 = self.serializeAssignment(assignment),
+                                         x0 = initial_guess,
+                                         bounds = bounds,
                                          constraints = ({'type' : 'eq',
                                                          'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg))}),
-                                         tol = tol )
+                                         tol = tol, 
+                                         options = {'maxiter' : 100})
             globalsection = self.deserializeAssignment(res.x)
         else:
             # The fallback situation, where we need to iterate over global sections manually...
@@ -780,20 +785,37 @@ class Sheaf(CellComplex):
 
         x0 = np.zeros((sum([c.stalkDim for c in self.cells])),dtype=assignment.sectionCells[0].value.dtype)
 
-        # Figure out cell boundaries in vector
+        # If any components are bounded, collect the bounds (later)
+        bounded=False
+        bounds=None
+        for i in range(len(self.cells)):
+            if self.cells[i].bounds is not None:
+                bounded=True
+                bounds=[]
+                break
+
+        # Figure out cell boundaries in vector, and collect their bounds if present
         idx=0
         idxarray=[]
         for i in range(len(self.cells)):
             if self.cells[i].stalkDim > 0:
                 idxarray.append(idx)
                 idx+=self.cells[i].stalkDim
+                if bounded:
+                    if self.cells[i].bounds is None:
+                        bounds+= [(None,None)]*self.cells[i].stalkDim
+                    else:
+                        bounds.extend(self.cells[0].bounds)
+        
+        if bounded:
+            bounds = tuple(bounds)
 
         # Pack data into vector.  If there are multiple values assigned, the one appearing last is used
         for cell in assignment.sectionCells:
             if self.cells[cell.support].stalkDim > 0:
                 x0[idxarray[cell.support]:idxarray[cell.support]+self.cells[cell.support].stalkDim]=cell.value
 
-        return x0
+        return x0,bounds
 
     def partitionAssignment(self,assignment,tol=1e-5):
         """Take an assignment to some cells of a sheaf and return a collection of disjoint maximal sets of cells on which this assignment is a local section"""
@@ -967,6 +989,7 @@ class ChainSheaf(Poset,Sheaf):
                                               for cf in c.cofaces]))
 
         Sheaf.__init__(self,shcells)
+
 
 # Flow sheaves
 class DirectedGraph(CellComplex):
@@ -1286,7 +1309,8 @@ class Section:
                     val=cf.restriction(s.value)
 
                     # Check for consistency
-                    if value is not None and np.any(np.abs(val - value)>tol):
+                    if value is not None and sheaf.cells[cf.index].metric(val, value)>tol:
+                    #if value is not None and np.any(np.abs(val - value)>tol):
                         return False
                     value = val
 
