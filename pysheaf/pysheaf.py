@@ -11,6 +11,9 @@ import random
 import networkx as nx
 import scipy.optimize
 
+#Import simplical homology
+import simplicialHomology as sH
+
 ## Data structures
 class Coface:
     """A coface relation"""
@@ -990,6 +993,290 @@ class ChainSheaf(Poset,Sheaf):
 
         Sheaf.__init__(self,shcells)
 
+#Sheaf for COGs
+class UndirectedGraph(CellComplex):
+    def __init__(self, graph, flag_complex=True, nx_Graph=True, vertex_capacity=-1, maxdim=None):
+        '''Create an Cell Complex from an undirected graph, and creating cells
+        from any n fully connected components
+        Note: This class assumes that the graph at initialization is a networkx
+              graph or a list of edges'''
+        #Store the original graph
+        self.origGraph = graph
+        
+        #Construct a flag complex from the given undriected graph
+        if flag_complex and nx_Graph:
+            
+            #Generate the flag complex
+            #closure imported from simplicialHomology.py
+            
+            cplx = sH.closure(nx.find_cliques(graph))
+            cplx = [sorted(value) for value in cplx]
+            cplx = set(map(tuple, cplx))
+            cplx = [value for value in cplx]
+            if maxdim != None:
+                cplx = [value for value in cplx if len(value) <= maxdim+1]
+            cplx = [list(elem) for elem in cplx]
+            
+            #Sort flag complex by size
+            cplx = sorted(cplx, key=len, reverse=True)
+            
+            #Create Cell Complex
+            
+            largest_dim_cell = max([len(ele) for ele in cplx])-1
+            
+            #Get the cells with their cofaces for the 
+            #Needs to be thoughly tested
+            compcells=[]
+            for dim in reversed(range(largest_dim_cell+1)):
+                if dim == largest_dim_cell:
+                    cplx_w_dim = [cplx_ele for cplx_ele in cplx if len(cplx_ele)-1 == dim]
+                    
+                    for i in range(len(cplx_w_dim)):
+                        compcells.append(Cell(dimension=dim,compactClosure=True))
+                        compcells[-1].vertex_label=None
+                        compcells[-1].name = str(cplx_w_dim[i])
+                    
+                elif dim == 1:
+                    #need to add back in the none_edgs
+                    cplx_w_dim = [(cplx[cplx_ele_ind], cplx_ele_ind) for cplx_ele_ind in range(len(cplx)) if len(cplx[cplx_ele_ind])-1 == dim]
+                    cplx_w_dim_p_1 = [(cplx[cplx_ele_ind],cplx_ele_ind) for cplx_ele_ind in range(len(cplx)) if len(cplx[cplx_ele_ind])-1 == (dim+1)]
+                                        
+                    for ind in range(len(cplx_w_dim)):
+                        i = cplx_w_dim[ind][0]
+                        #find all cofaces of the cell
+                        cfs = [cplx_w_dim_p_1[j][1] for j in range(len(cplx_w_dim_p_1)) if set(i).issubset(set(cplx_w_dim_p_1[j][0]))]
+                        
+                        #none_edgs addition
+                        '''Need to add cofaces'''
+                        
+                        #find the orientation
+                        cofaces = []
+                        orient = []
+                        for j in range(len(cfs)):
+                            '''
+                            if graph[cfs[j]][0]==i: 
+                                orient.append(-1)
+                            else:
+                                orient.append(1)
+                            '''
+                            orient.append(None)
+                            cofaces.append(Coface(cfs[j],orient[j]))
+                        
+                    
+                        #add the cell to the cell complex
+                        compcells.append(Cell(dimension=dim,compactClosure=True, cofaces=cofaces))
+                        compcells[-1].vertex_label=None
+                        compcells[-1].name = i
+                        
+                else:
+                    #Issue need the original indices for the 
+                    cplx_w_dim = [(cplx[cplx_ele_ind], cplx_ele_ind) for cplx_ele_ind in range(len(cplx)) if len(cplx[cplx_ele_ind])-1 == dim]
+                    cplx_w_dim_p_1 = [(cplx[cplx_ele_ind],cplx_ele_ind) for cplx_ele_ind in range(len(cplx)) if len(cplx[cplx_ele_ind])-1 == (dim+1)]
+                    
+                    for ind in range(len(cplx_w_dim)):
+                        i = cplx_w_dim[ind][0]
+                        #find all cofaces of the cell
+                        cfs = [cplx_w_dim_p_1[j][1] for j in range(len(cplx_w_dim_p_1)) if set(i).issubset(set(cplx_w_dim_p_1[j][0]))]
+                        
+                        #find the orientation
+                        cofaces = []
+                        orient = []
+                        for j in range(len(cfs)):
+                            '''
+                            if graph[cfs[j]][0]==i: #Need to fix this line...no such thing as a graph
+                                orient.append(-1)
+                            else:
+                                orient.append(1)
+                            '''
+                            orient.append(None)
+                            cofaces.append(Coface(cfs[j],orient[j]))
+                        
+                    
+                        #add the cell to the cell complex
+                        compcells.append(Cell(dimension=dim,compactClosure=True, cofaces=cofaces))
+                        compcells[-1].vertex_label=None
+                        compcells[-1].name = i
+                  
+            CellComplex.__init__(self,compcells)
+        
+        
+        elif  flag_complex and (not nx_Graph):
+            
+            #Create a networkx graph to efficiently find the higher level cliques
+            
+            #Sort out any edges with a None, and deal with them seperately
+            none_edgs_ind = [ind for ind in range(len(graph)) if (graph[ind][0] is None) or (graph[ind][1] is None)]
+            none_edgs = [graph[ind] for ind in none_edgs_ind]
+            not_none_edgs = [graph[ind] for ind in range(len(graph)) if ind not in none_edgs_ind]
+            
+
+            #Generate the flag complex (currently needs to be modified)
+            G = nx.Graph(not_none_edgs)
+            cplx = sH.closure(nx.find_cliques(G))
+            cplx = [sorted(value) for value in cplx]
+            cplx = set(map(tuple, cplx))
+            cplx = [value for value in cplx]
+            if maxdim != None:
+                cplx = [value for value in cplx if len(value) <= (maxdim+1)]
+            cplx = [list(elem) for elem in cplx]
+            
+            #Sort flag complex by size
+            cplx = sorted(cplx, key=len, reverse=True)
+            
+            #Create Cell Complex
+            
+            largest_dim_cell = max([len(ele) for ele in cplx])-1
+            
+            #Get the cells with their cofaces for the 
+            #Needs to be thoughly tested
+            compcells=[]
+            for dim in reversed(range(largest_dim_cell+1)):
+                if dim == largest_dim_cell:
+                    cplx_w_dim = [cplx_ele for cplx_ele in cplx if len(cplx_ele)-1 == dim]
+                    
+                    for i in range(len(cplx_w_dim)):
+                        compcells.append(Cell(dimension=dim,compactClosure=True))
+                        compcells[-1].vertex_label=None
+                        compcells[-1].name = str(cplx_w_dim[i])
+                    
+                elif dim == 1:
+                    #need to add back in the none_edgs
+                    cplx_w_dim = [(cplx[cplx_ele_ind], cplx_ele_ind) for cplx_ele_ind in range(len(cplx)) if len(cplx[cplx_ele_ind])-1 == dim]
+                    cplx_w_dim_p_1 = [(cplx[cplx_ele_ind],cplx_ele_ind) for cplx_ele_ind in range(len(cplx)) if len(cplx[cplx_ele_ind])-1 == (dim+1)]
+                                        
+                    for ind in range(len(cplx_w_dim)):
+                        i = cplx_w_dim[ind][0]
+                        #find all cofaces of the cell
+                        cfs = [cplx_w_dim_p_1[j][1] for j in range(len(cplx_w_dim_p_1)) if set(i).issubset(set(cplx_w_dim_p_1[j][0]))]
+                        
+                        #none_edgs addition
+                        '''Need to add cofaces'''
+                        
+                        #find the orientation
+                        cofaces = []
+                        orient = []
+                        for j in range(len(cfs)):
+                            '''
+                            if graph[cfs[j]][0]==i: 
+                                orient.append(-1)
+                            else:
+                                orient.append(1)
+                            '''
+                            orient.append(None)
+                            cofaces.append(Coface(cfs[j],orient[j]))
+                        
+                    
+                        #add the cell to the cell complex
+                        compcells.append(Cell(dimension=dim,compactClosure=True, cofaces=cofaces))
+                        compcells[-1].vertex_label=None
+                        compcells[-1].name = i
+                        
+                else:
+                    #Issue need the original indices for the 
+                    cplx_w_dim = [(cplx[cplx_ele_ind], cplx_ele_ind) for cplx_ele_ind in range(len(cplx)) if len(cplx[cplx_ele_ind])-1 == dim]
+                    cplx_w_dim_p_1 = [(cplx[cplx_ele_ind],cplx_ele_ind) for cplx_ele_ind in range(len(cplx)) if len(cplx[cplx_ele_ind])-1 == (dim+1)]
+                    
+                    for ind in range(len(cplx_w_dim)):
+                        i = cplx_w_dim[ind][0]
+                        #find all cofaces of the cell
+                        cfs = [cplx_w_dim_p_1[j][1] for j in range(len(cplx_w_dim_p_1)) if set(i).issubset(set(cplx_w_dim_p_1[j][0]))]
+                        
+                        #find the orientation
+                        cofaces = []
+                        orient = []
+                        for j in range(len(cfs)):
+                            '''
+                            if graph[cfs[j]][0]==i: #Need to fix this line...no such thing as a graph
+                                orient.append(-1)
+                            else:
+                                orient.append(1)
+                            '''
+                            orient.append(None)
+                            cofaces.append(Coface(cfs[j],orient[j]))
+                        
+                    
+                        #add the cell to the cell complex
+                        compcells.append(Cell(dimension=dim,compactClosure=True, cofaces=cofaces))
+                        compcells[-1].vertex_label=None
+                        compcells[-1].name = i
+                  
+            CellComplex.__init__(self,compcells)
+        
+        
+        elif (not flag_complex) and nx_Graph:
+            verts = graph.nodes()
+            edges = graph.edges()
+            
+            #Loop over edges, creating cells for each
+            compcells = []
+            for i in range(len(edges)):
+                compcells.append(Cell(dimension=1,compactClosure=True))
+                compcells[-1].vertex_label=None
+                compcells[-1].name = str(edges[i])
+            #Loop over vertices, creating cells for each
+            for i in verts:
+                #collect cofaces
+                cfs = [j for j in range(len(edges)) if edges[j][0]==i or edges[j][1]==i]
+                # Compute orientations of each attachment
+                orient=[]
+                cofaces=[]
+                for j in range(len(cfs)):
+                    if edges[cfs[j]][0]==i:
+                        orient.append(-1)
+                    else:
+                        orient.append(1)
+                    cofaces.append(Coface(cfs[j],orient[j]))
+                    
+                compcells.append(Cell(dimension=0,compactClosure=True,cofaces=cofaces))
+                
+                compcells[-1].vertex_label=i
+                compcells[-1].name=str(i)
+                
+            CellComplex.__init__(self,compcells)
+            
+          
+        else:
+            verts=[]
+            for ed in graph:
+                s=ed[0]
+                d=ed[1]
+                if s is not None:
+                    verts.append(s)
+                if d is not None:
+                    verts.append(d)
+            verts=list(set(verts))
+            
+            # Loop over edges, creating cells for each
+            compcells=[]
+            for i in range(len(graph)):
+                compcells.append(Cell(dimension=1,compactClosure=(graph[i][0] is not None) and (graph[i][1] is not None)))
+                compcells[-1].vertex_label=None
+                compcells[-1].name = str(graph[i])
+                try: # Add capacity if specified
+                    compcells[-1].capacity = graph[i][2]
+                except:
+                    pass
+                
+            # Loop over vertices, creating cells for each
+            for i in verts:
+                # Collect cofaces
+                cfs=[j for j in range(len(graph)) if graph[j][0]==i or graph[j][1]==i]
+                # Compute orientations of each attachment
+                orient=[]
+                cofaces=[]
+                for j in range(len(cfs)):
+                    if graph[cfs[j]][0]==i:
+                        orient.append(-1)
+                    else:
+                        orient.append(1)
+                    cofaces.append(Coface(cfs[j],orient[j]))
+                    
+                compcells.append(Cell(dimension=0,compactClosure=True,cofaces=cofaces))
+                
+                compcells[-1].vertex_label=i
+                compcells[-1].name = str(i)
+                
+            CellComplex.__init__(self,compcells)
 
 # Flow sheaves
 class DirectedGraph(CellComplex):
