@@ -996,11 +996,20 @@ class ChainSheaf(Poset,Sheaf):
 #Sheaf for COGs
 class UndirectedGraph(CellComplex):
     
-    def __init__(self, graph, flag_complex=True, nx_Graph=True, vertex_capacity=-1, maxdim=None):
+    def __init__(self, graph, flag_complex=True, vertex_capacity=-1, maxdim=None):
         '''Create an Cell Complex from an undirected graph, and creating cells
         from any n fully connected components
         Note: This class assumes that the graph at initialization is a networkx
               graph or a list of edges'''
+        #Determine input type
+        if isinstance(graph, nx.classes.graph.Graph):
+            nx_Graph = True
+        elif isinstance(graph, list):
+            nx_Graph = False
+        else:
+            raise TypeError('graph needs to be a list of edges or a networkx graph')
+        
+        
         #Store the original graph
         self.origGraph = graph
         self.graphBetti = self.computeGraphBetti(graph, nx_Graph)

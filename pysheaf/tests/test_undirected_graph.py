@@ -32,15 +32,15 @@ class TestUndirectedGraph(unittest.TestCase):
         self.str_graph.add_edges_from([('A','B'), ('A','C'), ('A','D'), ('B','C'), ('B','D'), ('C','D'), ('D','E'), ('E','F'), ('E','G'), ('F','G')])
         
         ##Create undirected graphs in pysheaf:
-        self.int_undir_graph_from_edge_no_flag = ps.UndirectedGraph(self.int_graph_edge_list, flag_complex=False, nx_Graph=False)
-        self.int_undir_graph_from_edge_flag = ps.UndirectedGraph(self.int_graph_edge_list, flag_complex=True, nx_Graph=False)
-        self.int_undir_graph_no_flag = ps.UndirectedGraph(self.int_graph, flag_complex=False, nx_Graph=True)
-        self.int_undir_graph_flag = ps.UndirectedGraph(self.int_graph, flag_complex=True, nx_Graph=True)
+        self.int_undir_graph_from_edge_no_flag = ps.UndirectedGraph(self.int_graph_edge_list, flag_complex=False)
+        self.int_undir_graph_from_edge_flag = ps.UndirectedGraph(self.int_graph_edge_list, flag_complex=True)
+        self.int_undir_graph_no_flag = ps.UndirectedGraph(self.int_graph, flag_complex=False)
+        self.int_undir_graph_flag = ps.UndirectedGraph(self.int_graph, flag_complex=True)
         
-        self.str_undir_graph_from_edge_no_flag = ps.UndirectedGraph(self.str_graph_edge_list, flag_complex=False, nx_Graph=False)
-        self.str_undir_graph_from_edge_flag = ps.UndirectedGraph(self.str_graph_edge_list, flag_complex=True, nx_Graph=False)
-        self.str_undir_graph_no_flag = ps.UndirectedGraph(self.str_graph, flag_complex=False, nx_Graph=True)
-        self.str_undir_graph_flag = ps.UndirectedGraph(self.str_graph, flag_complex=True, nx_Graph=True)
+        self.str_undir_graph_from_edge_no_flag = ps.UndirectedGraph(self.str_graph_edge_list, flag_complex=False)
+        self.str_undir_graph_from_edge_flag = ps.UndirectedGraph(self.str_graph_edge_list, flag_complex=True)
+        self.str_undir_graph_no_flag = ps.UndirectedGraph(self.str_graph, flag_complex=False)
+        self.str_undir_graph_flag = ps.UndirectedGraph(self.str_graph, flag_complex=True)
 
     def test_undirected_graph_instance(self):
         self.assertTrue(isinstance(self.int_undir_graph_from_edge_no_flag,ps.UndirectedGraph))
