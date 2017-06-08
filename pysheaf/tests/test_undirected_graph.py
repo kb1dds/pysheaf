@@ -32,30 +32,22 @@ class TestUndirectedGraph(unittest.TestCase):
         self.str_graph.add_edges_from([('A','B'), ('A','C'), ('A','D'), ('B','C'), ('B','D'), ('C','D'), ('D','E'), ('E','F'), ('E','G'), ('F','G')])
         
         ##Create undirected graphs in pysheaf:
-        self.int_undir_graph_from_edge_no_flag = ps.UndirectedGraph(self.int_graph_edge_list, flag_complex=False)
-        self.int_undir_graph_from_edge_flag = ps.UndirectedGraph(self.int_graph_edge_list, flag_complex=True)
-        self.int_undir_graph_no_flag = ps.UndirectedGraph(self.int_graph, flag_complex=False)
-        self.int_undir_graph_flag = ps.UndirectedGraph(self.int_graph, flag_complex=True)
+        self.int_undir_graph_from_edge = ps.UndirectedGraph(self.int_graph_edge_list)
+        self.int_undir_graph = ps.UndirectedGraph(self.int_graph)
         
-        self.str_undir_graph_from_edge_no_flag = ps.UndirectedGraph(self.str_graph_edge_list, flag_complex=False)
-        self.str_undir_graph_from_edge_flag = ps.UndirectedGraph(self.str_graph_edge_list, flag_complex=True)
-        self.str_undir_graph_no_flag = ps.UndirectedGraph(self.str_graph, flag_complex=False)
-        self.str_undir_graph_flag = ps.UndirectedGraph(self.str_graph, flag_complex=True)
+        self.str_undir_graph_from_edge = ps.UndirectedGraph(self.str_graph_edge_list)
+        self.str_undir_graph = ps.UndirectedGraph(self.str_graph)
 
     def test_undirected_graph_instance(self):
-        self.assertTrue(isinstance(self.int_undir_graph_from_edge_no_flag,ps.UndirectedGraph))
-        self.assertTrue(isinstance(self.int_undir_graph_from_edge_flag, ps.UndirectedGraph))
-        self.assertTrue(isinstance(self.int_undir_graph_no_flag,ps.UndirectedGraph))
-        self.assertTrue(isinstance(self.int_undir_graph_flag,ps.UndirectedGraph))
+        self.assertTrue(isinstance(self.int_undir_graph_from_edge,ps.UndirectedGraph))
+        self.assertTrue(isinstance(self.int_undir_graph,ps.UndirectedGraph))
         
-        self.assertTrue(isinstance(self.str_undir_graph_from_edge_no_flag, ps.UndirectedGraph))
-        self.assertTrue(isinstance(self.str_undir_graph_from_edge_flag, ps.UndirectedGraph))
-        self.assertTrue(isinstance(self.str_undir_graph_no_flag, ps.UndirectedGraph))
-        self.assertTrue(isinstance(self.str_undir_graph_flag, ps.UndirectedGraph))
+        self.assertTrue(isinstance(self.str_undir_graph_from_edge, ps.UndirectedGraph))
+        self.assertTrue(isinstance(self.str_undir_graph, ps.UndirectedGraph))
         
     def test_no_flag_int(self):
-        f_edge = self.int_undir_graph_from_edge_no_flag
-        f_graph = self.int_undir_graph_no_flag
+        f_edge = self.int_undir_graph_from_edge
+        f_graph = self.int_undir_graph
         
         #correct answers
         c_num_cells = 17
@@ -79,35 +71,10 @@ class TestUndirectedGraph(unittest.TestCase):
         self.assertEqual(str([f_edge.cells[i].cofaces for i in range(len(f_edge.cells))]), c_cofaces_cells)
         self.assertEqual(str([f_graph.cells[i].cofaces for i in range(len(f_graph.cells))]), c_cofaces_cells)
         
-    def test_flag_int(self):
-        f_edge = self.int_undir_graph_from_edge_flag
-        f_graph = self.int_undir_graph_flag
-        
-        #correct answers
-        c_num_cells = 23
-        c_indexes_cells = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22']
-        c_names_cells = [[1, 2, 3, 4], [1, 2, 3], [1, 2, 4], [1, 3, 4], [2, 3, 4], [5, 6, 7], [1, 2], [1, 3], [1, 4], [2, 3], [2, 4], [3, 4], [4, 5], [5, 6], [5, 7], [6, 7], [1], [2], [3], [4], [5], [6], [7]]
-        c_cofaces_cells = '[[], [(index=0,orientation=None)], [(index=0,orientation=None)], [(index=0,orientation=None)], [(index=0,orientation=None)], [], [(index=1,orientation=None), (index=2,orientation=None)], [(index=1,orientation=None), (index=3,orientation=None)], [(index=2,orientation=None), (index=3,orientation=None)], [(index=1,orientation=None), (index=4,orientation=None)], [(index=2,orientation=None), (index=4,orientation=None)], [(index=3,orientation=None), (index=4,orientation=None)], [], [(index=5,orientation=None)], [(index=5,orientation=None)], [(index=5,orientation=None)], [(index=6,orientation=None), (index=7,orientation=None), (index=8,orientation=None)], [(index=6,orientation=None), (index=9,orientation=None), (index=10,orientation=None)], [(index=7,orientation=None), (index=9,orientation=None), (index=11,orientation=None)], [(index=8,orientation=None), (index=10,orientation=None), (index=11,orientation=None), (index=12,orientation=None)], [(index=12,orientation=None), (index=13,orientation=None), (index=14,orientation=None)], [(index=13,orientation=None), (index=15,orientation=None)], [(index=14,orientation=None), (index=15,orientation=None)]]'
-        
-        #check number of cells
-        self.assertEqual(len(f_edge.cells), c_num_cells)
-        self.assertEqual(len(f_graph.cells), c_num_cells)
-        
-        #check the indices of the cells
-        self.assertEqual([f_edge.cells[i].id for i in range(len(f_edge.cells))], c_indexes_cells)
-        self.assertEqual([f_graph.cells[i].id for i in range(len(f_graph.cells))], c_indexes_cells)
-        
-        #check the cell names
-        self.assertEqual([f_edge.cells[i].name for i in range(len(f_edge.cells))], c_names_cells)
-        self.assertEqual([f_graph.cells[i].name for i in range(len(f_graph.cells))], c_names_cells)
-        
-        #check the cell cofaces
-        self.assertEqual(str([f_edge.cells[i].cofaces for i in range(len(f_edge.cells))]), c_cofaces_cells)
-        self.assertEqual(str([f_graph.cells[i].cofaces for i in range(len(f_graph.cells))]), c_cofaces_cells)
         
     def test_no_flag_str(self):
-        f_edge = self.str_undir_graph_from_edge_no_flag
-        f_graph = self.str_undir_graph_no_flag
+        f_edge = self.str_undir_graph_from_edge
+        f_graph = self.str_undir_graph
         
         #correct answers
         c_num_cells = 17
@@ -132,44 +99,15 @@ class TestUndirectedGraph(unittest.TestCase):
         self.assertEqual(str([f_graph.cells[i].cofaces for i in range(len(f_graph.cells))]), c_cofaces_cells)
         
         
-    def test_flag_str(self):
-        f_edge = self.str_undir_graph_from_edge_flag
-        f_graph = self.str_undir_graph_flag
-        
-        #correct answers
-        c_num_cells = 23
-        c_indexes_cells = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22']
-        c_names_cells = [['A', 'B', 'C', 'D'], ['A', 'B', 'C'], ['A', 'B', 'D'], ['A', 'C', 'D'], ['B', 'C', 'D'], ['E', 'F', 'G'], ['A', 'B'], ['A', 'C'], ['A', 'D'], ['B', 'C'], ['B', 'D'], ['C', 'D'], ['D', 'E'], ['E', 'F'], ['E', 'G'], ['F', 'G'], ['A'], ['B'], ['C'], ['D'], ['E'], ['F'], ['G']]
-        c_cofaces_cells = '[[], [(index=0,orientation=None)], [(index=0,orientation=None)], [(index=0,orientation=None)], [(index=0,orientation=None)], [], [(index=1,orientation=None), (index=2,orientation=None)], [(index=1,orientation=None), (index=3,orientation=None)], [(index=2,orientation=None), (index=3,orientation=None)], [(index=1,orientation=None), (index=4,orientation=None)], [(index=2,orientation=None), (index=4,orientation=None)], [(index=3,orientation=None), (index=4,orientation=None)], [], [(index=5,orientation=None)], [(index=5,orientation=None)], [(index=5,orientation=None)], [(index=6,orientation=None), (index=7,orientation=None), (index=8,orientation=None)], [(index=6,orientation=None), (index=9,orientation=None), (index=10,orientation=None)], [(index=7,orientation=None), (index=9,orientation=None), (index=11,orientation=None)], [(index=8,orientation=None), (index=10,orientation=None), (index=11,orientation=None), (index=12,orientation=None)], [(index=12,orientation=None), (index=13,orientation=None), (index=14,orientation=None)], [(index=13,orientation=None), (index=15,orientation=None)], [(index=14,orientation=None), (index=15,orientation=None)]]'
-        
-        #check number of cells
-        self.assertEqual(len(f_edge.cells), c_num_cells)
-        self.assertEqual(len(f_graph.cells), c_num_cells)
-        
-        #check the indices of the cells
-        self.assertEqual([f_edge.cells[i].id for i in range(len(f_edge.cells))], c_indexes_cells)
-        self.assertEqual([f_graph.cells[i].id for i in range(len(f_graph.cells))], c_indexes_cells)
-        
-        #check the cell names
-        self.assertEqual([f_edge.cells[i].name for i in range(len(f_edge.cells))], c_names_cells)
-        self.assertEqual([f_graph.cells[i].name for i in range(len(f_graph.cells))], c_names_cells)
-        
-        #check the cell cofaces
-        self.assertEqual(str([f_edge.cells[i].cofaces for i in range(len(f_edge.cells))]), c_cofaces_cells)
-        self.assertEqual(str([f_graph.cells[i].cofaces for i in range(len(f_graph.cells))]), c_cofaces_cells)
-
-    def test_graph_betti(self):
-        betti_number = 4
-        
-        self.assertEqual(self.int_undir_graph_from_edge_no_flag.graphBetti, betti_number)
-        self.assertEqual(self.int_undir_graph_from_edge_flag.graphBetti, betti_number)
-        self.assertEqual(self.int_undir_graph_no_flag.graphBetti, betti_number)
-        self.assertEqual(self.int_undir_graph_flag.graphBetti, betti_number)
-        
-        self.assertEqual(self.str_undir_graph_from_edge_no_flag.graphBetti, betti_number)
-        self.assertEqual(self.str_undir_graph_from_edge_flag.graphBetti, betti_number)
-        self.assertEqual(self.str_undir_graph_no_flag.graphBetti, betti_number)
-        self.assertEqual(self.str_undir_graph_flag.graphBetti, betti_number)
+#
+#    def test_graph_betti(self):
+#        betti_number = 4
+#        
+#        self.assertEqual(self.int_undir_graph_from_edge.graphBetti, betti_number)
+#        self.assertEqual(self.int_undir_graph.graphBetti, betti_number)
+#        
+#        self.assertEqual(self.str_undir_graph_from_edge.graphBetti, betti_number)
+#        self.assertEqual(self.str_undir_graph.graphBetti, betti_number)
 
 
     def tearDown(self):
