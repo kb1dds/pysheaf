@@ -202,6 +202,10 @@ class CellComplex:
 
         return Hk
 
+    def betti(self,k,compactSupport=False,tol=1e-5):
+        """Compute the k-th Betti number of the cell complex"""
+        return self.homology(k,compactSupport).shape[1]
+
     def localPairComplex(self,cells):
         """Construct a new cell complex that consists of a cell and its boundary.  The return is the cell complex paired with a list of boundary cells"""
         raise NotImplementedError('localPairComplex is not working!  Please do not use it yet')

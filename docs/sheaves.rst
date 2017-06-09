@@ -15,12 +15,12 @@ The :py:class:`Sheaf` class derives from :py:class:`CellComplex` to describe its
 
       Compute the degree `k` sheaf cohomology for the :py:class:`Sheaf`.   If you want compactly supported cohomology (if you don't know what that means, you don't) then set `compactSupport=True`.  This returns a :py:class:`numpy.ndarray` whose columns are the generators for cohomology.
 		  
-   .. py:method:: betti(k)
+   .. py:method:: cobetti(k)
 
       The dimension of the degree `k` sheaf cohomology space.
 
       .. warning :: This is not the dimension of the :py:meth:`CellComplex.homology()`, which is inherited into :py:class:`Sheaf`!
-		  
+
 .. py:class:: SheafCell(Cell)
 
    .. py:attribute:: stalkDim

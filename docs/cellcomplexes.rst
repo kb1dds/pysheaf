@@ -13,6 +13,12 @@ The :py:class:`CellComplex` class consists of a list of :py:class:`Cell` instanc
 
       Compute the degree `k` homology of the :py:class:`CellComplex`.  If you want relative homology, the `subcomplex` field specifies a list of indices into :py:class:`CellComplex.cells` for the relative subcomplex.  If you want compactly supported homology (if you don't know what that means, you don't) then set `compactSupport=True`.  The `tol` argument sets the tolerance below which a singular value is said to be zero, and thus is to be considered part of the kernel. This returns a :py:class:`numpy.ndarray` whose columns are the generators for homology.
 
+   .. py:method:: betti(k, compactSupport=False,tol=1e-5)
+
+      Compute the degree `k` Betti number of the :py:class:`CellComplex`.  This is the dimension of the degree `k` homology space computed using :py:meth:`CellComplex.homology()`.
+
+      .. warning :: This differs from the Betti number associated to the *cohomology* of any :py:class:`Sheaf`.  To access that, use :py:meth:`Sheaf.cobetti()` instead!
+      
    .. py:method:: boundary(k,subcomplex=None,compactSupport=False)
 
       Compute the degree `k` boundary map of the :py:class:`CellComplex`, returning it as a :py:class:`numpy.ndarray`.   If you want relative homology, the `subcomplex` field specifies a list of indices into :py:class:`CellComplex.cells` for the relative subcomplex.  If you want compactly supported homology (if you don't know what that means, you don't) then set `compactSupport=True`.  
