@@ -392,20 +392,23 @@ class AbstractSimplicialComplex(CellComplex):
         if maxdim is None:
             maxdim=max([len(tplx)-1 for tplx in toplexes])
 
-        self.cells=[]
+        cells=[]
         upsimplices=[] # Simplices of greater dimension than currently being added
         upindices=[]
         for k in range(maxdim,-1,-1):
             simplices=ksimplices(toplexes,k) # Simplices to be added
-            startindex=len(self.cells)
+            startindex=len(cells)
             for s in simplices:
                 cell=Cell(dimension=k,compactClosure=True,
                           cofaces=[Coface(index=upindices[i],
                                           orientation=simplexOrientation(s,upsimplices[i])) for i in range(len(upsimplices)) if set(s).issubset(upsimplices[i])])
-                self.cells.append(cell)
+                cells.append(cell)
+                cells[-1].name = s 
 
             upsimplices=simplices
             upindices=[startindex+i for i in range(len(simplices))]
+            
+        CellComplex.__init__(self,cells)
 
 
 class SetMorphism():
@@ -997,13 +1000,17 @@ class ChainSheaf(Poset,Sheaf):
 class FlagComplex(AbstractSimplicialComplex):
     
     def __init__(self, graph, flag_complex=True, maxdim=None):
-        '''Create an Cell Complex from an undirected graph, directed graph, networkx graph or list of edges and creating cells
+        '''Create an Cell Complex from an undirected graph, networkx graph or list of edges and creating cells
         from any n fully connected components'''
               
               
         #Determine input type
         if isinstance(graph, nx.classes.graph.Graph):
             toplexes = list(nx.find_cliques(graph))
+            
+            #Sort for consistency when testing
+            toplexes = sorted([sorted(ele) for ele in toplexes])
+            
             AbstractSimplicialComplex.__init__(self,toplexes, maxdim=maxdim)
             
         elif isinstance(graph, list):
@@ -1014,12 +1021,16 @@ class FlagComplex(AbstractSimplicialComplex):
             #redefine the graph
             graph = nx.Graph(not_none_edgs)
             toplexes = list(nx.find_cliques(graph))
+            
+            #Sort for consistency when testing
+            toplexes = sorted([sorted(ele) for ele in toplexes])
+            
             toplexes.extend(none_edgs)
             
             #Instantiate the Abstract Simplicial Complexes
             AbstractSimplicialComplex.__init__(self, toplexes, maxdim=maxdim)
             
-        elif isinstance(graph, UndirectedGraph) or isinstance(graph, DirectedGraph):
+        elif isinstance(graph, UndirectedGraph):
             cmplx = [graph.cells[i].name for i in range(len(graph.cells))]
             
             edges = [ind for ind in range(len(cmplx)) if (len(cmplx[ind]) == 2)]
@@ -1037,6 +1048,10 @@ class FlagComplex(AbstractSimplicialComplex):
             graph = nx.Graph(not_none_edgs)
             graph.add_nodes_from([cmplx[ind][0] for ind in nodes])
             toplexes = list(nx.find_cliques(graph))
+            
+            #Sort for consistency when testing
+            toplexes = sorted([sorted(ele) for ele in toplexes])
+
             toplexes.extend(none_edgs)
             
             
@@ -1044,7 +1059,7 @@ class FlagComplex(AbstractSimplicialComplex):
             AbstractSimplicialComplex.__init__(self, toplexes, maxdim=maxdim)
         
         else:
-            raise TypeError('graph needs to be a list of edges, a networkx graph, or an instance of either the Directed or Undirected Graph Class')
+            raise TypeError('graph needs to be a list of edges, a networkx graph, or an instance of the Undirected Graph Class')
                                          
 class Graph(CellComplex):
     
@@ -1153,53 +1168,6 @@ class UndirectedGraph(Graph):
         
         Graph.__init__(self, edges, verts)
         
-           
-         
-    def GenerateCellsfromComplex(self, cplx):
-        #Generate the cells 
-            
-        largest_dim_cell = max([len(ele) for ele in cplx])-1
-            
-        #Get the cells with their cofaces for the 
-        #Needs to be thoughly tested
-        compcells=[]
-        for dim in reversed(range(largest_dim_cell+1)):
-            if dim == largest_dim_cell:
-                cplx_w_dim = [cplx_ele for cplx_ele in cplx if len(cplx_ele)-1 == dim]
-                for i in range(len(cplx_w_dim)):
-                    compcells.append(Cell(dimension=dim,compactClosure=True))
-                    compcells[-1].vertex_label=None
-                    compcells[-1].name = cplx_w_dim[i]
-                
-            else:
-                #Issue need the original indices for the 
-                cplx_w_dim = [(cplx[cplx_ele_ind], cplx_ele_ind) for cplx_ele_ind in range(len(cplx)) if len(cplx[cplx_ele_ind])-1 == dim]
-                cplx_w_dim_p_1 = [(cplx[cplx_ele_ind],cplx_ele_ind) for cplx_ele_ind in range(len(cplx)) if len(cplx[cplx_ele_ind])-1 == (dim+1)]
-                
-                for ind in range(len(cplx_w_dim)):
-                    i = cplx_w_dim[ind][0]
-                    #find all cofaces of the cell
-                    cfs = [cplx_w_dim_p_1[j][1] for j in range(len(cplx_w_dim_p_1)) if set(i).issubset(set(cplx_w_dim_p_1[j][0]))]
-                    
-                    #find the orientation
-                    cofaces = []
-                    orient = []
-                    for j in range(len(cfs)):
-                        '''
-                        if graph[cfs[j]][0]==i: #Need to fix this line...no such thing as a graph
-                        orient.append(-1)
-                        else:
-                            orient.append(1)
-                        '''
-                        orient.append(None)
-                        cofaces.append(Coface(cfs[j],orient[j]))
-                    
-                
-                    #add the cell to the cell complex
-                    compcells.append(Cell(dimension=dim,compactClosure=True, cofaces=cofaces))
-                    compcells[-1].vertex_label=None
-                    compcells[-1].name = i
-        return compcells
         
     def computeGraphBetti(self, graph):
         num_verts = len(graph.nodes())
