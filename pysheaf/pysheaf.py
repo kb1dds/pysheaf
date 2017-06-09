@@ -1243,8 +1243,8 @@ class DirectedGraph(Graph):
         edges = [list(ed) for ed in edges]
             
         #Sort the edges and vertices for consistency (needed to pass testing/but may add a significant amount of time on large complexs)
-        edges = sorted([sorted(itm) for itm in edges])
-        verts = sorted([sorted(itm) for itm in verts])
+        edges = sorted([itm for itm in edges])
+        verts = sorted([itm for itm in verts])
 
         Graph.__init__(self, edges, verts, orientation=True, capacity=True, vertex_capacity=-1)
 
