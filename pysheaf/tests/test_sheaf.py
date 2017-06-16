@@ -71,14 +71,14 @@ class TestSheaf(unittest.TestCase):
         self.assertEqual(matrix_rank(d),matrix_rank(gt))
         self.assertEqual(matrix_rank(gt),matrix_rank(tmat))
 
-    def test_betti(self):
+    def test_cobetti(self):
         d = self.sheaf.coboundary(0)
         m,n = d.shape
         self.assertEqual(np.sum(d==d.astype(float)),m*n)
         d = d.astype(float)   ##### this avoids a type error when calculating matrix_rank
         r = matrix_rank(d)
         ker = d.shape[1] - r
-        self.assertEqual(self.sheaf.betti(0),ker)
+        self.assertEqual(self.sheaf.cobetti(0),ker)
 
 
     def tearDown(self):

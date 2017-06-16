@@ -202,6 +202,10 @@ class CellComplex:
 
         return Hk
 
+    def betti(self,k,compactSupport=False,tol=1e-5):
+        """Compute the k-th Betti number of the cell complex"""
+        return self.homology(k,compactSupport).shape[1]
+
     def localPairComplex(self,cells):
         """Construct a new cell complex that consists of a cell and its boundary.  The return is the cell complex paired with a list of boundary cells"""
         raise NotImplementedError('localPairComplex is not working!  Please do not use it yet')
@@ -709,7 +713,7 @@ class Sheaf(CellComplex):
 
         return Hk
 
-    def betti(self,k,compactSupport=False,tol=1e-5):
+    def cobetti(self,k,compactSupport=False,tol=1e-5):
         """Compute the k-th Betti number of the sheaf"""
         return self.cohomology(k,compactSupport).shape[1]
 
@@ -900,7 +904,7 @@ class Sheaf(CellComplex):
                 sheafCells.append(SheafCell(c.dimension,cfs,c.compactClosure))
             else:
                 ls,m=self.localSectional(self.starCells(bigPreimage))
-                sheafCells.append(SheafCell(c.dimension,[],c.compactClosure,stalkDim=ls.betti(0)))
+                sheafCells.append(SheafCell(c.dimension,[],c.compactClosure,stalkDim=ls.cobetti(0)))
 
         return Sheaf(sheafCells),SheafMorphism(mor)
 
@@ -1372,11 +1376,11 @@ class PersistenceSheaf(Sheaf):
                 persheaf.append(SheafCell(dimension=0,
                                           compactClosure=True,
                                           cofaces=cofaces))
-            else: # If cell does not have cofaces, compute stalk from Betti number
+            else: # If cell does not have cofaces, compute stalk from Sheaf Betti number
                 persheaf.append(SheafCell(dimension=1,
                                           compactClosure=len([d for (s,d,mor) in morphisms
                                                               if d==i])>1,
-                                          stalkDim=sheaves[i].betti(k)))
+                                          stalkDim=sheaves[i].cobetti(k)))
         # Initialize the sheaf
         Sheaf.__init__(self,persheaf)
 
