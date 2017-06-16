@@ -8,7 +8,7 @@ Michael Robinson, *Topological Signal Processing*, Springer, 2014.
 Although PySheaf can compute (co)homology of sheaves and cell complexes, the primary workflow for sheaves is
 
 1. Construct the :py:class:`Sheaf` instance, which involves defining lists of :py:class:`SheafCell` and :py:class:`SheafCoface` instances.  Presently, the :py:class:`Sheaf` instance will remain fixed once constructed.  Therefore, make sure to have all stalks and restrictions defined at this point!
-2. If you want to compute cohomology of the :py:class:`Sheaf`, you can do so using the :py:meth:`Sheaf.cohomology()` or :py:meth:`Sheaf.betti()`
+2. If you want to compute cohomology of the :py:class:`Sheaf`, you can do so using the :py:meth:`Sheaf.cohomology()` or :py:meth:`Sheaf.cobetti()`
 3. Construct various :py:class:`Section` instances for the data you have.  Key point: a :py:class:`Section` refers to a *local* section.  Its :py:class:`SectionCell` members refer to the :py:class:`Sheaf` you've just finished building, so you must built the :py:class:`Sheaf` first!
 4. Process the data using the :py:class:`Sheaf` and :py:class:`Section` instances:
    

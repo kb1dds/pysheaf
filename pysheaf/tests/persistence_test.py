@@ -30,4 +30,4 @@ if __name__ == '__main__':
 
     persh=ps.PersistenceSheaf([fs1,pf1,fs2,pf2,fs3],[(1,0,pf1m),(1,2,fsm2),(3,2,pf2m),(3,4,fsm3)],0)
     
-    print 'Persistence Betti 0=' + str(persh.betti(0))
+    print 'Persistence Sheaf Betti 0=' + str(persh.cobetti(0))
