@@ -132,33 +132,48 @@ class Test_Flag_Complex(unittest.TestCase):
         self.assertEqual(str([f_nx_graph.cells[i].cofaces for i in range(len(f_nx_graph.cells))]), c_cofaces_cells)
         self.assertEqual(str([f_undir_graph.cells[i].cofaces for i in range(len(f_undir_graph.cells))]), c_cofaces_cells)
         
-    '''
-    def test_graph_betti(self):
-        betti_number = 4
+    
+    def test_flag_complex_betti(self):
+        betti_0 = float(1) 
+        betti_1 = float(0)
+        betti_2 = float(0)
+        betti_3 = float(0)
         
-        self.assertEqual(self.int_undir_graph_from_edge_no_flag.graphBetti, betti_number)
-        self.assertEqual(self.int_undir_graph_from_edge_flag.graphBetti, betti_number)
-        self.assertEqual(self.int_undir_graph_no_flag.graphBetti, betti_number)
-        self.assertEqual(self.int_undir_graph_flag.graphBetti, betti_number)
+        print self.int_flag_complex_from_edges.betti(2)
         
-        self.assertEqual(self.str_undir_graph_from_edge_no_flag.graphBetti, betti_number)
-        self.assertEqual(self.str_undir_graph_from_edge_flag.graphBetti, betti_number)
-        self.assertEqual(self.str_undir_graph_no_flag.graphBetti, betti_number)
-        self.assertEqual(self.str_undir_graph_flag.graphBetti, betti_number)
+        #Check 0th Betti
+        self.assertEqual(float(self.int_flag_complex_from_edges.betti(0)), betti_0)
+        self.assertEqual(float(self.int_flag_complex_from_nx_graph.betti(0)), betti_0)
+        self.assertEqual(float(self.int_flag_complex_from_ps_undirectedgraph.betti(0)), betti_0)
+        self.assertEqual(float(self.str_flag_complex_from_edges.betti(0)), betti_0)
+        self.assertEqual(float(self.str_flag_complex_from_nx_graph.betti(0)), betti_0)
+        self.assertEqual(float(self.str_flag_complex_from_ps_undirectedgraph.betti(0)), betti_0)
         
-    def test_graph_extend(self):
+        #Check 1st Betti
+        self.assertEqual(float(self.int_flag_complex_from_edges.betti(1)), betti_1)
+        self.assertEqual(float(self.int_flag_complex_from_nx_graph.betti(1)), betti_1)
+        self.assertEqual(float(self.int_flag_complex_from_ps_undirectedgraph.betti(1)), betti_1)
+        self.assertEqual(float(self.str_flag_complex_from_edges.betti(1)), betti_1)
+        self.assertEqual(float(self.str_flag_complex_from_nx_graph.betti(1)), betti_1)
+        self.assertEqual(float(self.str_flag_complex_from_ps_undirectedgraph.betti(1)), betti_1)
         
-        #Correct Answers
-        #correct answers
-        c_num_cells = 23
-        c_indexes_cells = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22']
-        c_names_cells = [['A', 'B', 'C', 'D'], ['A', 'B', 'C'], ['A', 'B', 'D'], ['A', 'C', 'D'], ['B', 'C', 'D'], ['E', 'F', 'G'], ['A', 'B'], ['A', 'C'], ['A', 'D'], ['B', 'C'], ['B', 'D'], ['C', 'D'], ['D', 'E'], ['E', 'F'], ['E', 'G'], ['F', 'G'], ['A'], ['B'], ['C'], ['D'], ['E'], ['F'], ['G']]
-        c_cofaces_cells = '[[], [(index=0,orientation=None)], [(index=0,orientation=None)], [(index=0,orientation=None)], [(index=0,orientation=None)], [], [(index=1,orientation=None), (index=2,orientation=None)], [(index=1,orientation=None), (index=3,orientation=None)], [(index=2,orientation=None), (index=3,orientation=None)], [(index=1,orientation=None), (index=4,orientation=None)], [(index=2,orientation=None), (index=4,orientation=None)], [(index=3,orientation=None), (index=4,orientation=None)], [], [(index=5,orientation=None)], [(index=5,orientation=None)], [(index=5,orientation=None)], [(index=6,orientation=None), (index=7,orientation=None), (index=8,orientation=None)], [(index=6,orientation=None), (index=9,orientation=None), (index=10,orientation=None)], [(index=7,orientation=None), (index=9,orientation=None), (index=11,orientation=None)], [(index=8,orientation=None), (index=10,orientation=None), (index=11,orientation=None), (index=12,orientation=None)], [(index=12,orientation=None), (index=13,orientation=None), (index=14,orientation=None)], [(index=13,orientation=None), (index=15,orientation=None)], [(index=14,orientation=None), (index=15,orientation=None)]]'
+        #Check 2nd Betti
+        self.assertEqual(float(self.int_flag_complex_from_edges.betti(2)), betti_2)
+        self.assertEqual(float(self.int_flag_complex_from_nx_graph.betti(2)), betti_2)
+        self.assertEqual(float(self.int_flag_complex_from_ps_undirectedgraph.betti(2)), betti_2)
+        self.assertEqual(float(self.str_flag_complex_from_edges.betti(2)), betti_2)
+        self.assertEqual(float(self.str_flag_complex_from_nx_graph.betti(2)), betti_2)
+        self.assertEqual(float(self.str_flag_complex_from_ps_undirectedgraph.betti(2)), betti_2)
         
+        #Check 3rd Betti
+        self.assertEqual(float(self.int_flag_complex_from_edges.betti(3)), betti_3)
+        self.assertEqual(float(self.int_flag_complex_from_nx_graph.betti(3)), betti_3)
+        self.assertEqual(float(self.int_flag_complex_from_ps_undirectedgraph.betti(3)), betti_3)
+        self.assertEqual(float(self.str_flag_complex_from_edges.betti(3)), betti_3)
+        self.assertEqual(float(self.str_flag_complex_from_nx_graph.betti(3)), betti_3)
+        self.assertEqual(float(self.str_flag_complex_from_ps_undirectedgraph.betti(3)), betti_3)
         
-        self.assertEqual
 
-    '''
     def tearDown(self):
         pass
 

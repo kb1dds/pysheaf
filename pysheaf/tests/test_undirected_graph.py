@@ -99,16 +99,6 @@ class TestUndirectedGraph(unittest.TestCase):
         self.assertEqual(str([f_graph.cells[i].cofaces for i in range(len(f_graph.cells))]), c_cofaces_cells)
         
         
-#
-#    def test_graph_betti(self):
-#        betti_number = 4
-#        
-#        self.assertEqual(self.int_undir_graph_from_edge.graphBetti, betti_number)
-#        self.assertEqual(self.int_undir_graph.graphBetti, betti_number)
-#        
-#        self.assertEqual(self.str_undir_graph_from_edge.graphBetti, betti_number)
-#        self.assertEqual(self.str_undir_graph.graphBetti, betti_number)
-
 
     def tearDown(self):
         pass

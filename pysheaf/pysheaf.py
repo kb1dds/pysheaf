@@ -247,8 +247,9 @@ class CellComplex:
         rows=len(km1)
         cols=len(ks)
 #         d=np.zeros((rows,cols),dtype=np.complex)
-        d=np.zeros((rows,cols))
+        d=np.zeros((rows,cols)) 
         if rows and cols:
+            
             # Loop over all k-1-cells, writing them into the output matrix
             for i in range(len(km1)):
 #                print i, self.cells[km1[i]]
@@ -1003,8 +1004,8 @@ class ChainSheaf(Poset,Sheaf):
 
 class FlagComplex(AbstractSimplicialComplex):
     
-    def __init__(self, graph, flag_complex=True, maxdim=None):
-        '''Create an Cell Complex from an undirected graph, networkx graph or list of edges and creating cells
+    def __init__(self, graph, maxdim=None):
+        '''Create an Cell Complex from an undirected graph, networkx graph or list of edges by creating cells
         from any n fully connected components'''
               
               
@@ -1067,13 +1068,19 @@ class FlagComplex(AbstractSimplicialComplex):
                                          
 class Graph(CellComplex):
     
-    def __init__(self, edges, vertices, orientation=False, capacity=False, vertex_capacity=-1):
+    def __init__(self, edges, vertices, orientation=False, vertex_capacity=-1):
         '''Create a cell complex from a list of nodes and edges, nodes and edges must also be in list format, should always be called though directed or undirected graph'''
          #Define common graph attributes
         self.number_edges = len(edges)
         self.number_vertices = len(vertices)
+        
          
          # Loop over edges, creating cells for each
+        try:
+            check = edges[0][2]            
+            capacity = True
+        except:
+            capacity = False
         compcells=[]
         for i in range(len(edges)):
             compcells.append(Cell(dimension=1,
@@ -1115,18 +1122,19 @@ class Graph(CellComplex):
             compcells[-1].name=[i]
 
         CellComplex.__init__(self,compcells)
+            
     
 class UndirectedGraph(Graph):
     
-    def __init__(self, graph, maxdim=None):
-        '''Create an Cell Complex from an undirected graph, and creating cells
-        from any n fully connected components
+    def __init__(self, graph):
+        '''
+        Create an Cell Complex from an undirected graph
         Note: This class assumes that the graph at initialization is a networkx
-              graph or a list of edges'''
-              
-        #Store the original graph in its original format
-        self.origGraph = graph     
-              
+              graph or a list of edges.
+              Any homology calculations can also not be done on this class as
+              no orientation is specified.
+        '''
+                      
         #Determine input type
         if isinstance(graph, nx.classes.graph.Graph):
             none_edgs = []
@@ -1146,17 +1154,6 @@ class UndirectedGraph(Graph):
         self.graphDegreeHistogram = nx.degree_histogram(graph)
         self.graphAdjacencySpectrum = nx.adjacency_spectrum(graph)
         self.graphLaplacianSpectrum = nx.laplacian_spectrum(graph)
-        self.dh2 = self.graphDegreeHistogram[1]
-        
-        if(len(self.graphAdjacencySpectrum) > 1):
-            self.as2 = abs(self.graphAdjacencySpectrum[1])
-        else:
-            self.as2 = 0
-            
-        if(len(self.graphLaplacianSpectrum) > 1):
-            self.ls2 = self.graphLaplacianSpectrum[1]
-        else:
-            self.ls2.append(0)
         
         #Construct the Cell Complex from a networkX graph         
         verts = graph.nodes()
@@ -1172,19 +1169,8 @@ class UndirectedGraph(Graph):
         
         Graph.__init__(self, edges, verts)
         
-        
-    def computeGraphBetti(self, graph):
-        num_verts = len(graph.nodes())
-        num_edges = len(graph.edges())
-        return (num_edges - num_verts + 1)
-        
-    
-    def add_edge(self, edgepair):
-        pass
-    
-    def add_node(self, node):
-        pass
-    
+    def homology(self,k,subcomplex=None,compactSupport=False,tol=1e-5):
+        raise Exception('Homolgy cannot be computed for Undirected Graph Class as no orientation is specified.')
             
 
 # Flow sheaves
@@ -1218,7 +1204,7 @@ class DirectedGraph(Graph):
         edges = sorted([itm for itm in edges])
         verts = sorted([itm for itm in verts])
 
-        Graph.__init__(self, edges, verts, orientation=True, capacity=True, vertex_capacity=-1)
+        Graph.__init__(self, edges, verts, orientation=True, vertex_capacity=-1)
 
     def findPath(self,start,end,history=[]):
         """Find a path from specified start cell to end cell
