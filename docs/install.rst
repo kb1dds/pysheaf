@@ -98,5 +98,5 @@ Assuming you have installed the package into PySheaf you will now change to that
 
 If everything is working you will get a bunch of warnings and a line that looks something like::
 
-  Ran 49 tests in 0.006s  
+  Ran 57 tests in 0.070s  
   OK

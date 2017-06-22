@@ -10,6 +10,9 @@ import random
 # import matplotlib.pyplot as plt
 import networkx as nx
 import scipy.optimize
+import itertools as it
+
+
 
 ## Data structures
 class Coface:
@@ -244,8 +247,9 @@ class CellComplex:
         rows=len(km1)
         cols=len(ks)
 #         d=np.zeros((rows,cols),dtype=np.complex)
-        d=np.zeros((rows,cols))
+        d=np.zeros((rows,cols)) 
         if rows and cols:
+            
             # Loop over all k-1-cells, writing them into the output matrix
             for i in range(len(km1)):
 #                print i, self.cells[km1[i]]
@@ -393,20 +397,23 @@ class AbstractSimplicialComplex(CellComplex):
         if maxdim is None:
             maxdim=max([len(tplx)-1 for tplx in toplexes])
 
-        self.cells=[]
+        cells=[]
         upsimplices=[] # Simplices of greater dimension than currently being added
         upindices=[]
         for k in range(maxdim,-1,-1):
             simplices=ksimplices(toplexes,k) # Simplices to be added
-            startindex=len(self.cells)
+            startindex=len(cells)
             for s in simplices:
                 cell=Cell(dimension=k,compactClosure=True,
                           cofaces=[Coface(index=upindices[i],
                                           orientation=simplexOrientation(s,upsimplices[i])) for i in range(len(upsimplices)) if set(s).issubset(upsimplices[i])])
-                self.cells.append(cell)
+                cells.append(cell)
+                cells[-1].name = s 
 
             upsimplices=simplices
             upindices=[startindex+i for i in range(len(simplices))]
+            
+        CellComplex.__init__(self,cells)
 
 
 class SetMorphism():
@@ -995,9 +1002,181 @@ class ChainSheaf(Poset,Sheaf):
         Sheaf.__init__(self,shcells)
 
 
+class FlagComplex(AbstractSimplicialComplex):
+    
+    def __init__(self, graph, maxdim=None):
+        '''Create an Cell Complex from an undirected graph, networkx graph or list of edges by creating cells
+        from any n fully connected components'''
+              
+              
+        #Determine input type
+        if isinstance(graph, nx.classes.graph.Graph):
+            toplexes = list(nx.find_cliques(graph))
+            
+            #Sort for consistency when testing
+            toplexes = sorted([sorted(ele) for ele in toplexes])
+            
+            AbstractSimplicialComplex.__init__(self,toplexes, maxdim=maxdim)
+            
+        elif isinstance(graph, list):
+            none_edgs_ind = [ind for ind in range(len(graph)) if (graph[ind][0] is None) or (graph[ind][1] is None)]
+            none_edgs = [graph[ind] for ind in none_edgs_ind]
+            not_none_edgs = [graph[ind] for ind in range(len(graph)) if ind not in none_edgs_ind]
+            
+            #redefine the graph
+            graph = nx.Graph(not_none_edgs)
+            toplexes = list(nx.find_cliques(graph))
+            
+            #Sort for consistency when testing
+            toplexes = sorted([sorted(ele) for ele in toplexes])
+            
+            toplexes.extend(none_edgs)
+            
+            #Instantiate the Abstract Simplicial Complexes
+            AbstractSimplicialComplex.__init__(self, toplexes, maxdim=maxdim)
+            
+        elif isinstance(graph, UndirectedGraph):
+            cmplx = [graph.cells[i].name for i in range(len(graph.cells))]
+            
+            edges = [ind for ind in range(len(cmplx)) if (len(cmplx[ind]) == 2)]
+            nodes = [ind for ind in range(len(cmplx)) if (len(cmplx[ind]) == 1)]
+            
+            none_edgs_ind = [ind for ind in edges if ((cmplx[ind][0] is None) or (cmplx[ind][1] is None))]
+            none_edgs = [cmplx[ind] for ind in none_edgs_ind]
+            if none_edgs_ind != []:
+                not_none_edgs = [cmplx[ind] for ind in range(len(cmplx)) if ind not in none_edgs_ind]
+            else:
+                not_none_edgs = [cmplx[ind] for ind in edges]
+                
+            
+            #redefine the graph
+            graph = nx.Graph(not_none_edgs)
+            graph.add_nodes_from([cmplx[ind][0] for ind in nodes])
+            toplexes = list(nx.find_cliques(graph))
+            
+            #Sort for consistency when testing
+            toplexes = sorted([sorted(ele) for ele in toplexes])
+
+            toplexes.extend(none_edgs)
+            
+            
+            #Instantiate the Abstract Simplicial Complexes
+            AbstractSimplicialComplex.__init__(self, toplexes, maxdim=maxdim)
+        
+        else:
+            raise TypeError('graph needs to be a list of edges, a networkx graph, or an instance of the Undirected Graph Class')
+                                         
+class Graph(CellComplex):
+    
+    def __init__(self, edges, vertices, orientation=False, vertex_capacity=-1):
+        '''Create a cell complex from a list of nodes and edges, nodes and edges must also be in list format, should always be called though directed or undirected graph'''
+         #Define common graph attributes
+        self.number_edges = len(edges)
+        self.number_vertices = len(vertices)
+        
+         
+         # Loop over edges, creating cells for each
+        try:
+            check = edges[0][2]            
+            capacity = True
+        except:
+            capacity = False
+        compcells=[]
+        for i in range(len(edges)):
+            compcells.append(Cell(dimension=1,
+                                  compactClosure=(edges[i][0] is not None) and (edges[i][1] is not None)))
+            compcells[-1].vertex_label=None
+            compcells[-1].name = [edges[i][0], edges[i][1]]
+            if capacity:
+                try: # Add capacity if specified
+                    compcells[-1].capacity = edges[i][2]
+                except:
+                    pass
+
+        # Loop over vertices, creating cells for each
+        for ind in range(len(vertices)):
+            i = vertices[ind][0]
+            # Collect cofaces
+            cfs=[j for j in range(len(edges)) if edges[j][0]==i or edges[j][1]==i]
+            # Compute orientations of each attachment
+            orient=[]
+            cofaces=[]
+            if orientation:
+                for j in range(len(cfs)):
+                    if edges[cfs[j]][0]==i:
+                        orient.append(-1)
+                    else:
+                        orient.append(1)
+                    cofaces.append(Coface(cfs[j],orient[j]))
+            else:
+                for j in range(len(cfs)):
+                    orient.append(None)
+                    cofaces.append(Coface(cfs[j],orient[j]))
+
+            compcells.append(Cell(dimension=0,
+                                  compactClosure=True,
+                                  cofaces=cofaces))
+            if capacity:
+                compcells[-1].capacity=vertex_capacity
+            compcells[-1].vertex_label=i
+            compcells[-1].name=[i]
+
+        CellComplex.__init__(self,compcells)
+            
+    
+class UndirectedGraph(Graph):
+    
+    def __init__(self, graph):
+        '''
+        Create an Cell Complex from an undirected graph
+        Note: This class assumes that the graph at initialization is a networkx
+              graph or a list of edges.
+              Any homology calculations can also not be done on this class as
+              no orientation is specified.
+        '''
+                      
+        #Determine input type
+        if isinstance(graph, nx.classes.graph.Graph):
+            none_edgs = []
+        elif isinstance(graph, list):
+            none_edgs_ind = [ind for ind in range(len(graph)) if (graph[ind][0] is None) or (graph[ind][1] is None)]
+            none_edgs = [graph[ind] for ind in none_edgs_ind]
+            not_none_edgs = [graph[ind] for ind in range(len(graph)) if ind not in none_edgs_ind]
+            
+            #redefine the graph
+            graph = nx.Graph(not_none_edgs)
+        else:
+            raise TypeError('graph needs to be a list of edges or a networkx graph')
+            
+            
+        #Store Graph Metrics
+        self.graphDensity = nx.density(graph)
+        self.graphDegreeHistogram = nx.degree_histogram(graph)
+        self.graphAdjacencySpectrum = nx.adjacency_spectrum(graph)
+        self.graphLaplacianSpectrum = nx.laplacian_spectrum(graph)
+        
+        #Construct the Cell Complex from a networkX graph         
+        verts = graph.nodes()
+        edges = graph.edges()
+            
+        edges = [list(ed) for ed in edges]
+        edges.extend(none_edgs)
+        verts = [[v] for v in verts]
+            
+        #Sort the edges and vertices for consistency (needed to pass testing/but may add a significant amount of time on large complexs)
+        edges = sorted([sorted(itm) for itm in edges])
+        verts = sorted([sorted(itm) for itm in verts])
+        
+        Graph.__init__(self, edges, verts)
+        
+    def homology(self,k,subcomplex=None,compactSupport=False,tol=1e-5):
+        raise Exception('Homolgy cannot be computed for Undirected Graph Class as no orientation is specified.')
+            
+
 # Flow sheaves
-class DirectedGraph(CellComplex):
-    def __init__(self,graph,vertex_capacity=-1):
+class DirectedGraph(Graph):
+    
+    def __init__(self, graph, vertex_capacity=-1):
         """Create a cell complex from a directed graph description, which is a list of pairs (src,dest) or triples (src,dest,capacity) of numbers representing vertices.
         The vertex labeled None is an external connection
         Cells are labeled as follows:
@@ -1015,39 +1194,17 @@ class DirectedGraph(CellComplex):
             if d is not None:
                 verts.append(d)
         verts=list(set(verts))
+        verts = [[v] for v in verts]
 
-        # Loop over edges, creating cells for each
-        compcells=[]
-        for i in range(len(graph)):
-            compcells.append(Cell(dimension=1,
-                                  compactClosure=(graph[i][0] is not None) and (graph[i][1] is not None)))
-            compcells[-1].vertex_label=None
-            try: # Add capacity if specified
-                compcells[-1].capacity = graph[i][2]
-            except:
-                pass
+        #Construct the 
+        edges = graph
+        edges = [list(ed) for ed in edges]
+            
+        #Sort the edges and vertices for consistency (needed to pass testing/but may add a significant amount of time on large complexs)
+        edges = sorted([itm for itm in edges])
+        verts = sorted([itm for itm in verts])
 
-        # Loop over vertices, creating cells for each
-        for i in verts:
-            # Collect cofaces
-            cfs=[j for j in range(len(graph)) if graph[j][0]==i or graph[j][1]==i]
-            # Compute orientations of each attachment
-            orient=[]
-            cofaces=[]
-            for j in range(len(cfs)):
-                if graph[cfs[j]][0]==i:
-                    orient.append(-1)
-                else:
-                    orient.append(1)
-                cofaces.append(Coface(cfs[j],orient[j]))
-
-            compcells.append(Cell(dimension=0,
-                                  compactClosure=True,
-                                  cofaces=cofaces))
-            compcells[-1].vertex_label=i
-            compcells[-1].capacity=vertex_capacity
-
-        CellComplex.__init__(self,compcells)
+        Graph.__init__(self, edges, verts, orientation=True, vertex_capacity=-1)
 
     def findPath(self,start,end,history=[]):
         """Find a path from specified start cell to end cell
@@ -1523,3 +1680,4 @@ def ksimplices(toplexes,k,relative=None):
             if not spx in simplices and (relative is None or not spx in relative):
                 simplices.append(spx)
     return simplices
+
