@@ -39,7 +39,7 @@ The :py:class:`Sheaf` class derives from :py:class:`CellComplex` to describe its
 
    .. py:attribute:: bounds
 		     
-      The portion of the stalk in which legal values live.  This is used by the optimizer in :py:meth:`Sheaf.fuseAssignment` to set bounds on which values are used.  This should either be :py:`None` (in which the stalk represents the entire vector space) or a list of :py:`(min,max)` pairs of length :py:attr:`SheafCell.stalkDim`.  Use :py:`None` for any bound you wish to ignore. 
+      The portion of the stalk in which legal values live.  This is used by the optimizer in :py:meth:`Sheaf.fuseAssignment` to set bounds on which values are used.  This should either be `None` (in which the stalk represents the entire vector space) or a list of `(min,max)` pairs of length :py:attr:`SheafCell.stalkDim`.  Use `None` for any bound you wish to ignore. 
 
 .. py:class:: SheafCoface(Coface)
 
