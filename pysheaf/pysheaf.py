@@ -10,7 +10,19 @@ import random
 # import matplotlib.pyplot as plt
 import networkx as nx
 import scipy.optimize
-import itertools as it
+from math import pi
+
+import warnings
+
+#import all DEAP related functions for genetic algorithms
+import copy
+from functools import partial
+
+from deap import base
+from deap import creator
+from deap import tools
+from deap import algorithms
+
 
 
 
@@ -270,7 +282,20 @@ class CellComplex:
         """Compute the induced map on local homology between two cells.  It is assumed that cell2 is a coface (perhaps not codimension 1) of cell1"""
         # Compute local homology basis centered on each cell
         pass
-
+    
+    def id_no_cofaces(self):
+        """Return the indices of the toplexes for the cell complex"""
+        
+        indices_of_toplexes = []
+        
+        for cell in self.cells:
+            iscoface = any([alt_cell.isCoface() for alt_cell in self.cells if alt_cell.id == cell.id])
+            if not iscoface:
+                indices_of_toplexes.append(cell.id)
+        
+        return indices_of_toplexes
+    
+    
     # def attachDiagram(self):
     #     """Draw the attachment diagram using NetworkX"""
     #     G=nx.DiGraph()
@@ -747,46 +772,51 @@ class Sheaf(CellComplex):
     def assignmentMetric(self,assignment1,assignment2):
         """Compute the distance between two assignments"""
         radius=0
+        count_comparison = 0
         for c1 in assignment1.sectionCells:
             for c2 in assignment2.sectionCells:
                 if c1.support == c2.support:
                     rad = self.cells[c1.support].metric(c1.value,c2.value)
+                    count_comparison += 1
                     if rad > radius:
                         radius = rad
+                        
+        if count_comparison == 0:
+            radius = 1000000000000
+            warnings.warn("No SectionCells in the assignments match, therefore nothing was compared by assignmentMetric")
+            
         return radius
 
-    def fuseAssignment(self,assignment,tol=1e-5):
-        """Compute the nearest global section to a given assignment"""
-        if self.isNumeric():
-            # The situation where the stalks are all numeric
-            initial_guess, bounds = self.serializeAssignment(assignment)
-            res=scipy.optimize.minimize( fun = lambda sec: self.assignmentMetric(assignment,self.deserializeAssignment(sec)),
-                                         x0 = initial_guess,
-                                         bounds = bounds,
-                                         constraints = ({'type' : 'eq',
-                                                         'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg))}),
-                                         tol = tol, 
-                                         options = {'maxiter' : 100})
-            globalsection = self.deserializeAssignment(res.x)
+    def fuseAssignment(self,assignment,tol=1e-5, global_section=False):
+        
+        if global_section:
+            if self.isNumeric():
+                globalsection = self.optimize_SLSQP(assignment)
+            else:
+                # The fallback situation, where we need to iterate over global sections manually...
+                raise NotImplementedError
         else:
-            # The fallback situation, where we need to iterate over global sections manually...
-            raise NotImplementedError
-
+            if self.isNumeric():
+                globalsection = self.optimize_SLSQP(assignment)
+            else:
+                # The fallback situation, where we need to iterate over global sections manually...
+                raise NotImplementedError
+        
         return globalsection
-
+    
+    
     def deserializeAssignment(self,vect):
-        """Transform a vector of values for a numeric-valued sheaf into an assignment as a Section instance
-        (Note: this is really a helper method and should generally not be used by external callers)"""
+        """Transform a vector of values for a numeric-valued sheaf into an assignment as a Section instance(Note: this is really a helper method and should generally not be used by external callers)"""
         if not self.isNumeric():
             raise TypeError('Cannot deserialize an assignment vector for a non-numeric sheaf')
-
+    
         scs=[]
         idx=0
         for i in range(len(self.cells)):
             if self.cells[i].stalkDim > 0:
                 scs.append(SectionCell(support=i,value=vect[idx:idx+self.cells[i].stalkDim]))
                 idx+=self.cells[i].stalkDim
-
+    
         return Section(scs)
 
     def serializeAssignment(self,assignment):
@@ -827,6 +857,305 @@ class Sheaf(CellComplex):
                 x0[idxarray[cell.support]:idxarray[cell.support]+self.cells[cell.support].stalkDim]=cell.value
 
         return x0,bounds
+    
+    def serialize_global_section_assignment(self, assignment):
+    #TO DO: Minimize Serialze Assignment
+        bounds = []
+        id_len = []
+        
+        for cell in self.cells:
+            isCoface_check = [alt_cell.isCoface(int(cell.id)) for alt_cell in self.cells if alt_cell.id != cell.id]
+            iscoface = any([alt_cell.isCoface(int(cell.id)) for alt_cell in self.cells if alt_cell.id != cell.id])
+            if not iscoface:
+                id_len.append((int(cell.id), cell.stalkDim))
+                if cell.bounds !=None:
+                    #Ensure that the length of the specfied bounds is equivalent to the stalkDim
+                    if len(cell.bounds) == cell.stalkDim:
+                        bounds.extend(cell.bounds)
+                    else:
+                        raise ValueError("Not all bounds specified")
+                else:
+                    bnds=[]
+                    #This will not work (error out if stalkDim = None) however why are you trying to optimize over an empty cell
+                    for x in range(cell.stalkDim):
+                        bnds.append((None, None))
+                    bounds.extend(bnds)
+        
+        #Create initial guess
+        initial_guess = [[0 for j in range(id_len[i][1])] for i in range(len(id_len))]
+        for section in assignment.sectionCells:
+            id_list = [id_len[i][0] for i in range(len(id_len))]
+            # all ids should be unique, enabling the the use of index
+            try:
+                ind = id_list.index(section.support)
+                #This needs to be double checked that it is working properly
+                #section.value needs to be a a numpy array
+                initial_guess[ind] = section.value
+                
+            except ValueError:
+                pass
+            
+        
+        initial_guess_restructure = []
+        for i in range(len(initial_guess)):
+            initial_guess_restructure.extend(initial_guess[i])
+        initial_guess = np.array(initial_guess_restructure)
+        
+        return initial_guess,bounds,id_len
+    
+    def deserialize_global_section(self, vect, id_len):
+        #write a new assignment from the individual so that one can use maximal extend.
+        new_assignment = []
+        start_index = 0
+        for i in range(len(id_len)):
+            new_assignment.append(SectionCell(support=id_len[i][0], value=vect[(start_index):(start_index+id_len[i][1])]))
+            start_index += id_len[i][1]
+        
+        new_assignment = Section(new_assignment)
+        
+        #start of optimization function
+        new_assignment = self.maximalExtend(new_assignment,multiassign=False,tol=1e-5)
+        
+        return new_assignment
+    
+    
+    
+    
+    def optimize_SLSQP(self, assignment, tol=1e-5):
+        """
+        Compute the nearest global section to a given assignment using 
+        scipy.optimize.minimize. When there are constraints specified, 
+        scipy.optimize.minimize defaults to using SLSQP.
+        Based on:
+            Kraft, D. A software package for sequential quadratic programming. 1988. 
+            Tech. Rep. DFVLR-FB 88-28, DLR German Aerospace Center, 
+            Institute for Flight Mechanics, Koln, Germany.
+        """
+        '''
+        if self.isNumeric():
+            # The situation where the stalks are all numeric
+            initial_guess, bounds = self.serializeAssignment(assignment)
+            res=scipy.optimize.minimize( fun = lambda sec: self.assignmentMetric(assignment,self.deserializeAssignment(sec,id_len)),
+                                         x0 = initial_guess,
+                                         bounds = bounds,
+                                         constraints = ({'type' : 'eq',
+                                                         'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg))}),
+                                         tol = tol, 
+                                         options = {'maxiter' : int(100)})
+            globalsection = self.deserializeAssignment(res.x)
+        else:
+            # The fallback situation, where we need to iterate over global sections manually...
+            raise NotImplementedError
+
+        return globalsection
+        '''
+    
+        initial_guess, bounds = self.serializeAssignment(assignment)
+        res=scipy.optimize.minimize( fun = lambda sec: self.assignmentMetric(assignment,self.deserializeAssignment(sec)),
+                                    x0 = initial_guess,
+                                    bounds = bounds,
+                                    constraints = ({'type' : 'eq',
+                                                    'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg))}), tol = tol, options = {'maxiter' : 100})
+        globalsection = self.deserializeAssignment(res.x)
+        return globalsection
+    
+    def optimize_global_section_SLSQP(self, assignment, tol=1e-5):
+        """
+        Compute the nearest global section to a given assignment using 
+        scipy.optimize.minimize. When there are constraints specified, 
+        scipy.optimize.minimize defaults to using SLSQP.
+        Based on:
+            Kraft, D. A software package for sequential quadratic programming. 1988. 
+            Tech. Rep. DFVLR-FB 88-28, DLR German Aerospace Center, 
+            Institute for Flight Mechanics, Koln, Germany.
+        """
+        if self.isNumeric():
+            # The situation where the stalks are all numeric
+            initial_guess, bounds, id_len = self.serialize_global_section_assignment(assignment)
+            res=scipy.optimize.minimize( fun = lambda sec: self.assignmentMetric(assignment,self.deserialize_global_section(sec,id_len)),
+                                         x0 = initial_guess,
+                                         bounds = bounds,
+                                         constraints = ({'type' : 'eq',
+                                                         'fun' : lambda asg: self.consistencyRadius(self.deserialize_global_section(asg))}),
+                                         tol = tol, 
+                                         options = {'maxiter' : 100})
+            globalsection = self.deserialize_global_section(res.x, id_len)
+        else:
+            # The fallback situation, where we need to iterate over global sections manually...
+            raise NotImplementedError
+
+        return globalsection
+    
+    
+    
+    
+    def ga_optimization_function(self,  space_des_2_opt, assignment,individual):
+        """Write the function for the genetic algorithm to optimize similar to fun for scipy.optimize.minimize"""
+        
+        
+        #write a new assignment from the individual so that one can use maximal extend.
+        new_assignment = []
+        start_index = 0
+        for i in range(len(space_des_2_opt)):
+            new_assignment.append(SectionCell(support=space_des_2_opt[i][0], value=individual[(start_index):(start_index+space_des_2_opt[i][1])]))
+            start_index += space_des_2_opt[i][1]
+        
+        new_assignment = Section(new_assignment)
+        
+        #start of optimization function
+        new_assignment = self.maximalExtend(new_assignment,multiassign=False,tol=1e-5)
+        
+        cost = self.assignmentMetric(assignment, new_assignment)
+        #Sum to formulate cost (NOTE: GA maximizes instead of minimizes so we need a negative sign)
+        cost = -cost
+        return (float(cost),)
+
+    
+    def optimize_GA(self, assignment, tol=1e-5, initial_pop_size=100, mutation_rate = .4, num_generations=100 ,num_ele_Hallfame=1):
+        #Entire segment needs to be changed
+        """
+        Compute the nearest global section to a given assignment using 
+        a genetic algorithm. Currently utilizing DEAP with can be install
+        through Anaconda and the command line with conda-forge
+        
+        """
+        #Get the spaces to optimize over while saving their indices in the complex and length as well as the bounds
+                
+        bounds = []
+        opt_sp_id_len = []
+        
+        for cell in self.cells:
+            isCoface_check = [alt_cell.isCoface(int(cell.id)) for alt_cell in self.cells if alt_cell.id != cell.id]
+            iscoface = any([alt_cell.isCoface(int(cell.id)) for alt_cell in self.cells if alt_cell.id != cell.id])
+            if not iscoface:
+                opt_sp_id_len.append((int(cell.id), cell.stalkDim))
+                if cell.bounds !=None:
+                    #Ensure that the length of the specfied bounds is equivalent to the stalkDim
+                    if len(cell.bounds) == cell.stalkDim:
+                        bounds.extend(cell.bounds)
+                    else:
+                        raise ValueError("Not all bounds specified")
+                else:
+                    bnds=[]
+                    #This will not work (error out if stalkDim = None) however why are you trying to optimize over an empty cell
+                    for x in range(cell.stalkDim):
+                        bnds.append(tuple(None, None))
+                    bounds.extend(bnds)
+        
+        #Create initial guess
+        initial_guess = [[0 for j in range(opt_sp_id_len[i][1])] for i in range(len(opt_sp_id_len))]
+        initial_guess_save = copy.deepcopy(initial_guess)
+        for section in assignment.sectionCells:
+            id_list = [opt_sp_id_len[i][0] for i in range(len(opt_sp_id_len))]
+            # all ids should be unique, enabling the the use of index
+            try:
+                ind = id_list.index(section.support)
+                #This needs to be double checked that it is working properly
+                #section.value needs to be a a numpy array
+                initial_guess[ind] = section.value
+                
+            except ValueError:
+                pass
+            
+        
+        initial_guess_restructure = []
+        for i in range(len(initial_guess)):
+            initial_guess_restructure.extend(initial_guess[i])
+        initial_guess = np.array(initial_guess_restructure)
+        
+        
+        #Start of unique to the genetic algorithm
+        if np.array_equal(initial_guess, np.zeros_like(initial_guess)):
+            initial_guess = None
+        
+        #initial_guess, bounds = self.serializeAssignment(assignment)
+        
+        
+        
+        creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+        creator.create("Individual", np.ndarray, fitness=creator.FitnessMax)
+        
+        toolbox = base.Toolbox()
+        
+        #need to change attr_bool to reflect respective bounds for each element in the list
+        #n needs to be the size of the initial assignment
+        
+        #Need a seq_func with all of the bounds 
+        #build seq_func from bounds
+        seq_func = []
+        for bnds in bounds:
+            if bnds[0] != None and bnds[1] != None:
+                #add_func = lambda:partial(random.uniform, )
+                random_in_bounds = partial(random.uniform, bnds[0], bnds[1])
+                seq_func.extend([lambda:random_in_bounds()])
+                #seq_func.extend([lambda:random.uniform(float(bnds[0]), float(bnds[1]))])
+            elif bnds[0] == None and bnds[1] == None:
+                seq_func.extend([lambda:(1/(1-random.random()))-1]) #maps [0,1) to [0, inf)
+            elif bnds[0] == None:
+                multiply_bnds1 = partial(np.multiply, bnds[1])
+                seq_func.extend([lambda:(-1/(1-random.random()) + 1 + multiply_bnds1(1.0))])
+                #seq_func.extend([lambda:(random.randrange(copy.deepcopy(bnds[1])))]) #need to check actual opperation of randrange without a start
+            else:
+                multiply_bnds0 = partial(np.multiply, bnds[0])
+                seq_func.extend([lambda: (1/(1-random.random()))-1 + multiply_bnds0(1.0)])
+                #seq_func.extend([lambda:(-1*random.randrange(copy.deepcopy(bnds[0])) + 2*copy.deepcopy(bnds[0]))])
+        
+        #specify a population within the bounds
+        #print bounds
+        toolbox.register("individual", tools.initCycle, creator.Individual, seq_func, n=1)
+        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+        
+        
+        
+        #Not needed to be built until after the 
+        if not np.any(initial_guess):
+            #specify a population without including an initial guess
+            pop = toolbox.population(n=initial_pop_size)
+        
+        else:
+            #specify a population within the bounds that includes the initial guess
+            pop = toolbox.population(n=(initial_pop_size-1))
+            initial_g = creator.Individual(initial_guess)
+            pop.insert(0, initial_g)
+            
+        #cost = self.ga_optimization_function(opt_sp_id_len, assignment, initial_guess)
+        cost = partial(self.ga_optimization_function, opt_sp_id_len, assignment)
+        
+        toolbox.register("evaluate", cost)
+        
+        lower_bounds = [int(bnds[0]) for bnds in bounds]
+        upper_bounds = [int(bnds[1]) for bnds in bounds]
+        
+        #Note: eta =Crowding degree of the crossover. A high eta will produce children resembling to their parents, while a small eta will produce solutions much more different
+        #indpb = the probability of each attribute to be mutated
+        toolbox.register("mate", tools.cxSimulatedBinaryBounded, low=lower_bounds, up=upper_bounds, eta=20.0)
+        
+        
+        
+        toolbox.register("mutate", tools.mutUniformInt, low=lower_bounds, up=upper_bounds, indpb=mutation_rate)
+        #toolbox.register("mutate", tools.mutPolynomialBounded, low=lower_bounds, up=upper_bounds, eta=20.0, indpb=1.0/30.0)
+        toolbox.register("select", tools.selNSGA2)
+        
+        #Set up the hallof fame in order to report the best individual
+        hof = tools.HallOfFame(num_ele_Hallfame, similar=np.array_equal)
+    
+        
+        #Get statistics for each generation in the genetic algoritm
+        stats = tools.Statistics(lambda ind: ind.fitness.values)
+        stats.register("avg", np.mean)
+        stats.register("std", np.std)
+        stats.register("min", np.min)
+        stats.register("max", np.max)
+    
+        algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=num_generations, stats=stats,
+                        halloffame=hof)
+
+        return pop, stats, hof
+            
+        
+
+            
+
 
     def partitionAssignment(self,assignment,tol=1e-5):
         """Take an assignment to some cells of a sheaf and return a collection of disjoint maximal sets of cells on which this assignment is a local section"""
@@ -938,6 +1267,17 @@ class Sheaf(CellComplex):
                 mor.append(SheafMorphismCell([i],[LinearMorphism(np.ones((1,c.stalkDim)))]))
 
         return fs,SheafMorphism(mor)
+
+    
+#Add Sheaf with system in order to match Grant's code
+
+class SheafwSystem(Sheaf):
+    '''Construct a sheaf which has all of the methods associated with a system'''
+    pass
+    
+
+    
+    
 
 class AmbiguitySheaf(Sheaf):
     def __init__(self,shf1,mor):
@@ -1540,6 +1880,10 @@ class PersistenceSheaf(Sheaf):
                                           stalkDim=sheaves[i].cobetti(k)))
         # Initialize the sheaf
         Sheaf.__init__(self,persheaf)
+        
+        
+
+
 
 ## Functions
 
