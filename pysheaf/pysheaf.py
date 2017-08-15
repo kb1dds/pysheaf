@@ -10,7 +10,7 @@ import random
 # import matplotlib.pyplot as plt
 import networkx as nx
 import scipy.optimize
-from math import pi
+from math import pi, floor
 
 import warnings
 
@@ -22,9 +22,19 @@ from deap import base
 from deap import creator
 from deap import tools
 from deap import algorithms
+from operator import attrgetter
 
+#For debugging
+import warnings
 
+#For Debugging genetic optimization
+#Temporary addition to check the genetic algorithm DELETE BEFORE MERGING INTO MAIN"""
+import sys
+sys.path.append('C:/Users/jhenrich/Documents/pysheaf_optimize/')
+import Explicit_Cost_Search_Rescue as ec
 
+#For outputting 
+from datetime import datetime
 
 ## Data structures
 class Coface:
@@ -751,10 +761,13 @@ class Sheaf(CellComplex):
 
     def maximalExtend(self,assignment,multiassign=False,tol=1e-5):
         """Take a partial assignment and extend it to a maximal assignment that's non-conflicting (if multiassign=False) or one in which multiple values can be given to a given cell (if multiassign=True)"""
+        #print [x.value for x in assignment.sectionCells]
         for i in range(len(assignment.sectionCells)):
             for cf in self.cofaces(assignment.sectionCells[i].support):
                 if not assignment.extend(self,cf.index,tol=tol) and multiassign:
                     assignment.sectionCells.append(SectionCell(cf.index,cf.restriction(assignment.sectionCells[i].value)))
+        #print [x.support for x in assignment.sectionCells]
+        #print [x.value for x in assignment.sectionCells]
         return assignment
 
     def consistencyRadius(self,assignment,tol=1e-5):
@@ -767,6 +780,7 @@ class Sheaf(CellComplex):
                     rad = self.cells[c1.support].metric(c1.value,c2.value)
                     if rad > radius:
                         radius = rad
+        
         return radius
 
     def assignmentMetric(self,assignment1,assignment2):
@@ -784,14 +798,35 @@ class Sheaf(CellComplex):
         if count_comparison == 0:
             radius = 1000000000000
             warnings.warn("No SectionCells in the assignments match, therefore nothing was compared by assignmentMetric")
-            
+        
+        
+        #print radius
+        return radius
+    
+    def assignmentMetric_differentiable(self,assignment1,assignment2):
+        """Compute the distance between two assignments"""
+        radius=0
+        count_comparison = 0
+        for c1 in assignment1.sectionCells:
+            for c2 in assignment2.sectionCells:
+                if c1.support == c2.support:
+                    rad = self.cells[c1.support].metric(c1.value,c2.value)
+                    count_comparison += 1
+                    radius += (rad)**2
+                        
+        if count_comparison == 0:
+            radius = 1000000000000
+            warnings.warn("No SectionCells in the assignments match, therefore nothing was compared by assignmentMetric")
+        
+        
+        #print radius
         return radius
 
     def fuseAssignment(self,assignment,tol=1e-5, global_section=False):
         
         if global_section:
             if self.isNumeric():
-                globalsection = self.optimize_SLSQP(assignment)
+                globalsection = self.optimize_global_section_SLSQP(assignment, tol=tol)
             else:
                 # The fallback situation, where we need to iterate over global sections manually...
                 raise NotImplementedError
@@ -858,11 +893,13 @@ class Sheaf(CellComplex):
 
         return x0,bounds
     
-    def serialize_global_section_assignment(self, assignment):
+    def serialize_global_section_assignment(self, assignment, initial_random=True):
     #TO DO: Minimize Serialze Assignment
-        bounds = []
         id_len = []
+        bounded = False
+        bounds= []
         
+        '''
         for cell in self.cells:
             isCoface_check = [alt_cell.isCoface(int(cell.id)) for alt_cell in self.cells if alt_cell.id != cell.id]
             iscoface = any([alt_cell.isCoface(int(cell.id)) for alt_cell in self.cells if alt_cell.id != cell.id])
@@ -878,8 +915,27 @@ class Sheaf(CellComplex):
                     bnds=[]
                     #This will not work (error out if stalkDim = None) however why are you trying to optimize over an empty cell
                     for x in range(cell.stalkDim):
-                        bnds.append((None, None))
+                        bnds.append(tuple([None, None]))
                     bounds.extend(bnds)
+        '''            
+
+        # Figure out cell boundaries in vector, and collect their bounds if present
+        for i in range(len(self.cells)):
+            iscoface = any([alt_cell.isCoface(int(self.cells[i].id)) for alt_cell in self.cells if alt_cell.id != self.cells[i].id])
+            if not iscoface:
+                id_len.append((int(self.cells[i].id), self.cells[i].stalkDim))
+                if bounded or self.cells[i].bounds is not None:
+                    if self.cells[i].bounds is None:
+                        bounds+= [(None,None)]*self.cells[i].stalkDim
+                    else:
+                        bounds.extend(self.cells[0].bounds)
+                    bounded = True
+        
+        if bounded:
+            bounds = tuple(bounds)
+        else:
+            bounds=None          
+                
         
         #Create initial guess
         initial_guess = [[0 for j in range(id_len[i][1])] for i in range(len(id_len))]
@@ -901,6 +957,31 @@ class Sheaf(CellComplex):
             initial_guess_restructure.extend(initial_guess[i])
         initial_guess = np.array(initial_guess_restructure)
         
+        
+        if initial_random:
+            #Need a seq_func with all of the bounds 
+            #build seq_func from bounds
+            seq_rand = []
+            for i in range(sum([x[1] for x in id_len])):
+                if bounds != None:
+                    if bounds[i][0] != None and bounds[i][1] != None:
+                        #add_func = lambda:partial(random.uniform, )
+                        random_in_bounds = random.uniform(bounds[i][0], bounds[i][1])
+                        seq_rand.append(random_in_bounds)
+                        #seq_func.extend([lambda:random.uniform(float(bnds[0]), float(bnds[1]))])
+                    elif bounds[i][0] == None and bounds[i][1] == None:
+                        seq_rand.append((1/(1-random.random()))-1) #maps [0,1) to [0, inf)
+                    elif bounds[i][0] == None:
+                        seq_rand.append((-1/(1-random.random()) + 1 + bounds[i][1]))
+                        #seq_func.extend([lambda:(random.randrange(copy.deepcopy(bnds[1])))]) #need to check actual opperation of randrange without a start
+                    else:
+                        seq_rand.append((1/(1-random.random()))-1 + bounds[i][0])
+                        #seq_func.extend([lambda:(-1*random.randrange(copy.deepcopy(bnds[0])) + 2*copy.deepcopy(bnds[0]))])
+                else: 
+                    seq_rand.append((1/(1-random.random()))-1) #maps [0,1) to [0, inf)
+            initial_guess = seq_rand
+            
+        #Make sure that if bounds is empty to reassign bounds to None
         return initial_guess,bounds,id_len
     
     def deserialize_global_section(self, vect, id_len):
@@ -912,9 +993,7 @@ class Sheaf(CellComplex):
             start_index += id_len[i][1]
         
         new_assignment = Section(new_assignment)
-        
-        #start of optimization function
-        new_assignment = self.maximalExtend(new_assignment,multiassign=False,tol=1e-5)
+        #print [x.value for x in new_assignment.sectionCells]
         
         return new_assignment
     
@@ -951,12 +1030,16 @@ class Sheaf(CellComplex):
         '''
     
         initial_guess, bounds = self.serializeAssignment(assignment)
+        print bounds
         res=scipy.optimize.minimize( fun = lambda sec: self.assignmentMetric(assignment,self.deserializeAssignment(sec)),
                                     x0 = initial_guess,
+                                    method = 'SLSQP', 
                                     bounds = bounds,
                                     constraints = ({'type' : 'eq',
-                                                    'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg))}), tol = tol, options = {'maxiter' : 100})
+                                                    'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg))}), tol = tol, options = {'maxiter' : 10000})
         globalsection = self.deserializeAssignment(res.x)
+        print res.success
+        print res.message
         return globalsection
     
     def optimize_global_section_SLSQP(self, assignment, tol=1e-5):
@@ -972,14 +1055,32 @@ class Sheaf(CellComplex):
         if self.isNumeric():
             # The situation where the stalks are all numeric
             initial_guess, bounds, id_len = self.serialize_global_section_assignment(assignment)
-            res=scipy.optimize.minimize( fun = lambda sec: self.assignmentMetric(assignment,self.deserialize_global_section(sec,id_len)),
-                                         x0 = initial_guess,
-                                         bounds = bounds,
-                                         constraints = ({'type' : 'eq',
-                                                         'fun' : lambda asg: self.consistencyRadius(self.deserialize_global_section(asg))}),
-                                         tol = tol, 
-                                         options = {'maxiter' : 100})
-            globalsection = self.deserialize_global_section(res.x, id_len)
+            #print bounds
+            #print initial_guess
+            if len(id_len) < 2:
+                res=scipy.optimize.minimize( fun = lambda sec: self.assignmentMetric(assignment,self.maximalExtend(self.deserialize_global_section(sec,id_len), multiassign=True)),
+                                            x0 = initial_guess,
+                                            method = 'SLSQP',
+                                            bounds = bounds,
+                                            #constraints = ({'type' : 'eq',
+                                            #                'fun' : lambda asg: self.consistencyRadius(self.deserialize_global_section(asg, id_len))}),
+                                            tol = tol, 
+                                            options = {'maxiter' : 10000, 'disp' : True})
+                globalsection = self.deserialize_global_section(res.x, id_len)
+                print res.success
+                print res.message
+            else:
+                res=scipy.optimize.minimize( fun = lambda sec: self.assignmentMetric(assignment,self.maximalExtend(self.deserialize_global_section(sec,id_len), multiassign=True)),
+                                            x0 = initial_guess,
+                                            method = 'SLSQP',
+                                            bounds = bounds,
+                                            constraints = ({'type' : 'eq',
+                                                            'fun' : lambda asg: self.consistencyRadius(self.deserialize_global_section(asg, id_len))}),
+                                            tol = tol, 
+                                            options = {'maxiter' : 10000, 'disp' : True})
+                globalsection = self.deserialize_global_section(res.x, id_len)
+                print res.success
+                print res.message
         else:
             # The fallback situation, where we need to iterate over global sections manually...
             raise NotImplementedError
@@ -992,35 +1093,193 @@ class Sheaf(CellComplex):
     def ga_optimization_function(self,  space_des_2_opt, assignment,individual):
         """Write the function for the genetic algorithm to optimize similar to fun for scipy.optimize.minimize"""
         
+        #Assign a high cost to eliminate individuals with nans from the population
+        if np.any(np.isnan(individual)):
+            cost = 1e100
+            cost = -cost
+            
+        else:
+            
+            
+            #write a new assignment from the individual so that one can use maximal extend.
+            new_assignment = []
+            start_index = 0
+            for i in range(len(space_des_2_opt)):
+                new_assignment.append(SectionCell(support=space_des_2_opt[i][0], value=individual[(start_index):(start_index+space_des_2_opt[i][1])]))
+                start_index += space_des_2_opt[i][1]
         
-        #write a new assignment from the individual so that one can use maximal extend.
-        new_assignment = []
-        start_index = 0
-        for i in range(len(space_des_2_opt)):
-            new_assignment.append(SectionCell(support=space_des_2_opt[i][0], value=individual[(start_index):(start_index+space_des_2_opt[i][1])]))
-            start_index += space_des_2_opt[i][1]
+            new_assignment = Section(new_assignment)
         
-        new_assignment = Section(new_assignment)
+            #start of optimization function
+            new_assignment = self.maximalExtend(new_assignment,multiassign=False,tol=1e-5)
         
-        #start of optimization function
-        new_assignment = self.maximalExtend(new_assignment,multiassign=False,tol=1e-5)
-        
-        cost = self.assignmentMetric(assignment, new_assignment)
-        #Sum to formulate cost (NOTE: GA maximizes instead of minimizes so we need a negative sign)
-        cost = -cost
+            cost = self.assignmentMetric(assignment, new_assignment)
+            #Sum to formulate cost (NOTE: GA maximizes instead of minimizes so we need a negative sign)
+            cost = -cost
         return (float(cost),)
+    
+    
+    
+    def explicit_optimization_function(self, assignment, individual):
+        """Temporary function to check the genetic algorithm DELETE BEFORE MERGING INTO MAIN"""
+        print "Cost Explicit:"
+        if np.any(np.isnan(individual)):
+            cost = 1e100
+            cost = -cost
+        else:
+            #Simplistic way to take assignment to this case specific list
+#            new_assignment = {}
+#            for cell in assignment.sectionCells:
+#                if cell.support == 0:
+#                    new_assignment['field_lon'] = cell.value[0]
+#                    new_assignment['field_lat'] = cell.value[1]
+#                    new_assignment['field_alt'] = cell.value[2]
+#                    new_assignment['field_vec_lon'] = cell.value[3]
+#                    new_assignment['field_vec_lat'] = cell.value[4]
+#                    new_assignment['field_t'] = cell.value[5]
+#                elif cell.support == 1:
+#                    new_assignment['plan_lon'] = cell.value[0]
+#                    new_assignment['plan_lat'] = cell.value[1]
+#                    new_assignment['plan_alt'] = cell.value[2]
+#                elif cell.support == 2:
+#                    new_assignment['atc_lon'] = cell.support[0]
+#                    new_assignment['atc_lat'] = cell.support[1]
+#                    new_assignment['atc_alt'] = cell.support[2]
+#                    new_assignment['atc_vec_lon'] = cell.support[3]
+#                    new_assignment['atc_vec_lat'] = cell.support[4]
+#                elif cell.support == 3:
+#                    new_assignment['rf1_bearing'] = cell.support[0]
+#                    new_assignment['rf1_t'] = cell.support[1]
+#                elif cell.support == 4:
+#                    new_assignment['rf2_bearing'] = cell.support[0]
+#                    new_assignment['rf2_t'] = cell.support[1]
+#                elif cell.suppport == 5:
+#                    new_assignment['s_lon'] = cell.support[0]
+#                    new_assignment['s_lat'] = cell.support[1]
+
+            cost = ec.explicit_sr(individual, assignment)
+            cost = -cost
+        return (float(cost),)
+        
 
     
-    def optimize_GA(self, assignment, tol=1e-5, initial_pop_size=100, mutation_rate = .4, num_generations=100 ,num_ele_Hallfame=1):
+    def optimize_GA(self, assignment, tol=1e-5, initial_pop_size=100, mutation_rate = .3, num_generations=100 ,num_ele_Hallfame=1):
         #Entire segment needs to be changed
         """
         Compute the nearest global section to a given assignment using 
-        a genetic algorithm. Currently utilizing DEAP with can be install
-        through Anaconda and the command line with conda-forge
+        a genetic algorithm. 
+        
+        Inputs:
+            assignment - the initial assignment that the selection function compares guess against for consistency
+            tol - the maximum distance for two items to be considered the same
+            initial_pop_size - the number of individuals in the starting population
+            mutation_rate - the proportion of the offspring (newly created individuals each round) that are from mutations rather
+                            than mating
+            num_generations - the number of iterations that the genetic algorithm runs
+            num_ele_Hallfame - the number of top individuals that should be reported in the hall of fame (hof)
+            
+        Outputs:
+            pop - the final population of the algorithm
+            stats - the statistics on the fitness of the final population
+            hof - the fittest individual
+            opt_sp_id_len - the space the algorithm is optimizing over
         
         """
+        #Add in a potential selection function
+        def selStochasticUniversalSampling(individuals, k, fit_attr="fitness"):
+            """Select the *k* individuals among the input *individuals*.
+            The selection is made by using a single random value to sample all of the
+            individuals by choosing them at evenly spaced intervals. The list returned
+            contains references to the input *individuals*.
+            :param individuals: A list of individuals to select from.
+            :param k: The number of individuals to select.
+            :param fit_attr: The attribute of individuals to use as selection criterion
+            :return: A list of selected individuals.
+            This function uses the :func:`~random.uniform` function from the python base
+            :mod:`random` module.
+            """
+            s_inds = sorted(individuals, key=attrgetter(fit_attr), reverse=True)
+            sum_fits = sum(getattr(ind, fit_attr).values[0] for ind in individuals)
+        
+            distance = sum_fits / float(k)
+            start = random.uniform(0, distance)
+            points = [start + i*distance for i in xrange(k)]
+        
+            chosen = []
+            for p in points:
+                i = 0
+                sum_ = getattr(s_inds[i], fit_attr).values[0]
+                while sum_ < p:
+                    i += 1
+                    sum_ += getattr(s_inds[i], fit_attr).values[0]
+                chosen.append(s_inds[i])
+        
+            return chosen
+        
+        #add as a potential selection function to match Matlab
+        def selnormGeom(individuals, k, prob_sel_best= 0.08, fit_attr="fitness"):
+            #NormGeomSelect is a ranking selection function based on the normalized
+            #geometric distribution.  
+            
+            #Modified from the Matlab version into the style of DEAP
+            
+            #function[newPop] = normGeomSelect(oldPop,options)
+            #newPop  - the new population selected from the oldPop
+            #oldPop  - the current population
+            #options - options to normGeomSelect [gen probability_of_selecting_best]
+            
+            #Binary and Real-Valued Simulation Evolution for Matlab 
+            #Copyright (C) 1996 C.R. Houck, J.A. Joines, M.G. Kay 
+            
+            #C.R. Houck, J.Joines, and M.Kay. A genetic algorithm for function
+            #optimization: A Matlab implementation. ACM Transactions on Mathmatical
+            #Software, Submitted 1996.
+            
+
+            q = prob_sel_best   # Probability of selecting the best
+            n = len(individuals)  # Number of individuals in pop
+            
+            
+            chosen = [] #editted the structure of th output to reflect the structure of pysheaf
+            fit = np.zeros((n,1))  #Allocates space for the prop of select
+            x = np.zeros((n,2))    #Sorted list of id and rank
+            x[:, 0] = range(n,0,-1) # Get original location of the element
+            to_sort = zip(individuals, range(n)) #need to keep original index associated
+            s_inds = sorted(to_sort, key= lambda ind: getattr(ind[0], fit_attr).values[0]) #Sort by the fitnesses
+            x[:, 1] = [b for a,b in s_inds]
+            r =q/(1-((1-q)**n))  # normalize the distribution, q prime
+            for ind in range(n):  #Generate the probability of selection
+                ind_fit = int(x[ind,1])
+                fit[ind_fit] = r*((1-q)**(x[ind, 0]-1))
+            fit = np.cumsum(fit)  # Calculate the cummulative prob. function
+            rnums = sorted([random.random() for nn in range(n)])  # Generate n sorted random numbers
+            fitIn = 0
+            new_In = 0
+            unique = []
+            while new_In < k:
+                if rnums[new_In] < fit[fitIn]:
+                    unique.append(fitIn)
+                    chosen.append(individuals[fitIn]) #Select the fitIn individual
+                    new_In += 1  # Looking for next new individual
+                else:
+                    fitIn += 1 # Looking at next potential selection
+            print len(np.unique(np.array(unique)))
+            
+            return chosen 
+        
+        
+        #Define functions similar to Matlab optimization functionality
+        def arithXover(ind1, ind2):
+            for i, (x1, x2) in enumerate(zip(ind1, ind2)):
+                gamma = random.random()
+                ind1[i] = (1. - gamma) * x1 + gamma * x2
+                ind2[i] = gamma * x1 + (1. - gamma) * x2
+
+            return ind1, ind2
+            
+        
+        
         #Get the spaces to optimize over while saving their indices in the complex and length as well as the bounds
-                
         bounds = []
         opt_sp_id_len = []
         
@@ -1039,10 +1298,10 @@ class Sheaf(CellComplex):
                     bnds=[]
                     #This will not work (error out if stalkDim = None) however why are you trying to optimize over an empty cell
                     for x in range(cell.stalkDim):
-                        bnds.append(tuple(None, None))
+                        bnds.append(tuple([None, None]))
                     bounds.extend(bnds)
         
-        #Create initial guess
+        #Create initial guess if that index is specfied for that section
         initial_guess = [[0 for j in range(opt_sp_id_len[i][1])] for i in range(len(opt_sp_id_len))]
         initial_guess_save = copy.deepcopy(initial_guess)
         for section in assignment.sectionCells:
@@ -1064,24 +1323,20 @@ class Sheaf(CellComplex):
         initial_guess = np.array(initial_guess_restructure)
         
         
-        #Start of unique to the genetic algorithm
+        #Make the Initial guess none if section was empty
         if np.array_equal(initial_guess, np.zeros_like(initial_guess)):
             initial_guess = None
         
-        #initial_guess, bounds = self.serializeAssignment(assignment)
         
-        
-        
+        #Start of unique to the genetic algorithm
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
         creator.create("Individual", np.ndarray, fitness=creator.FitnessMax)
         
         toolbox = base.Toolbox()
+
         
-        #need to change attr_bool to reflect respective bounds for each element in the list
-        #n needs to be the size of the initial assignment
         
-        #Need a seq_func with all of the bounds 
-        #build seq_func from bounds
+        #seq_func forces the initial population to be generated randomly within the bounds
         seq_func = []
         for bnds in bounds:
             if bnds[0] != None and bnds[1] != None:
@@ -1101,13 +1356,12 @@ class Sheaf(CellComplex):
                 #seq_func.extend([lambda:(-1*random.randrange(copy.deepcopy(bnds[0])) + 2*copy.deepcopy(bnds[0]))])
         
         #specify a population within the bounds
-        #print bounds
         toolbox.register("individual", tools.initCycle, creator.Individual, seq_func, n=1)
         toolbox.register("population", tools.initRepeat, list, toolbox.individual)
         
         
         
-        #Not needed to be built until after the 
+        #Include the initial guess in the population, otherwise register the population
         if not np.any(initial_guess):
             #specify a population without including an initial guess
             pop = toolbox.population(n=initial_pop_size)
@@ -1118,23 +1372,37 @@ class Sheaf(CellComplex):
             initial_g = creator.Individual(initial_guess)
             pop.insert(0, initial_g)
             
-        #cost = self.ga_optimization_function(opt_sp_id_len, assignment, initial_guess)
+        #define a function to calculate the fitness of an individual
         cost = partial(self.ga_optimization_function, opt_sp_id_len, assignment)
-        
         toolbox.register("evaluate", cost)
         
+        #Define the upper and lower bounds for each attribute in the optimization
         lower_bounds = [int(bnds[0]) for bnds in bounds]
         upper_bounds = [int(bnds[1]) for bnds in bounds]
         
+        
+        #Define the function to do the mating between two individuals in the previous population
+        #Note: Any toolbox.register that are commented out are other possibilities for the function
+        
         #Note: eta =Crowding degree of the crossover. A high eta will produce children resembling to their parents, while a small eta will produce solutions much more different
         #indpb = the probability of each attribute to be mutated
-        toolbox.register("mate", tools.cxSimulatedBinaryBounded, low=lower_bounds, up=upper_bounds, eta=20.0)
+        #toolbox.register("mate", tools.cxSimulatedBinaryBounded, low=lower_bounds, up=upper_bounds, eta=20.0)
+        #toolbox.register("mate", tools.cxSimulatedBinary, eta=10)
+        #toolbox.register("mate", tools.cxUniform, indpb = .3)
         
+        toolbox.register("mate", arithXover)
         
-        
+        #Define a function to do the mutation for an individual in the next generation
         toolbox.register("mutate", tools.mutUniformInt, low=lower_bounds, up=upper_bounds, indpb=mutation_rate)
         #toolbox.register("mutate", tools.mutPolynomialBounded, low=lower_bounds, up=upper_bounds, eta=20.0, indpb=1.0/30.0)
-        toolbox.register("select", tools.selNSGA2)
+        
+        #Define a function to do the selection of individuals 
+        #toolbox.register("select", tools.selNSGA2)
+        #toolbox.register("select", tools.selBest)
+        #toolbox.register("select", tools.selTournament, tournsize=15)
+        #toolbox.register("select", tools.selAutomaticEpsilonLexicase)
+        #toolbox.register("select", selStochasticUniversalSampling)
+        toolbox.register("select", selnormGeom, prob_sel_best=0.08)
         
         #Set up the hallof fame in order to report the best individual
         hof = tools.HallOfFame(num_ele_Hallfame, similar=np.array_equal)
@@ -1146,11 +1414,12 @@ class Sheaf(CellComplex):
         stats.register("std", np.std)
         stats.register("min", np.min)
         stats.register("max", np.max)
-    
-        algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=num_generations, stats=stats,
-                        halloffame=hof)
+        
+        #Define an algorithm to structure the iteration through generations
+        algorithms.eaMuPlusLambda(pop, toolbox, mu = (3*initial_pop_size), lambda_=(3*initial_pop_size), cxpb=0.5, mutpb=0.5, ngen=num_generations, stats=stats,
+                        halloffame=hof) #mu and lambda are only the same because of the normGeomSelect
 
-        return pop, stats, hof
+        return pop, stats, hof, opt_sp_id_len
             
         
 
@@ -1798,6 +2067,7 @@ class Section:
 
     def extend(self,sheaf,cell,value=None,tol=1e-5):
         """Extend the section to another cell; returns True if successful"""
+        
         # If the desired cell is already in the support, do nothing
         if cell in self.support():
             return
@@ -1837,10 +2107,26 @@ class Section:
                 if np.any(np.abs(res)>tol):
                     return False
                 value = val
+            
+            if isinstance(value,np.ndarray):
+                if np.any(np.isnan(value)):
+                    print value
+                    value=None
+                
         else: # ...or check consistency with an old one
             for cf in sheaf.cells[cell].cofaces:
                 for s in self.sectionCells:
                     if s.support == cf.index:
+                        #added next segment to debug genetic algorithm
+                        try:
+                            warnings.simplefilter("error")
+                            check = np.abs(cf.restriction(value)-s.value)
+                        except RuntimeWarning:
+                            print value
+                            print cf.restriction(value)
+                            print s.value
+                            print cf.restriction(value)-s.value
+                            
                         if np.any(np.abs(cf.restriction(value)-s.value)>tol):
                             return False
 
