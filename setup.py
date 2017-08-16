@@ -17,7 +17,7 @@ setup(name='pysheaf',
       author_email='michaelr@american.edu',
       license='MIT',
       packages=['pysheaf'],
-      install_requires=['numpy','networkx','scipy'],
+      install_requires=['numpy','networkx','scipy','deap'],
       classifiers=[
         'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: MIT License',
