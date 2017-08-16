@@ -73,10 +73,11 @@ Because we wish to test the installation using the :py:mod:`unittest` module we 
 
   pip install -e git+https://github.com/kb1dds/pysheaf.git#egg=pysheaf
 
-Depending on your system (Windows in particular) this may or may not install all of the dependencies. If you get an error message that something is missing you can install the missing dependencies using :py:mod:`conda`.  PySheaf requires :py:mod:`numpy`, :py:mod:`networkx`, and :py:mod:`scipy`.
+Depending on your system (Windows in particular) this may or may not install all of the dependencies. If you get an error message that something is missing you can install the missing dependencies using :py:mod:`conda`.  PySheaf requires :py:mod:`numpy`, :py:mod:`networkx`, :py:mod:`scipy`, and :py:mod:`deap`.
 To install these using :py:mod:`conda`::
 
   conda install numpy networkx scipy
+  conda install -c conda-forge deap
 
 **Note:** If you only wish to install the PySheaf package for purposes of imports and do not wish to run the tests or review the source code then use the following for pip install::
 
