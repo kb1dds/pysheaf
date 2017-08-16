@@ -279,18 +279,6 @@ class CellComplex:
         # Compute local homology basis centered on each cell
         pass
     
-    def id_no_cofaces(self):
-        """Return the indices of the toplexes for the cell complex"""
-        
-        indices_of_toplexes = []
-        
-        for cell in self.cells:
-            iscoface = any([alt_cell.isCoface() for alt_cell in self.cells if alt_cell.id == cell.id])
-            if not iscoface:
-                indices_of_toplexes.append(cell.id)
-        
-        return indices_of_toplexes
-    
     
     # def attachDiagram(self):
     #     """Draw the attachment diagram using NetworkX"""
@@ -747,13 +735,10 @@ class Sheaf(CellComplex):
 
     def maximalExtend(self,assignment,multiassign=False,tol=1e-5):
         """Take a partial assignment and extend it to a maximal assignment that's non-conflicting (if multiassign=False) or one in which multiple values can be given to a given cell (if multiassign=True)"""
-        #print [x.value for x in assignment.sectionCells]
         for i in range(len(assignment.sectionCells)):
             for cf in self.cofaces(assignment.sectionCells[i].support):
                 if not assignment.extend(self,cf.index,tol=tol) and multiassign:
                     assignment.sectionCells.append(SectionCell(cf.index,cf.restriction(assignment.sectionCells[i].value)))
-        #print [x.support for x in assignment.sectionCells]
-        #print [x.value for x in assignment.sectionCells]
         return assignment
 
     def consistencyRadius(self,assignment,tol=1e-5):
@@ -784,16 +769,13 @@ class Sheaf(CellComplex):
         if count_comparison == 0:
             radius = 1000000000000
             warnings.warn("No SectionCells in the assignments match, therefore nothing was compared by assignmentMetric")
-        
-        
-        #print radius
         return radius
     
 
-    def fuseAssignment(self,assignment,tol=1e-5, global_section=False):
+    def fuseAssignment(self,assignment,tol=1e-5):
         """Compute the nearest global section to a given assignment"""
         if self.isNumeric():
-            globalsection = self.optimize_SLSQP(assignment)
+            globalsection = self.optimize_SLSQP(assignment, tol)
         else:
             # The fallback situation, where we need to iterate over global sections manually...
             raise NotImplementedError
@@ -865,36 +847,19 @@ class Sheaf(CellComplex):
             Tech. Rep. DFVLR-FB 88-28, DLR German Aerospace Center, 
             Institute for Flight Mechanics, Koln, Germany.
         """
-        '''
-        if self.isNumeric():
-            # The situation where the stalks are all numeric
-            initial_guess, bounds = self.serializeAssignment(assignment)
-            res=scipy.optimize.minimize( fun = lambda sec: self.assignmentMetric(assignment,self.deserializeAssignment(sec,id_len)),
-                                         x0 = initial_guess,
-                                         bounds = bounds,
-                                         constraints = ({'type' : 'eq',
-                                                         'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg))}),
-                                         tol = tol, 
-                                         options = {'maxiter' : int(100)})
-            globalsection = self.deserializeAssignment(res.x)
-        else:
-            # The fallback situation, where we need to iterate over global sections manually...
-            raise NotImplementedError
-
-        return globalsection
-        '''
     
         initial_guess, bounds = self.serializeAssignment(assignment)
-        print bounds
         res=scipy.optimize.minimize( fun = lambda sec: self.assignmentMetric(assignment,self.deserializeAssignment(sec)),
                                     x0 = initial_guess,
                                     method = 'SLSQP', 
                                     bounds = bounds,
                                     constraints = ({'type' : 'eq',
-                                                    'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg))}), tol = tol, options = {'maxiter' : 10000})
+                                                    'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg))}), 
+                                    tol = tol, 
+                                    options = {'maxiter' : int(1000)})
         globalsection = self.deserializeAssignment(res.x)
-        print res.success
-        print res.message
+        #print res.success
+        #print res.message
         return globalsection
     
     
@@ -909,8 +874,6 @@ class Sheaf(CellComplex):
             cost = -cost
             
         else:
-            
-            
             #write a new assignment from the individual so that one can use maximal extend.
             new_assignment = []
             start_index = 0
@@ -931,7 +894,6 @@ class Sheaf(CellComplex):
 
     
     def optimize_GA(self, assignment, tol=1e-5, initial_pop_size=100, mutation_rate = .3, num_generations=100 ,num_ele_Hallfame=1):
-        #Entire segment needs to be changed
         """
         Compute the nearest global section to a given assignment using 
         a genetic algorithm. 
@@ -1256,14 +1218,6 @@ class Sheaf(CellComplex):
                 mor.append(SheafMorphismCell([i],[LinearMorphism(np.ones((1,c.stalkDim)))]))
 
         return fs,SheafMorphism(mor)
-
-    
-#Add Sheaf with system in order to match Grant's code
-
-class SheafwSystem(Sheaf):
-    '''Construct a sheaf which has all of the methods associated with a system'''
-    pass
-    
 
     
     
@@ -1827,24 +1781,10 @@ class Section:
                     return False
                 value = val
             
-            if isinstance(value,np.ndarray):
-                if np.any(np.isnan(value)):
-                    print value
-                    value=None
-                
         else: # ...or check consistency with an old one
             for cf in sheaf.cells[cell].cofaces:
                 for s in self.sectionCells:
                     if s.support == cf.index:
-                        #added next segment to debug genetic algorithm
-                        try:
-                            warnings.simplefilter("error")
-                        except RuntimeWarning:
-                            print value
-                            print cf.restriction(value)
-                            print s.value
-                            print cf.restriction(value)-s.value
-                            
                         if np.any(np.abs(cf.restriction(value)-s.value)>tol):
                             return False
 
