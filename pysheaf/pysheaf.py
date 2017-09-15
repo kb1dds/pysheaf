@@ -772,14 +772,41 @@ class Sheaf(CellComplex):
         return radius
     
 
-    def fuseAssignment(self,assignment,tol=1e-5):
-        """Compute the nearest global section to a given assignment"""
-        if self.isNumeric():
-            globalsection = self.optimize_SLSQP(assignment, tol)
+    def fuseAssignment(self,assignment,tol=1e-5, method='SLSQP', options={}):
+        """
+        Compute the nearest global section to a given assignment
+        Currently there are two optimization schemes to choose from
+        'SLSQP': This algorithm is scipy.optimize.minimize's default for bounded optimization
+            Parameters:
+                assignment: the partial assignment of the sheaf to fuse
+                tol: the tol of numeric values to be considered the same
+        'GA': This genetic algorithm was implemented using DEAP for optimizations over nondifferentiable functions
+            Parameters:
+                assignment: the partial assignment of the sheaf to fuse
+                tol: the tol of numeric values to be considered the same
+                options: a dictionary to store changes to parameters, the keys must be identical to the current parameters
+                    keys for GA:
+                        initial_pop_size - the number of individuals in the starting population
+                        mutation_rate - the proportion of the offspring (newly created individuals each round) that are from mutations rather
+                                        than mating
+                        num_generations - the number of iterations that the genetic algorithm runs
+                        num_ele_Hallfame - the number of top individuals that should be reported in the hall of fame (hof)
+        """
+        if method == 'SLSQP':
+            if self.isNumeric():
+                globalsection = self.optimize_SLSQP(assignment, tol)
+            else:
+                # The fallback situation, where we need to iterate over global sections manually...
+                raise NotImplementedError
+        elif method == 'GA':
+            add_parameters = {'initial_pop_size':100, 'mutation_rate':0.3, 'num_generations':100, 'num_ele_Hallfame':1}
+            overlap = [st for st in add_parameters.keys() if st in set(options.keys())]
+            if len(overlap) > 0:
+                for st_overlap in overlap:
+                    add_parameters[st_overlap] = options[st_overlap]
+            globalsection = self.optimize_GA(assignment, tol, initial_pop_size=add_parameters['initial_pop_size'], mutation_rate = add_parameters['mutation_rate'], num_generations= add_parameters['num_generations'] ,num_ele_Hallfame=add_parameters['num_ele_Hallfame'])
         else:
-            # The fallback situation, where we need to iterate over global sections manually...
-            raise NotImplementedError
-        
+            raise NotImplementedError('Invalid method')
         return globalsection
     
     
@@ -796,6 +823,19 @@ class Sheaf(CellComplex):
                 idx+=self.cells[i].stalkDim
     
         return Section(scs)
+    
+    def deserializeAssignment_ga(self, vect, id_len):
+        #write a new assignment from the individual so that one can use maximal extend.
+        new_assignment = []
+        start_index = 0
+        for i in range(len(id_len)):
+            new_assignment.append(SectionCell(support=id_len[i][0], value=vect[(start_index):(start_index+id_len[i][1])]))
+            start_index += id_len[i][1]
+        
+        new_assignment = Section(new_assignment)
+        #print [x.value for x in new_assignment.sectionCells]
+        
+        return new_assignment
 
     def serializeAssignment(self,assignment):
         """Transform a partial assignment in a Section instance into a vector of values"""
@@ -856,7 +896,7 @@ class Sheaf(CellComplex):
                                     constraints = ({'type' : 'eq',
                                                     'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg))}), 
                                     tol = tol, 
-                                    options = {'maxiter' : int(1000)})
+                                    options = {'maxiter' : int(100)})
         globalsection = self.deserializeAssignment(res.x)
         #print res.success
         #print res.message
@@ -1101,10 +1141,8 @@ class Sheaf(CellComplex):
         algorithms.eaMuPlusLambda(pop, toolbox, mu = (3*initial_pop_size), lambda_=(3*initial_pop_size), cxpb=0.5, mutpb=0.5, ngen=num_generations, stats=stats,
                         halloffame=hof) #mu and lambda are only the same because of the normGeomSelect
 
-        return pop, stats, hof, opt_sp_id_len
-            
-        
-
+        globalsection = self.deserializeAssignment_ga(hof[0], opt_sp_id_len)
+        return globalsection
             
 
 
