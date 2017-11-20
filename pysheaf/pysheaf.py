@@ -767,7 +767,7 @@ class Sheaf(CellComplex):
                         radius = rad
                         
         if count_comparison == 0:
-            radius = 1000000000000
+            radius = np.inf
             warnings.warn("No SectionCells in the assignments match, therefore nothing was compared by assignmentMetric")
         return radius
     
