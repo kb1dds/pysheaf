@@ -1003,7 +1003,32 @@ class Sheaf(CellComplex):
 
             return ind1, ind2
             
-        
+        #Define a function to do the mutation of the elements from a floating point perspective
+        def mutUniformFloat(individual, low, up, indpb):
+            """Mutate an individual by replacing attributes, with probability *indpb*,
+            by a integer uniformly drawn between *low* and *up* inclusively.
+            
+            :param individual: :term:`Sequence <sequence>` individual to be mutated.
+            :param low: The lower bound or a :term:`python:sequence` of
+                        of lower bounds of the range from wich to draw the new
+                        integer.
+            :param up: The upper bound or a :term:`python:sequence` of
+                       of upper bounds of the range from wich to draw the new
+                       integer.
+            :param indpb: Independent probability for each attribute to be mutated.
+            :returns: A tuple of one individual.
+            """
+            size = len(individual)
+            if len(low) < size:
+                raise IndexError("low must be at least the size of individual: %d < %d" % (len(low), size))
+            elif len(up) < size:
+                raise IndexError("up must be at least the size of individual: %d < %d" % (len(up), size))
+            
+            for i, xl, xu in zip(xrange(size), low, up):
+                if random.random() < indpb:
+                    individual[i] = random.uniform(xl, xu)
+            
+            return individual,
         
         #Get the spaces to optimize over while saving their indices in the complex and length as well as the bounds
         bounds = []
@@ -1101,8 +1126,10 @@ class Sheaf(CellComplex):
         toolbox.register("evaluate", cost)
         
         #Define the upper and lower bounds for each attribute in the optimization
-        lower_bounds = [int(bnds[0]) for bnds in bounds]
-        upper_bounds = [int(bnds[1]) for bnds in bounds]
+        #lower_bounds = [int(bnds[0]) for bnds in bounds]
+        #upper_bounds = [int(bnds[1]) for bnds in bounds]
+        lower_bounds = [float(bnds[0]) for bnds in bounds]
+        upper_bounds = [float(bnds[0]) for bnds in bounds]
         
         
         #Define the function to do the mating between two individuals in the previous population
@@ -1116,7 +1143,8 @@ class Sheaf(CellComplex):
         toolbox.register("mate", arithXover)
         
         #Define a function to do the mutation for an individual in the next generation
-        toolbox.register("mutate", tools.mutUniformInt, low=lower_bounds, up=upper_bounds, indpb=mutation_rate)
+        toolbox.register("mutate", mutUniformFloat, low=lower_bounds, up=upper_bounds, indpb=mutation_rate)
+        #toolbox.register("mutate", tools.mutUniformInt, low=lower_bounds, up=upper_bounds, indpb=mutation_rate) #Bounds must be integers to utilize
         #toolbox.register("mutate", tools.mutPolynomialBounded, low=lower_bounds, up=upper_bounds, eta=20.0, indpb=1.0/30.0)
         
         #Define a function to do the selection of individuals 
