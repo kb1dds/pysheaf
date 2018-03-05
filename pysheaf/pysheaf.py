@@ -740,7 +740,7 @@ class Sheaf(CellComplex):
         for i in range(len(assignment.sectionCells)):
             for cf in self.cofaces(assignment.sectionCells[i].support):
                 if not assignment.extend(self,cf.index,tol=tol) and multiassign:
-                    assignment.sectionCells.append(SectionCell(cf.index,cf.restriction(assignment.sectionCells[i].value)))
+                    assignment.sectionCells.append(SectionCell(cf.index,cf.restriction(assignment.sectionCells[i].value),source=assignment.sectionCells[i].support))
         return assignment
 
     def consistencyRadius(self,assignment,testSupport=None,tol=1e-5):
@@ -749,7 +749,7 @@ class Sheaf(CellComplex):
         radius=0
         for c1 in assignment.sectionCells:
             for c2 in assignment.sectionCells:
-                if c1.support == c2.support and ((testSupport is None) or (c1.support in testSupport)):
+                if c1.support == c2.support and ((testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport) and (c2.source in testSupport))):
                     rad = self.cells[c1.support].metric(c1.value,c2.value)
                     if rad > radius:
                         radius = rad
@@ -1773,10 +1773,14 @@ class SheafMorphism:
 
 # A local section
 class SectionCell:
-    def __init__(self,support,value):
+    def __init__(self,support,value,source=None):
         """Specify support cell indices and values in each cell stalk for a local section"""
         self.support=support
         self.value=value
+        if source is None:
+            self.source=support
+        else:
+            self.source=source
 
 class Section:
     def __init__(self,sectionCells):
