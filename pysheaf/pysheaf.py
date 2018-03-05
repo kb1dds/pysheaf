@@ -1,6 +1,6 @@
 # Persistence-capable sheaf manipulation library
 #
-# Copyright (c) 2013-2017, Michael Robinson
+# Copyright (c) 2013-2018, Michael Robinson
 # Distribution of unaltered copies permitted for noncommercial use only
 # All other uses require express permission of the author
 # This software comes with no warrantees express or implied
@@ -12,6 +12,8 @@ import networkx as nx
 import scipy.optimize
 
 import warnings
+
+import covers # For cover optimzation
 
 #import all DEAP related functions for genetic algorithms
 from functools import partial
@@ -741,18 +743,26 @@ class Sheaf(CellComplex):
                     assignment.sectionCells.append(SectionCell(cf.index,cf.restriction(assignment.sectionCells[i].value)))
         return assignment
 
-    def consistencyRadius(self,assignment,tol=1e-5):
+    def consistencyRadius(self,assignment,testSupport=None,tol=1e-5):
         """Compute the consistency radius of an approximate section"""
         assignment=self.maximalExtend(assignment,multiassign=True,tol=tol)
         radius=0
         for c1 in assignment.sectionCells:
             for c2 in assignment.sectionCells:
-                if c1.support == c2.support:
+                if c1.support == c2.support and ((testSupport is None) or (c1.support in testSupport)):
                     rad = self.cells[c1.support].metric(c1.value,c2.value)
                     if rad > radius:
                         radius = rad
         
         return radius
+
+    def coverConsistency(self,assignment,cover,tol=1e-5):
+        """Compute the consistency of a cover against an assignment"""
+        return np.mean([self.consistencyRadius(assignment,testSupport=a,tol=tol) for a in cover])
+
+    def coverFigureofMerit(self,assignment,cover,weights=(1./3,1./3,1./3),tol=1e-5):
+        """Compute figure of merit for a cover against an assignment.  NOTE: Silently assumes all cell metrics return values between 0 and 1.  Wierd results will occur otherwise."""
+        return weights[0]*coverConsistency(assignment,cover,tol)+weights[1]*(1-covers.normalized_coarseness(cover))+weights[2]*covers.normalized_elementwise_overlap(cover)
 
     def assignmentMetric(self,assignment1,assignment2):
         """Compute the distance between two assignments"""
