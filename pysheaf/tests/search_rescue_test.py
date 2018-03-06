@@ -201,3 +201,10 @@ print 'Post-fusion consistency radii for each test case (should ideally be zero!
 # Demonstrate the consistency radius improves when faulty sensor (U5) is removed
 print 'Case 2 consistency radius after removing faulty sensor ' + str(s1.consistencyRadius(input_data[1],testSupport=[0,1,2,3,4,6,7,8]))
 print 'Case 3 consistency radius after removing faulty sensor ' + str(s1.consistencyRadius(input_data[2],testSupport=[0,1,2,3,4,6,7,8]))
+
+# Perform limited data fusion in which we modify only X
+fused_data_X=[s1.fuseAssignment(case,activeCells=[5]) for case in input_data]
+print fused_data
+# Exhibit the consistency radius of the fused data and output the final fused values.  These may not be global sections!
+fused_consistency_radii_X=[s1.consistencyRadius(case) for case in fused_data_X]
+print 'Post-fusion consistency radii for each test case (should ideally be zero!): ' + str(fused_consistency_radii_X)

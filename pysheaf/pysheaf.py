@@ -795,13 +795,15 @@ class Sheaf(CellComplex):
         return radius
     
 
-    def fuseAssignment(self,assignment,tol=1e-5, method='SLSQP', options={}):
+    def fuseAssignment(self,assignment, activeCells=None, testSupport=None, method='SLSQP', options={}, tol=1e-5):
         """
         Compute the nearest global section to a given assignment
         Currently there are two optimization schemes to choose from
         'SLSQP': This algorithm is scipy.optimize.minimize's default for bounded optimization
             Parameters:
                 assignment: the partial assignment of the sheaf to fuse
+                activeCells: set of cells whose values are to be changed or None if all are allowed to be modified (Note: global sections may not be returned if this is changed from the default)
+                testSupport: the set of cells over which consistency radius is assessed
                 tol: the tol of numeric values to be considered the same
         'GA': This genetic algorithm was implemented using DEAP for optimizations over nondifferentiable functions
             Parameters:
@@ -817,7 +819,7 @@ class Sheaf(CellComplex):
         """
         if method == 'SLSQP':
             if self.isNumeric():
-                globalsection = self.optimize_SLSQP(assignment, tol)
+                globalsection = self.optimize_SLSQP(assignment, activeCells, testSupport, tol)
             else:
                 # The fallback situation, where we need to iterate over global sections manually...
                 raise NotImplementedError
@@ -833,18 +835,24 @@ class Sheaf(CellComplex):
         return globalsection
     
     
-    def deserializeAssignment(self,vect):
-        """Transform a vector of values for a numeric-valued sheaf into an assignment as a Section instance(Note: this is really a helper method and should generally not be used by external callers)"""
+    def deserializeAssignment(self,vect,activeCells=None,assignment=None):
+        """Transform a vector of values for a numeric-valued sheaf into an assignment as a Section instance(Note: this is really a helper method and should generally not be used by external callers).  Inactive cells are filled from another assignment that's optionally supplied"""
         if not self.isNumeric():
             raise TypeError('Cannot deserialize an assignment vector for a non-numeric sheaf')
     
         scs=[]
         idx=0
+
         for i in range(len(self.cells)):
-            if self.cells[i].stalkDim > 0:
-                scs.append(SectionCell(support=i,value=vect[idx:idx+self.cells[i].stalkDim]))
-                idx+=self.cells[i].stalkDim
-    
+            if (activeCells is None) or (i in activeCells): # If the cell is active, pull its value from the vector
+                if self.cells[i].stalkDim > 0:
+                    scs.append(SectionCell(support=i,value=vect[idx:idx+self.cells[i].stalkDim]))
+                    idx+=self.cells[i].stalkDim
+            elif assignment is not None: # If the cell is not active, pull its value from the given assignment
+                for cell in assignment.sectionCells:
+                    if i == cell.support:
+                        scs.append(cell)
+                    
         return Section(scs)
     
     def deserializeAssignment_ga(self, vect, id_len):
@@ -860,17 +868,19 @@ class Sheaf(CellComplex):
         
         return new_assignment
 
-    def serializeAssignment(self,assignment):
+    def serializeAssignment(self,assignment,activeCells=None):
         """Transform a partial assignment in a Section instance into a vector of values"""
         if not self.isNumeric():
             raise TypeError('Cannot serialize an assignment vector for a non-numeric sheaf')
 
-        x0 = np.zeros((sum([c.stalkDim for c in self.cells])),dtype=assignment.sectionCells[0].value.dtype)
+        x0 = np.zeros((sum([c.stalkDim for i,c in enumerate(self.cells) if ((activeCells is None) or (i in activeCells))])),dtype=assignment.sectionCells[0].value.dtype)
 
         # If any components are bounded, collect the bounds (later)
         bounded=False
         bounds=None
-        for i in range(len(self.cells)):
+        if activeCells is None:
+            activeCells = range(len(self.cells))
+        for i in activeCells:
             if self.cells[i].bounds is not None:
                 bounded=True
                 bounds=[]
@@ -879,7 +889,7 @@ class Sheaf(CellComplex):
         # Figure out cell boundaries in vector, and collect their bounds if present
         idx=0
         idxarray=[]
-        for i in range(len(self.cells)):
+        for i in activeCells:
             if self.cells[i].stalkDim > 0:
                 idxarray.append(idx)
                 idx+=self.cells[i].stalkDim
@@ -891,16 +901,16 @@ class Sheaf(CellComplex):
         
         if bounded:
             bounds = tuple(bounds)
-
+        
         # Pack data into vector.  If there are multiple values assigned, the one appearing last is used
         for cell in assignment.sectionCells:
-            if self.cells[cell.support].stalkDim > 0:
+            if self.cells[cell.support].stalkDim > 0 and ((activeCells is None) or (cell.support in activeCells)):
                 x0[idxarray[cell.support]:idxarray[cell.support]+self.cells[cell.support].stalkDim]=cell.value
 
         return x0,bounds
                 
     
-    def optimize_SLSQP(self, assignment, tol=1e-5):
+    def optimize_SLSQP(self, assignment, activeCells=None, testSupport=None, tol=1e-5):
         """
         Compute the nearest global section to a given assignment using 
         scipy.optimize.minimize. When there are constraints specified, 
@@ -911,16 +921,16 @@ class Sheaf(CellComplex):
             Institute for Flight Mechanics, Koln, Germany.
         """
     
-        initial_guess, bounds = self.serializeAssignment(assignment)
-        res=scipy.optimize.minimize( fun = lambda sec: self.assignmentMetric(assignment,self.deserializeAssignment(sec)),
+        initial_guess, bounds = self.serializeAssignment(assignment,activeCells)
+        res=scipy.optimize.minimize( fun = lambda sec: self.assignmentMetric(assignment,self.deserializeAssignment(sec,activeCells,assignment)),
                                     x0 = initial_guess,
                                     method = 'SLSQP', 
                                     bounds = bounds,
                                     constraints = ({'type' : 'eq',
-                                                    'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg))}), 
+                                                    'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg,activeCells,assignment),testSupport=testSupport)}), 
                                     tol = tol, 
                                     options = {'maxiter' : int(100)})
-        globalsection = self.deserializeAssignment(res.x)
+        globalsection = self.deserializeAssignment(res.x,activeCells,assignment)
         #print res.success
         #print res.message
         return globalsection
