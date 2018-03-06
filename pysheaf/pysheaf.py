@@ -762,7 +762,7 @@ class Sheaf(CellComplex):
 
     def coverFigureofMerit(self,assignment,cover,weights=(1./3,1./3,1./3),tol=1e-5):
         """Compute figure of merit for a cover against an assignment.  NOTE: Silently assumes all cell metrics return values between 0 and 1.  Wierd results will occur otherwise."""
-        return weights[0]*coverConsistency(assignment,cover,tol)+weights[1]*(1-covers.normalized_coarseness(cover))+weights[2]*covers.normalized_elementwise_overlap(cover)
+        return weights[0]*self.coverConsistency(assignment,cover,tol)+weights[1]*(1-covers.normalized_coarseness(cover))+weights[2]*covers.normalized_elementwise_overlap(cover)
 
     def assignmentMetric(self,assignment1,assignment2):
         """Compute the distance between two assignments"""

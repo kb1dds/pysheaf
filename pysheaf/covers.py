@@ -44,3 +44,13 @@ def normalized_elementwise_overlap(cover):
 def memberdict(cover):
     """Determine lambda, the elementwise membership vector, defined on page 7.  This is implemented as a dictionary indexed by element."""
     return {e:len([a for a in cover if e in a]) for e in squash(cover)}
+
+def partitions_iter(elements,currentset=[]):
+    """Iterate over all partitions of a given set"""
+    if not elements:
+        yield currentset
+    else:
+        for newset in powerset(elements):
+            if newset:
+                for p in partitions_iter([a for a in elements if a not in list(squash(currentset))+list(newset)],currentset+[list(newset)]):
+                    yield p
