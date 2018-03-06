@@ -193,7 +193,7 @@ consistency_radii=[s1.consistencyRadius(case) for case in input_data]
 print 'Raw consistency radii for each test case: ' + str(consistency_radii)
 # Perform data fusion
 fused_data=[s1.fuseAssignment(case) for case in input_data]
-print fused_data
+#print fused_data
 # Exhibit the consistency radius of the fused data and output the final fused values.  These should be global sections, so very close to zero
 fused_consistency_radii=[s1.consistencyRadius(case) for case in fused_data]
 print 'Post-fusion consistency radii for each test case (should ideally be zero!): ' + str(fused_consistency_radii)
@@ -202,9 +202,9 @@ print 'Post-fusion consistency radii for each test case (should ideally be zero!
 print 'Case 2 consistency radius after removing faulty sensor ' + str(s1.consistencyRadius(input_data[1],testSupport=[0,1,2,3,4,6,7,8]))
 print 'Case 3 consistency radius after removing faulty sensor ' + str(s1.consistencyRadius(input_data[2],testSupport=[0,1,2,3,4,6,7,8]))
 
-# Perform limited data fusion in which we modify only X
-fused_data_X=[s1.fuseAssignment(case,activeCells=[5]) for case in input_data]
-print fused_data
+# Perform limited data fusion in which we modify only the faulty sensor (U5)
+fused_data_U5=[s1.fuseAssignment(case,activeCells=[5]) for case in input_data]
+#print fused_data
 # Exhibit the consistency radius of the fused data and output the final fused values.  These may not be global sections!
-fused_consistency_radii_X=[s1.consistencyRadius(case) for case in fused_data_X]
-print 'Post-fusion consistency radii for each test case (should ideally be zero!): ' + str(fused_consistency_radii_X)
+fused_consistency_radii_U5=[s1.consistencyRadius(case) for case in fused_data_U5]
+print 'Post-fusion consistency radii for each test case modifying only U5 (should be smaller than the raw case, but not zero!): ' + str(fused_consistency_radii_U5)

@@ -892,6 +892,9 @@ class Sheaf(CellComplex):
         for i in activeCells:
             if self.cells[i].stalkDim > 0:
                 idxarray.append(idx)
+                for cell in assignment.sectionCells:         # Pack data into vector.  If there are multiple values assigned, the one appearing last is used
+                    if cell.support == i: 
+                        x0[idx:idx+self.cells[i].stalkDim]=cell.value
                 idx+=self.cells[i].stalkDim
                 if bounded:
                     if self.cells[i].bounds is None:
@@ -901,11 +904,6 @@ class Sheaf(CellComplex):
         
         if bounded:
             bounds = tuple(bounds)
-        
-        # Pack data into vector.  If there are multiple values assigned, the one appearing last is used
-        for cell in assignment.sectionCells:
-            if self.cells[cell.support].stalkDim > 0 and ((activeCells is None) or (cell.support in activeCells)):
-                x0[idxarray[cell.support]:idxarray[cell.support]+self.cells[cell.support].stalkDim]=cell.value
 
         return x0,bounds
                 
