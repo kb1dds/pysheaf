@@ -187,7 +187,13 @@ input_data=[ps.Section([ps.SectionCell(support=0,value=np.array([-70.649,42.753,
                         ps.SectionCell(support=2,value=np.array([-70.617,42.834,11236,419,310])), # U2
                         ps.SectionCell(support=3,value=np.array([77.2,0.985])), # U3
                         ps.SectionCell(support=4,value=np.array([63.3,1.05])), # U4
-                        ps.SectionCell(support=5,value=np.array([-62.742,44.550]))])] # U5
+                        ps.SectionCell(support=5,value=np.array([-62.742,44.550]))]), # U5
+
+            ps.Section([ps.SectionCell(support=1,value=np.array([-70.612,42.834,11237])), # U1
+                        ps.SectionCell(support=2,value=np.array([-70.617,42.834,11236,419,310])), # U2
+                        ps.SectionCell(support=3,value=np.array([77.2,0.985])), # U3
+                        ps.SectionCell(support=4,value=np.array([63.3,1.05])), # U4
+                        ps.SectionCell(support=5,value=np.array([-62.742,44.550]))])] 
 
 
 # Exhibit the consistency radius of the partially-filled Section with the input data

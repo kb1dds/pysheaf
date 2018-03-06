@@ -746,7 +746,17 @@ class Sheaf(CellComplex):
 
     def consistencyRadius(self,assignment,testSupport=None,tol=1e-5):
         """Compute the consistency radius of an approximate section"""
+        # Extend along restriction maps
         assignment=self.maximalExtend(assignment,multiassign=True,tol=tol)
+
+        # Extend to any remaining cells via fusion using default optimizer
+        if testSupport is None:
+            activeCells=[i for i in range(len(self.cells)) if i not in assignment.support()]
+        else:
+            activeCells=[i for i in testSupport if i not in assignment.support()]
+        if activeCells:    
+            assignment=self.fuseAssignment(assignment,activeCells,testSupport)
+        
         radius=0
         for c1 in assignment.sectionCells:
             for c2 in assignment.sectionCells:
@@ -1847,7 +1857,7 @@ class Section:
 
     def support(self):
         """List the cells in the support of this section"""
-        return [sc.support for sc in self.sectionCells]
+        return list(set([sc.support for sc in self.sectionCells]))
 
     def extend(self,sheaf,cell,value=None,tol=1e-5):
         """Extend the section to another cell; returns True if successful"""
