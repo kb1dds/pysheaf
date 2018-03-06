@@ -22,6 +22,7 @@ from deap import tools
 from deap import algorithms
 
 
+
 ## Data structures
 class Coface:
     """A coface relation"""
@@ -799,12 +800,12 @@ class Sheaf(CellComplex):
                 # The fallback situation, where we need to iterate over global sections manually...
                 raise NotImplementedError
         elif method == 'GA':
-            add_parameters = {'initial_pop_size':100, 'mutation_rate':0.3, 'num_generations':100, 'num_ele_Hallfame':1}
+            add_parameters = {'initial_pop_size':100, 'mutation_rate':0.3, 'num_generations':100, 'num_ele_Hallfame':1, 'initial_guess_p':None}
             overlap = [st for st in add_parameters.keys() if st in set(options.keys())]
             if len(overlap) > 0:
                 for st_overlap in overlap:
                     add_parameters[st_overlap] = options[st_overlap]
-            globalsection = self.optimize_GA(assignment, tol, initial_pop_size=add_parameters['initial_pop_size'], mutation_rate = add_parameters['mutation_rate'], num_generations= add_parameters['num_generations'] ,num_ele_Hallfame=add_parameters['num_ele_Hallfame'])
+            globalsection = self.optimize_GA(assignment, tol, initial_pop_size=add_parameters['initial_pop_size'], mutation_rate = add_parameters['mutation_rate'], num_generations= add_parameters['num_generations'] ,num_ele_Hallfame=add_parameters['num_ele_Hallfame'], initial_guess_p = add_parameters['initial_guess_p'])
         else:
             raise NotImplementedError('Invalid method')
         return globalsection
@@ -833,7 +834,6 @@ class Sheaf(CellComplex):
             start_index += id_len[i][1]
         
         new_assignment = Section(new_assignment)
-        #print [x.value for x in new_assignment.sectionCells]
         
         return new_assignment
 
@@ -933,7 +933,7 @@ class Sheaf(CellComplex):
         
 
     
-    def optimize_GA(self, assignment, tol=1e-5, initial_pop_size=100, mutation_rate = .3, num_generations=100 ,num_ele_Hallfame=1):
+    def optimize_GA(self, assignment, tol=1e-5, initial_pop_size=100, mutation_rate = .3, num_generations=100 ,num_ele_Hallfame=1, initial_guess_p = None):
         """
         Compute the nearest global section to a given assignment using 
         a genetic algorithm. 
@@ -990,7 +990,6 @@ class Sheaf(CellComplex):
                     new_In += 1  # Looking for next new individual
                 else:
                     fitIn += 1 # Looking at next potential selection
-            print len(np.unique(np.array(unique)))
             
             return chosen 
         
@@ -1075,6 +1074,11 @@ class Sheaf(CellComplex):
         #Make the Initial guess none if section was empty
         if np.array_equal(initial_guess, np.zeros_like(initial_guess)):
             initial_guess = None
+            
+        #Ensure that any assigned individual to the initial population is the correct length
+        if np.any(initial_guess_p):
+            if np.size(initial_guess_p) != self.cells[0].stalkDim:
+                initial_guess_p = None
         
         
         #Start of unique to the genetic algorithm
@@ -1089,10 +1093,7 @@ class Sheaf(CellComplex):
         seq_func = []
         for bnds in bounds:
             if bnds[0] != None and bnds[1] != None:
-                #add_func = lambda:partial(random.uniform, )
-                random_in_bounds = partial(random.uniform, bnds[0], bnds[1])
-                seq_func.extend([lambda:random_in_bounds()])
-                #seq_func.extend([lambda:random.uniform(float(bnds[0]), float(bnds[1]))])
+                seq_func.append(partial(random.uniform, bnds[0], bnds[1]))
             elif bnds[0] == None and bnds[1] == None:
                 seq_func.extend([lambda:(1/(1-random.random()))-1]) #maps [0,1) to [0, inf)
             elif bnds[0] == None:
@@ -1109,31 +1110,40 @@ class Sheaf(CellComplex):
         toolbox.register("population", tools.initRepeat, list, toolbox.individual)
         
         
-        
+
+            
         #Include the initial guess in the population, otherwise register the population
-        if not np.any(initial_guess):
+        if not np.any(initial_guess) and not np.any(initial_guess_p):
             #specify a population without including an initial guess
             pop = toolbox.population(n=initial_pop_size)
-        
-        else:
-            #specify a population within the bounds that includes the initial guess
+        elif not np.any(initial_guess) and np.any(initial_guess_p):
+            pop = toolbox.population(n=(initial_pop_size-1))
+            initial_g = creator.Individual(initial_guess_p)
+            pop.insert(0, initial_g)
+        elif np.any(initial_guess) and not np.any(initial_guess_p):
             pop = toolbox.population(n=(initial_pop_size-1))
             initial_g = creator.Individual(initial_guess)
+            pop.insert(0, initial_g)    
+        else:
+            #specify a population within the bounds that includes the initial guess
+            pop = toolbox.population(n=(initial_pop_size-2))
+            initial_g = creator.Individual(initial_guess)
             pop.insert(0, initial_g)
+            initial_g = creator.Individual(initial_guess_p)
+            pop.insert(0, initial_g)   
             
         #Define a function to calculate the fitness of an individual
         cost = partial(self.ga_optimization_function, opt_sp_id_len, assignment)
         toolbox.register("evaluate", cost)
         
         #Define the upper and lower bounds for each attribute in the optimization
-        #lower_bounds = [int(bnds[0]) for bnds in bounds]
-        #upper_bounds = [int(bnds[1]) for bnds in bounds]
         lower_bounds = [float(bnds[0]) for bnds in bounds]
-        upper_bounds = [float(bnds[0]) for bnds in bounds]
-        
+        upper_bounds = [float(bnds[1]) for bnds in bounds]
         
         #Define the function to do the mating between two individuals in the previous population
         #Note: Any toolbox.register that are commented out are other possibilities for the function
+        
+#        
         
         #Note: eta =Crowding degree of the crossover. A high eta will produce children resembling to their parents, while a small eta will produce solutions much more different
         #indpb = the probability of each attribute to be mutated
