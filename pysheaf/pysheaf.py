@@ -764,6 +764,19 @@ class Sheaf(CellComplex):
         """Compute figure of merit for a cover against an assignment.  NOTE: Silently assumes all cell metrics return values between 0 and 1.  Wierd results will occur otherwise."""
         return weights[0]*self.coverConsistency(assignment,cover,tol)+weights[1]*(1-covers.normalized_coarseness(cover))+weights[2]*covers.normalized_elementwise_overlap(cover)
 
+    def mostConsistentCover(self,assignment,dimension=0,weights=(1./3,1./3,1./3),tol=1e-5):
+        """Compute the open cover that is most consistent with a given assignment.  The cover is built from stars over elements with given dimension.  Assumes that the assignment is supported on cells of that dimension.  Also assumes all cell metrics are bounded between 0 and 1 (unless weights are tuned appropriately).  Weights are (consistency, coarseness, overlap).  Caution: this is likely to be extremely slow for large base spaces!!!"""
+        bestCov=None # Default: no cover
+        bestFOM=np.inf
+        for roots in covers.partitions_iter([i for i,c in enumerate(self.cells) if c.dimension==dimension]):
+            cov=[self.starCells(op) for op in roots]
+            FOM = self.coverFigureofMerit(assignment,cov)
+            if FOM < bestFOM:
+                # Improved cover found
+                bestCov=cov
+                bestFOM=FOM
+        return bestCov
+
     def assignmentMetric(self,assignment1,assignment2):
         """Compute the distance between two assignments"""
         radius=0
