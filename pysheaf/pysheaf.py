@@ -210,7 +210,7 @@ class CellComplex:
 
         # Remove image
         if dp1.any():
-            map,j1,j2,j3=np.linalg.lstsq(ker,dp1)
+            map,j1,j2,j3=np.linalg.lstsq(ker,dp1,rcond=None)
             Hk=np.dot(ker,cokernel(map,tol));
         else:
             Hk=ker
