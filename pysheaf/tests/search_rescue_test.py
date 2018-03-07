@@ -208,3 +208,4 @@ fused_data_U5=[s1.fuseAssignment(case,activeCells=[5]) for case in input_data]
 # Exhibit the consistency radius of the fused data and output the final fused values.  These may not be global sections!
 fused_consistency_radii_U5=[s1.consistencyRadius(case) for case in fused_data_U5]
 print 'Post-fusion consistency radii for each test case modifying only U5 (should be smaller than the raw case, but not zero!): ' + str(fused_consistency_radii_U5)
+print 'Change to values in stalks other than that over U5 post fusion that modifies only U5 (should be zero!): ' + str( max([np.linalg.norm(scnew.value - scold.value) for j in range(len(input_data)) for scnew in fused_data_U5[j].sectionCells for scold in input_data[j].sectionCells if scnew.support == scold.support and scold.support != 5]))

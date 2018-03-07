@@ -10,6 +10,7 @@ import random
 # import matplotlib.pyplot as plt
 import networkx as nx
 import scipy.optimize
+import copy
 
 import warnings
 
@@ -744,9 +745,10 @@ class Sheaf(CellComplex):
                     assignment.sectionCells.append(SectionCell(cf.index,cf.restriction(assignment.sectionCells[i].value),source=assignment.sectionCells[i].support))
         return assignment
 
-    def consistencyRadius(self,assignment,testSupport=None,tol=1e-5):
+    def consistencyRadius(self,assignment_input,testSupport=None,tol=1e-5):
         """Compute the consistency radius of an approximate section"""
         # Extend along restriction maps
+        assignment=copy.deepcopy(assignment_input)
         assignment=self.maximalExtend(assignment,multiassign=True,tol=tol)
 
         # Extend to any remaining cells via fusion using default optimizer
