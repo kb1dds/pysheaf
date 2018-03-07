@@ -1,7 +1,7 @@
 # Unit test for the set cover measurement tools
 
 import unittest
-import covers
+import pysheaf.covers as covers
 
 class CoverTest(unittest.TestCase):
     """Test case based on the collection of all irredundant set covers of a set with four elements.  The results are given in Figure 2 on page 5."""

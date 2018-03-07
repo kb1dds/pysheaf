@@ -9,7 +9,7 @@
 import pysheaf as ps
 import numpy as np
 
-import covers
+import pysheaf.covers as covers
 
 # Metrics and spherical geometry
 def distance(v1,v2):
