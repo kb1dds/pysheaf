@@ -750,22 +750,19 @@ class Sheaf(CellComplex):
         # Extend along restriction maps
         assignment=copy.deepcopy(assignment_input)
         assignment=self.maximalExtend(assignment,multiassign=True,tol=tol)
-
-        # Extend to any remaining cells via fusion using default optimizer
-        if testSupport is None:
-            activeCells=[i for i in range(len(self.cells)) if i not in assignment.support()]
-        else:
-            activeCells=[i for i in testSupport if i not in assignment.support()]
-        if activeCells:    
-            assignment=self.fuseAssignment(assignment,activeCells,testSupport)
         
         radius=0
+        count_comparison = 0
         for c1 in assignment.sectionCells:
             for c2 in assignment.sectionCells:
                 if c1.support == c2.support and ((testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport) and (c2.source in testSupport))):
                     rad = self.cells[c1.support].metric(c1.value,c2.value)
+                    count_comparison += 1
                     if rad > radius:
                         radius = rad
+        
+        if count_comparison == 0:
+            warnings.warn("No SectionCells in the assignment match, therefore nothing was compared by consistencyRadius")
         
         return radius
 
@@ -790,13 +787,13 @@ class Sheaf(CellComplex):
                 bestFOM=FOM
         return bestCov
 
-    def assignmentMetric(self,assignment1,assignment2):
+    def assignmentMetric(self,assignment1,assignment2, testSupport=None):
         """Compute the distance between two assignments"""
         radius=0
         count_comparison = 0
         for c1 in assignment1.sectionCells:
             for c2 in assignment2.sectionCells:
-                if c1.support == c2.support:
+                if c1.support == c2.support and ((testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport) and (c2.source in testSupport))):
                     rad = self.cells[c1.support].metric(c1.value,c2.value)
                     count_comparison += 1
                     if rad > radius:
@@ -932,7 +929,7 @@ class Sheaf(CellComplex):
         """
     
         initial_guess, bounds = self.serializeAssignment(assignment,activeCells)
-        res=scipy.optimize.minimize( fun = lambda sec: self.assignmentMetric(assignment,self.deserializeAssignment(sec,activeCells,assignment)),
+        res=scipy.optimize.minimize( fun = lambda sec: self.assignmentMetric(assignment,self.deserializeAssignment(sec,activeCells,assignment), testSupport=testSupport),
                                     x0 = initial_guess,
                                     method = 'SLSQP', 
                                     bounds = bounds,
