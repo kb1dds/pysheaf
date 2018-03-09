@@ -766,19 +766,20 @@ class Sheaf(CellComplex):
         
         return radius
 
-    def consistentCover(self,assignment,threshold,tol=1e-5):
+    def consistentCover(self,assignment,threshold,dimension=None,tol=1e-5):
         """Construct a cover of the base space such that each element is consistent to within the given threshold.  Note: the assignment must be supported on the entire space."""
         cover=[]
 
         # Consider each cell...
-        for i in range(len(self.cells)):
-            found=False
-            # Check each set in the cover, if the new cell is consistent with that set, add it...
-            for j,s in enumerate(cover):
-                if self.consistencyRadius(assignment,testSupport=s+[i],tol=tol) < threshold:
-                    found=True
-                    cover[j].append(i)
-                    break
+        for i,c in enumerate(self.cells):
+            if (dimension is None) or (c.dimension==dimension):
+                found=False
+                # Check each set in the cover, if the new cell is consistent with that set, add it...
+                for j,s in enumerate(cover):
+                    if self.consistencyRadius(assignment,testSupport=s+[i],tol=tol) < threshold:
+                        found=True
+                        cover[j].append(i)
+                        break
 
             # ... otherwise it starts a new set in the cover
             if not found:
@@ -786,26 +787,23 @@ class Sheaf(CellComplex):
 
         return cover
 
-    def coverConsistency(self,assignment,cover,tol=1e-5):
+    def coverMeanConsistency(self,assignment,cover,tol=1e-5):
         """Compute the consistency of a cover against an assignment"""
         return np.mean([self.consistencyRadius(assignment,testSupport=a,tol=tol) for a in cover])
 
     def coverFigureofMerit(self,assignment,cover,weights=(1./3,1./3,1./3),tol=1e-5):
         """Compute figure of merit for a cover against an assignment.  NOTE: Silently assumes all cell metrics return values between 0 and 1.  Wierd results will occur otherwise."""
-        return weights[0]*self.coverConsistency(assignment,cover,tol)+weights[1]*(1-covers.normalized_coarseness(cover))+weights[2]*covers.normalized_elementwise_overlap(cover)
+        return -weights[0]*self.coverMeanConsistency(assignment,cover,tol)+weights[1]*(1-covers.normalized_coarseness(cover))+weights[2]*covers.normalized_elementwise_overlap(cover)
 
-    def mostConsistentCover(self,assignment,dimension=0,weights=(1./3,1./3,1./3),tol=1e-5):
+    def mostConsistentCover(self,assignment,dimension=None,weights=(1./3,1./3,1./3),tol=1e-5):
         """Compute the open cover that is most consistent with a given assignment.  The cover is built from stars over elements with given dimension.  Assumes that the assignment is supported on cells of that dimension.  Also assumes all cell metrics are bounded between 0 and 1 (unless weights are tuned appropriately).  Weights are (consistency, coarseness, overlap).  Caution: this is likely to be extremely slow for large base spaces!!!"""
-        bestCov=None # Default: no cover
-        bestFOM=np.inf
-        for roots in covers.partitions_iter([i for i,c in enumerate(self.cells) if c.dimension==dimension]):
-            cov=[self.starCells(op) for op in roots]
-            FOM = self.coverFigureofMerit(assignment,cov)
-            if FOM < bestFOM:
-                # Improved cover found
-                bestCov=cov
-                bestFOM=FOM
-        return bestCov
+        optimal_thres=scipy.optimize.bisect(lambda thres: self.coverFigureofMerit(assignment,
+                                                                                  self.consistentCover(assignment,thres,dimension),
+                                                                                  weights=weights,
+                                                                                  tol=tol),
+                                            a=0,
+                                            b=self.consistencyRadius(assignment))
+        return self.consistentCover(assignment,optimal_thres)
 
     def assignmentMetric(self,assignment1,assignment2, testSupport=None):
         """Compute the distance between two assignments"""
