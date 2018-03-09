@@ -839,7 +839,7 @@ class Sheaf(CellComplex):
             if len(overlap) > 0:
                 for st_overlap in overlap:
                     add_parameters[st_overlap] = options[st_overlap]
-            globalsection = self.optimize_GA(assignment, tol, initial_pop_size=add_parameters['initial_pop_size'], mutation_rate = add_parameters['mutation_rate'], num_generations= add_parameters['num_generations'] ,num_ele_Hallfame=add_parameters['num_ele_Hallfame'], initial_guess_p = add_parameters['initial_guess_p'])
+            globalsection = self.optimize_GA(assignment, tol, activeCells=activeCells, testSupport=testSupport, initial_pop_size=add_parameters['initial_pop_size'], mutation_rate = add_parameters['mutation_rate'], num_generations= add_parameters['num_generations'] ,num_ele_Hallfame=add_parameters['num_ele_Hallfame'], initial_guess_p = add_parameters['initial_guess_p'])
         else:
             raise NotImplementedError('Invalid method')
         return globalsection
@@ -945,7 +945,7 @@ class Sheaf(CellComplex):
     
     
     
-    def ga_optimization_function(self,  space_des_2_opt, assignment,individual):
+    def ga_optimization_function(self,  space_des_2_opt, assignment,individual, testSupport=None):
         """Write the function for the genetic algorithm to optimize similar to fun for scipy.optimize.minimize"""
         
         #Assign a high cost to eliminate individuals with nans from the population
@@ -966,14 +966,14 @@ class Sheaf(CellComplex):
             #start of optimization function
             new_assignment = self.maximalExtend(new_assignment,multiassign=False,tol=1e-5)
         
-            cost = self.assignmentMetric(assignment, new_assignment)
+            cost = self.assignmentMetric(assignment, new_assignment, testSupport=testSupport)
             #Sum to formulate cost (NOTE: GA maximizes instead of minimizes so we need a negative sign)
             cost = -cost
         return (float(cost),)
         
 
     
-    def optimize_GA(self, assignment, tol=1e-5, initial_pop_size=100, mutation_rate = .3, num_generations=100 ,num_ele_Hallfame=1, initial_guess_p = None):
+    def optimize_GA(self, assignment, tol=1e-5, activeCells=None, testSupport=None, initial_pop_size=100, mutation_rate = .3, num_generations=100 ,num_ele_Hallfame=1, initial_guess_p = None):
         """
         Compute the nearest global section to a given assignment using 
         a genetic algorithm. 
@@ -995,6 +995,9 @@ class Sheaf(CellComplex):
             opt_sp_id_len - the space the algorithm is optimizing over
         
         """
+        ##########################################################################################
+        # Helper Functions for Algorithm
+        ##########################################################################################
         
         #add as a potential selection function to match Matlab GA
         def selnormGeom(individuals, k, prob_sel_best= 0.08, fit_attr="fitness"):
@@ -1069,13 +1072,28 @@ class Sheaf(CellComplex):
             
             return individual,
         
+        ###################################################################################################
+        #Beginning of Algoithm Run
+        ###################################################################################################
+        
+        
+        
+        
         #Get the spaces to optimize over while saving their indices in the complex and length as well as the bounds
         bounds = []
-        opt_sp_id_len = []
+        opt_sp_id_len = [] #stores the cell id and 
         
         for cell in self.cells:
-            iscoface = any([alt_cell.isCoface(int(cell.id)) for alt_cell in self.cells if alt_cell.id != cell.id])
-            if not iscoface:
+            if activeCells is None:
+                #Use the 0-dimension cells in sheaf
+                active = not any([alt_cell.isCoface(int(cell.id)) for alt_cell in self.cells if alt_cell.id != cell.id]) #should be done differently for speed
+            else:
+                #Use the cells denoted as active in sheaf
+                active = False
+                if cell.id in activeCells:
+                    active = True
+                    
+            if active:
                 opt_sp_id_len.append((int(cell.id), cell.stalkDim))
                 if cell.bounds !=None:
                     #Ensure that the length of the specfied bounds is equivalent to the stalkDim
@@ -1088,7 +1106,8 @@ class Sheaf(CellComplex):
                     #This will not work (error out if stalkDim = None) however why are you trying to optimize over an empty cell
                     for x in range(cell.stalkDim):
                         bnds.append(tuple([None, None]))
-                    bounds.extend(bnds)
+                    bounds.extend(bnds)            
+        
         
         #Create initial guess if that index is specfied for that section
         initial_guess = [[0 for j in range(opt_sp_id_len[i][1])] for i in range(len(opt_sp_id_len))]
@@ -1173,7 +1192,7 @@ class Sheaf(CellComplex):
             pop.insert(0, initial_g)   
             
         #Define a function to calculate the fitness of an individual
-        cost = partial(self.ga_optimization_function, opt_sp_id_len, assignment)
+        cost = partial(self.ga_optimization_function, opt_sp_id_len, assignment, testSupport=testSupport)
         toolbox.register("evaluate", cost)
         
         #Define the upper and lower bounds for each attribute in the optimization
