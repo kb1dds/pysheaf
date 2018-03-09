@@ -945,7 +945,7 @@ class Sheaf(CellComplex):
     
     
     
-    def ga_optimization_function(self,  space_des_2_opt, assignment,individual, testSupport=None):
+    def ga_optimization_function(self,  space_des_2_opt, assignment,individual,activeCells=None,testSupport=None):
         """Write the function for the genetic algorithm to optimize similar to fun for scipy.optimize.minimize"""
         
         #Assign a high cost to eliminate individuals with nans from the population
@@ -955,16 +955,26 @@ class Sheaf(CellComplex):
             
         else:
             #write a new assignment from the individual so that one can use maximal extend.
+            multiassign = False
+            
             new_assignment = []
             start_index = 0
             for i in range(len(space_des_2_opt)):
                 new_assignment.append(SectionCell(support=space_des_2_opt[i][0], value=individual[(start_index):(start_index+space_des_2_opt[i][1])]))
                 start_index += space_des_2_opt[i][1]
+                
+                
+            if activeCells is not None:
+                for sec in assignment.sectionCells:
+                    if not (sec.support in activeCells):
+                        new_assignment.append(sec)
+                        multiassign=True
+                
         
             new_assignment = Section(new_assignment)
         
             #start of optimization function
-            new_assignment = self.maximalExtend(new_assignment,multiassign=False,tol=1e-5)
+            new_assignment = self.maximalExtend(new_assignment,multiassign=multiassign,tol=1e-5)
         
             cost = self.assignmentMetric(assignment, new_assignment, testSupport=testSupport)
             #Sum to formulate cost (NOTE: GA maximizes instead of minimizes so we need a negative sign)
@@ -1192,7 +1202,7 @@ class Sheaf(CellComplex):
             pop.insert(0, initial_g)   
             
         #Define a function to calculate the fitness of an individual
-        cost = partial(self.ga_optimization_function, opt_sp_id_len, assignment, testSupport=testSupport)
+        cost = partial(self.ga_optimization_function, opt_sp_id_len, assignment, activeCells=activeCells, testSupport=testSupport)
         toolbox.register("evaluate", cost)
         
         #Define the upper and lower bounds for each attribute in the optimization
