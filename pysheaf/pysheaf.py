@@ -766,13 +766,13 @@ class Sheaf(CellComplex):
         
         return radius
 
-    def consistentCover(self,assignment,threshold,dimension=None,tol=1e-5):
+    def consistentCover(self,assignment,threshold,testSupport=None,tol=1e-5):
         """Construct a cover of the base space such that each element is consistent to within the given threshold.  Note: the assignment must be supported on the entire space."""
         cover=[]
 
         # Consider each cell...
         for i,c in enumerate(self.cells):
-            if (dimension is None) or (c.dimension==dimension):
+            if (testSupport is None) or (i in testSupport):
                 found=False
                 # Check each set in the cover, if the new cell is consistent with that set, add it...
                 for j,s in enumerate(cover):
