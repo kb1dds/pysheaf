@@ -799,10 +799,10 @@ class Sheaf(CellComplex):
         """Compute figure of merit for a cover against an assignment.  NOTE: Silently assumes all cell metrics return values between 0 and 1.  Wierd results will occur otherwise."""
         return -weights[0]*self.coverMaxConsistency(assignment,cover,tol)+weights[1]*(1-covers.normalized_coarseness(cover))+weights[2]*covers.normalized_elementwise_overlap(cover)
 
-    def mostConsistentCover(self,assignment,dimension=None,weights=(1./3,1./3,1./3),tol=1e-5):
-        """Compute the open cover that is most consistent with a given assignment.  The cover is built from stars over elements with given dimension.  Assumes that the assignment is supported on cells of that dimension.  Also assumes all cell metrics are bounded between 0 and 1 (unless weights are tuned appropriately).  Weights are (consistency, coarseness, overlap).  Caution: this is likely to be extremely slow for large base spaces!!!"""
+    def mostConsistentCover(self,assignment,testSupport=None,weights=(1./3,1./3,1./3),tol=1e-5):
+        """Compute the open cover that is most consistent with a given assignment.  The cover is built from stars over elements with given dimension.  Assumes that the assignment is supported on cells specified in testSupport.  Also assumes all cell metrics are bounded between 0 and 1 (unless weights are tuned appropriately).  Weights are (consistency, coarseness, overlap).  Caution: this is likely to be extremely slow for large base spaces!!!"""
         optimal_thres=scipy.optimize.bisect(lambda thres: self.coverFigureofMerit(assignment,
-                                                                                  self.consistentCover(assignment,thres,dimension),
+                                                                                  self.consistentCover(assignment,thres,testSupport),
                                                                                   weights=weights,
                                                                                   tol=tol),
                                             a=0,
