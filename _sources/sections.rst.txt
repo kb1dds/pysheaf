@@ -35,12 +35,60 @@ Data fusion with :py:class:`Section` and :py:class:`Sheaf` instances
 
 Given some data in a :py:class:`Section` for a :py:class:`Sheaf` you can measure the overall consistency radius with
 
-.. py:method:: Sheaf.consistencyRadius(assignment, tol=1e-5)
+.. py:method:: Sheaf.consistencyRadius(assignment, testSupport=None, tol=1e-5)
 
    where `assignment` is the :py:class:`Section` to be tested.  The optional `tol` specifies the tolerance for consistency, to be used in conjunction with each :py:attr:`SheafCell.metric` in the :py:class:`Sheaf`.
 
+   The optional `testSupport` parameter is a list of cell indices on which consistency is to be assessed.  If it is listed as `None`, then the entire base space is to be tested.
+
+   .. warning :: Consistency radius is measured using the cells specified in the :py:class:`Section` and all cells that are specified as :py:attr:`Sheaf.Cofaces`.  Preimages through :py:attr:`Sheaf.restriction` maps are not computed, so values on faces are not tested.
+
 Similarly, if you want the nearest global section to your data, you can call
 	       
-.. py:method:: Sheaf.fuseAssignment(assignment, tol=1e-5)
+.. py:method:: Sheaf.fuseAssignment(assignment, activeCells=None, testSupport=None, method='SLSQP', options={}, tol=1e-5)
 
    which returns a new :py:class:`Section` instance that is the global section nearest to your `assignment`.  In this case, the tolerance `tol` is passed to :py:func:`scipy.optimize.minimize`.
+
+   As in :py:meth:`Sheaf.consistencyRadius`, the `testSupport` specifies a list of cells under which consistency is measured.
+
+   The `activeCells` argument is a list of cells whose stalks are allowed to be changed by the fusion process.  If passed as `None`, all values in the stalks over all cells may be changed.
+
+   The method is a string, specifying the optimizer method to be used.  There are currently two optimizers implemented, 'SLSQP' and 'GA':
+
+   'SLSQP': This algorithm is :py:meth:`scipy.optimize.minimize` default for bounded optimization
+   'GA': This genetic algorithm was implemented using DEAP for optimizations over nondifferentiable functions.  For this algorithm, it takes `options`: a dictionary to store changes to parameters, the keys must be identical to the current parameters.
+    1. `initial_pop_size` - the number of individuals in the starting population
+    2. `mutation_rate` - the proportion of the offspring (newly created individuals each round) that are from mutations rather than mating
+    3. `num_generations` - the number of iterations that the genetic algorithm runs
+    4. `num_ele_Hallfame` - the number of top individuals that should be reported in the hall of fame (hof)
+   
+
+Covers of :py:class:`CellComplex` instances based on a :py:class:`Section` of a :py:class:`Sheaf`
+-------------------------------------------------------------------------------------------------
+
+Rather than working with :py:class:`Section` instances globally -- over the entirety of a :py:class:`CellComplex` instance -- one could restrict attention to portions of a :py:class:`Section` that are are consistent on portion.  By restricting the consistency testing to a list `testSupport` of cells in :py:meth:`Sheaf.consistencyRadius`, callers can examine consistency on a part of the base space.
+
+One can instead work with a `cover` of a :py:class:`CellComplex` instance, which is a list of lists of cells in which every cell index appears at least once.  Two methods compute statistics of consistency of an :py:class:`Section` instance `assignment` over a `cover`
+
+.. py:method:: Sheaf.coverMeanConsistency(self,assignment,cover,tol=1e-5)
+.. py:method:: Sheaf.coverMaxConsistency(self,assignment,cover,tol=1e-5)
+
+Given a `threshold` for consistency, one can compute cover in which each list consists of cells that are consistent to that `threshold`.  This is computed by
+
+.. py:method:: Sheaf.consistentCover(self,assignment,threshold,testSupport=None,tol=1e-5)
+
+   which relies on the aforementioned `threshold` and a :py:class:`Section` instance `assignment`.
+
+   As in :py:meth:`Sheaf.consistencyRadius`, `testSupport` specifies what portion of the base :py:class:`CellComplex` is being analyzed.
+
+If the `threshold` is not known, or cannot be easily estimated, it can be computed.
+   
+.. py:method:: Sheaf.mostConsistentCover(self,assignment,testSupport=None,weights=(1./3,1./3,1./3),tol=1e-5)
+
+   This method returns a cover that is most aligned to an :py:class:`Section` instance `assignment`.  In order to do this, this function performs a bisection search using `scipy.optimize.bisect` for the zeros of the function that is a linear combination of
+
+   1. the negative of :py:meth:`coverMaxConsistency`
+   2. one minus the normalized coarseness of the cover
+   3. the normalized elementwise overlap of the cover
+
+   in which the `weights` are as specified. 

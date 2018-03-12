@@ -91,15 +91,69 @@
 <p>Given some data in a <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> for a <a class="reference internal" href="sheaves.html#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a> you can measure the overall consistency radius with</p>
 <dl class="method">
 <dt id="Sheaf.consistencyRadius">
-<code class="descclassname">Sheaf.</code><code class="descname">consistencyRadius</code><span class="sig-paren">(</span><em>assignment</em>, <em>tol=1e-5</em><span class="sig-paren">)</span><a class="headerlink" href="#Sheaf.consistencyRadius" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Sheaf.</code><code class="descname">consistencyRadius</code><span class="sig-paren">(</span><em>assignment</em>, <em>testSupport=None</em>, <em>tol=1e-5</em><span class="sig-paren">)</span><a class="headerlink" href="#Sheaf.consistencyRadius" title="Permalink to this definition">¶</a></dt>
 <dd><p>where <cite>assignment</cite> is the <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> to be tested.  The optional <cite>tol</cite> specifies the tolerance for consistency, to be used in conjunction with each <a class="reference internal" href="sheaves.html#SheafCell.metric" title="SheafCell.metric"><code class="xref py py-attr docutils literal"><span class="pre">SheafCell.metric</span></code></a> in the <a class="reference internal" href="sheaves.html#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a>.</p>
+<p>The optional <cite>testSupport</cite> parameter is a list of cell indices on which consistency is to be assessed.  If it is listed as <cite>None</cite>, then the entire base space is to be tested.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Consistency radius is measured using the cells specified in the <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> and all cells that are specified as <code class="xref py py-attr docutils literal"><span class="pre">Sheaf.Cofaces</span></code>.  Preimages through <code class="xref py py-attr docutils literal"><span class="pre">Sheaf.restriction</span></code> maps are not computed, so values on faces are not tested.</p>
+</div>
 </dd></dl>
 
 <p>Similarly, if you want the nearest global section to your data, you can call</p>
 <dl class="method">
 <dt id="Sheaf.fuseAssignment">
-<code class="descclassname">Sheaf.</code><code class="descname">fuseAssignment</code><span class="sig-paren">(</span><em>assignment</em>, <em>tol=1e-5</em><span class="sig-paren">)</span><a class="headerlink" href="#Sheaf.fuseAssignment" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Sheaf.</code><code class="descname">fuseAssignment</code><span class="sig-paren">(</span><em>assignment</em>, <em>activeCells=None</em>, <em>testSupport=None</em>, <em>method='SLSQP'</em>, <em>options={}</em>, <em>tol=1e-5</em><span class="sig-paren">)</span><a class="headerlink" href="#Sheaf.fuseAssignment" title="Permalink to this definition">¶</a></dt>
 <dd><p>which returns a new <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> instance that is the global section nearest to your <cite>assignment</cite>.  In this case, the tolerance <cite>tol</cite> is passed to <code class="xref py py-func docutils literal"><span class="pre">scipy.optimize.minimize()</span></code>.</p>
+<p>As in <a class="reference internal" href="#Sheaf.consistencyRadius" title="Sheaf.consistencyRadius"><code class="xref py py-meth docutils literal"><span class="pre">Sheaf.consistencyRadius()</span></code></a>, the <cite>testSupport</cite> specifies a list of cells under which consistency is measured.</p>
+<p>The <cite>activeCells</cite> argument is a list of cells whose stalks are allowed to be changed by the fusion process.  If passed as <cite>None</cite>, all values in the stalks over all cells may be changed.</p>
+<p>The method is a string, specifying the optimizer method to be used.  There are currently two optimizers implemented, &#8216;SLSQP&#8217; and &#8216;GA&#8217;:</p>
+<p>&#8216;SLSQP&#8217;: This algorithm is <code class="xref py py-meth docutils literal"><span class="pre">scipy.optimize.minimize()</span></code> default for bounded optimization
+&#8216;GA&#8217;: This genetic algorithm was implemented using DEAP for optimizations over nondifferentiable functions.  For this algorithm, it takes <cite>options</cite>: a dictionary to store changes to parameters, the keys must be identical to the current parameters.</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><cite>initial_pop_size</cite> - the number of individuals in the starting population</li>
+<li><cite>mutation_rate</cite> - the proportion of the offspring (newly created individuals each round) that are from mutations rather than mating</li>
+<li><cite>num_generations</cite> - the number of iterations that the genetic algorithm runs</li>
+<li><cite>num_ele_Hallfame</cite> - the number of top individuals that should be reported in the hall of fame (hof)</li>
+</ol>
+</div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="covers-of-cellcomplex-instances-based-on-a-section-of-a-sheaf">
+<h2>Covers of <a class="reference internal" href="cellcomplexes.html#CellComplex" title="CellComplex"><code class="xref py py-class docutils literal"><span class="pre">CellComplex</span></code></a> instances based on a <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> of a <a class="reference internal" href="sheaves.html#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a><a class="headerlink" href="#covers-of-cellcomplex-instances-based-on-a-section-of-a-sheaf" title="Permalink to this headline">¶</a></h2>
+<p>Rather than working with <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> instances globally &#8211; over the entirety of a <a class="reference internal" href="cellcomplexes.html#CellComplex" title="CellComplex"><code class="xref py py-class docutils literal"><span class="pre">CellComplex</span></code></a> instance &#8211; one could restrict attention to portions of a <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> that are are consistent on portion.  By restricting the consistency testing to a list <cite>testSupport</cite> of cells in <a class="reference internal" href="#Sheaf.consistencyRadius" title="Sheaf.consistencyRadius"><code class="xref py py-meth docutils literal"><span class="pre">Sheaf.consistencyRadius()</span></code></a>, callers can examine consistency on a part of the base space.</p>
+<p>One can instead work with a <cite>cover</cite> of a <a class="reference internal" href="cellcomplexes.html#CellComplex" title="CellComplex"><code class="xref py py-class docutils literal"><span class="pre">CellComplex</span></code></a> instance, which is a list of lists of cells in which every cell index appears at least once.  Two methods compute statistics of consistency of an <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> instance <cite>assignment</cite> over a <cite>cover</cite></p>
+<dl class="method">
+<dt id="Sheaf.coverMeanConsistency">
+<code class="descclassname">Sheaf.</code><code class="descname">coverMeanConsistency</code><span class="sig-paren">(</span><em>self</em>, <em>assignment</em>, <em>cover</em>, <em>tol=1e-5</em><span class="sig-paren">)</span><a class="headerlink" href="#Sheaf.coverMeanConsistency" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Sheaf.coverMaxConsistency">
+<code class="descclassname">Sheaf.</code><code class="descname">coverMaxConsistency</code><span class="sig-paren">(</span><em>self</em>, <em>assignment</em>, <em>cover</em>, <em>tol=1e-5</em><span class="sig-paren">)</span><a class="headerlink" href="#Sheaf.coverMaxConsistency" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Given a <cite>threshold</cite> for consistency, one can compute cover in which each list consists of cells that are consistent to that <cite>threshold</cite>.  This is computed by</p>
+<dl class="method">
+<dt id="Sheaf.consistentCover">
+<code class="descclassname">Sheaf.</code><code class="descname">consistentCover</code><span class="sig-paren">(</span><em>self</em>, <em>assignment</em>, <em>threshold</em>, <em>testSupport=None</em>, <em>tol=1e-5</em><span class="sig-paren">)</span><a class="headerlink" href="#Sheaf.consistentCover" title="Permalink to this definition">¶</a></dt>
+<dd><p>which relies on the aforementioned <cite>threshold</cite> and a <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> instance <cite>assignment</cite>.</p>
+<p>As in <a class="reference internal" href="#Sheaf.consistencyRadius" title="Sheaf.consistencyRadius"><code class="xref py py-meth docutils literal"><span class="pre">Sheaf.consistencyRadius()</span></code></a>, <cite>testSupport</cite> specifies what portion of the base <a class="reference internal" href="cellcomplexes.html#CellComplex" title="CellComplex"><code class="xref py py-class docutils literal"><span class="pre">CellComplex</span></code></a> is being analyzed.</p>
+</dd></dl>
+
+<p>If the <cite>threshold</cite> is not known, or cannot be easily estimated, it can be computed.</p>
+<dl class="method">
+<dt id="Sheaf.mostConsistentCover">
+<code class="descclassname">Sheaf.</code><code class="descname">mostConsistentCover</code><span class="sig-paren">(</span><em>self</em>, <em>assignment</em>, <em>testSupport=None</em>, <em>weights=(1./3</em>, <em>1./3</em>, <em>1./3)</em>, <em>tol=1e-5</em><span class="sig-paren">)</span><a class="headerlink" href="#Sheaf.mostConsistentCover" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method returns a cover that is most aligned to an <a class="reference internal" href="#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> instance <cite>assignment</cite>.  In order to do this, this function performs a bisection search using <cite>scipy.optimize.bisect</cite> for the zeros of the function that is a linear combination of</p>
+<ol class="arabic simple">
+<li>the negative of <a class="reference internal" href="#Sheaf.coverMaxConsistency" title="Sheaf.coverMaxConsistency"><code class="xref py py-meth docutils literal"><span class="pre">coverMaxConsistency()</span></code></a></li>
+<li>one minus the normalized coarseness of the cover</li>
+<li>the normalized elementwise overlap of the cover</li>
+</ol>
+<p>in which the <cite>weights</cite> are as specified.</p>
 </dd></dl>
 
 </div>
@@ -115,6 +169,7 @@
   <ul>
 <li><a class="reference internal" href="#">The <code class="docutils literal"><span class="pre">Section</span></code> class</a><ul>
 <li><a class="reference internal" href="#data-fusion-with-section-and-sheaf-instances">Data fusion with <code class="docutils literal"><span class="pre">Section</span></code> and <code class="docutils literal"><span class="pre">Sheaf</span></code> instances</a></li>
+<li><a class="reference internal" href="#covers-of-cellcomplex-instances-based-on-a-section-of-a-sheaf">Covers of <code class="docutils literal"><span class="pre">CellComplex</span></code> instances based on a <code class="docutils literal"><span class="pre">Section</span></code> of a <code class="docutils literal"><span class="pre">Sheaf</span></code></a></li>
 </ul>
 </li>
 </ul>

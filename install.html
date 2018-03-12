@@ -110,9 +110,10 @@
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="n">git</span><span class="o">+</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">kb1dds</span><span class="o">/</span><span class="n">pysheaf</span><span class="o">.</span><span class="n">git</span><span class="c1">#egg=pysheaf</span>
 </pre></div>
 </div>
-<p>Depending on your system (Windows in particular) this may or may not install all of the dependencies. If you get an error message that something is missing you can install the missing dependencies using <code class="xref py py-mod docutils literal"><span class="pre">conda</span></code>.  PySheaf requires <code class="xref py py-mod docutils literal"><span class="pre">numpy</span></code>, <code class="xref py py-mod docutils literal"><span class="pre">networkx</span></code>, and <code class="xref py py-mod docutils literal"><span class="pre">scipy</span></code>.
+<p>Depending on your system (Windows in particular) this may or may not install all of the dependencies. If you get an error message that something is missing you can install the missing dependencies using <code class="xref py py-mod docutils literal"><span class="pre">conda</span></code>.  PySheaf requires <code class="xref py py-mod docutils literal"><span class="pre">numpy</span></code>, <code class="xref py py-mod docutils literal"><span class="pre">networkx</span></code>, <code class="xref py py-mod docutils literal"><span class="pre">scipy</span></code>, and <code class="xref py py-mod docutils literal"><span class="pre">deap</span></code>.
 To install these using <code class="xref py py-mod docutils literal"><span class="pre">conda</span></code>:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="n">numpy</span> <span class="n">networkx</span> <span class="n">scipy</span>
+<span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="n">deap</span>
 </pre></div>
 </div>
 <p><strong>Note:</strong> If you only wish to install the PySheaf package for purposes of imports and do not wish to run the tests or review the source code then use the following for pip install:</p>
@@ -133,7 +134,7 @@ To install these using <code class="xref py py-mod docutils literal"><span class
 </pre></div>
 </div>
 <p>If everything is working you will get a bunch of warnings and a line that looks something like:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Ran</span> <span class="mi">49</span> <span class="n">tests</span> <span class="ow">in</span> <span class="mf">0.006</span><span class="n">s</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Ran</span> <span class="mi">57</span> <span class="n">tests</span> <span class="ow">in</span> <span class="mf">0.070</span><span class="n">s</span>
 <span class="n">OK</span>
 </pre></div>
 </div>
