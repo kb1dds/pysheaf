@@ -751,21 +751,46 @@ class Sheaf(CellComplex):
         assignment=copy.deepcopy(assignment_input)
         assignment=self.maximalExtend(assignment,multiassign=True,tol=tol)
         
-        radius=0
+        radius = self.assignmentMetric(assignment, assignment, testSupport)
+        
+        if radius == np.inf:
+            radius = 0
+        
+        return radius
+    
+    def consistencyRadiusSheafCells(self,assignment_input,testSupport=None,tol=1e-5):
+        """Compute the consistency radius of an approximate section"""
+        # Extend along restriction maps
+        assignment=copy.deepcopy(assignment_input)
+        assignment=self.maximalExtend(assignment,multiassign=True,tol=tol)
+        
+        #Set the dictionary for consistencies of cells
+        radii = dict()
+        if testSupport is None:
+            for c1 in assignment.sectionCells:
+                radii[c1.support] = 0.0
+        else:
+            for c1 in testSupport:
+                radii[c1] = 0.0
+                
+                
+        max_radius=0
         count_comparison = 0
         for c1 in assignment.sectionCells:
             for c2 in assignment.sectionCells:
-                if c1.support == c2.support and ((testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport) and (c2.source in testSupport))):
+                if c1.support == c2.support and ((testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport) and (c2.support in testSupport) and (c2.source in testSupport))):
                     rad = self.cells[c1.support].metric(c1.value,c2.value)
                     count_comparison += 1
-                    if rad > radius:
-                        radius = rad
-        
+                    if rad > radii[c1.support]:
+                        radii[c1.support] = rad
+                    if rad > max_radius:
+                        max_radius = rad
+                        
         if count_comparison == 0:
-            warnings.warn("No SectionCells in the assignment match, therefore nothing was compared by consistencyRadius")
+            warnings.warn("No SectionCells in the assignments match, therefore nothing was compared by assignmentMetric")
         
-        return radius
-
+        return max_radius, radii
+    
     def coverConsistency(self,assignment,cover,tol=1e-5):
         """Compute the consistency of a cover against an assignment"""
         return np.mean([self.consistencyRadius(assignment,testSupport=a,tol=tol) for a in cover])
@@ -793,7 +818,7 @@ class Sheaf(CellComplex):
         count_comparison = 0
         for c1 in assignment1.sectionCells:
             for c2 in assignment2.sectionCells:
-                if c1.support == c2.support and ((testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport) and (c2.source in testSupport))):
+                if c1.support == c2.support and ((testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport) and (c2.support in testSupport) and (c2.source in testSupport))):
                     rad = self.cells[c1.support].metric(c1.value,c2.value)
                     count_comparison += 1
                     if rad > radius:
@@ -1206,8 +1231,22 @@ class Sheaf(CellComplex):
         toolbox.register("evaluate", cost)
         
         #Define the upper and lower bounds for each attribute in the optimization
-        lower_bounds = [float(bnds[0]) for bnds in bounds]
-        upper_bounds = [float(bnds[1]) for bnds in bounds]
+        lower_bounds = []
+        upper_bounds = []
+        for bnds in bounds:
+            if bnds[0] is not None:
+                lower_bounds.append(float(bnds[0]))
+            else:
+                lower_bounds.append(bnds[0])
+            if bnds[1] is not None:
+                upper_bounds.append(float(bnds[1]))
+            else:
+                upper_bounds.append(bnds[1])
+                
+                
+         #Old Bounds Definition       
+#        lower_bounds = [float(bnds[0]) for bnds in bounds]
+#        upper_bounds = [float(bnds[1]) for bnds in bounds]
         
         #Define the function to do the mating between two individuals in the previous population
         #Note: Any toolbox.register that are commented out are other possibilities for the function
