@@ -753,13 +753,15 @@ class Sheaf(CellComplex):
         
         radius=0
         count_comparison = 0
+            
         for c1 in assignment.sectionCells:
-            for c2 in assignment.sectionCells:
-                if c1.support == c2.support and ((testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport) and (c2.source in testSupport))):
-                    rad = self.cells[c1.support].metric(c1.value,c2.value)
-                    count_comparison += 1
-                    if rad > radius:
-                        radius = rad
+            if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
+                for c2 in assignment.sectionCells:
+                    if c1.support == c2.support and ((testSupport is None) or (c2.source in testSupport)):
+                        rad = self.cells[c1.support].metric(c1.value,c2.value)
+                        count_comparison += 1
+                        if rad > radius:
+                            radius = rad
         
         if count_comparison == 0:
             warnings.warn("No SectionCells in the assignment match, therefore nothing was compared by consistencyRadius")
@@ -770,16 +772,22 @@ class Sheaf(CellComplex):
         """Construct a cover of the base space such that each element is consistent to within the given threshold.  Note: the assignment must be supported on the entire space."""
         cover=[]
 
+        if testSupport is None:
+            cellList=range(len(self.cells))
+        else:
+            cellList=testSupport
+
         # Consider each cell...
-        for i,c in enumerate(self.cells):
+        for i in cellList:
+            c=self.cells[i]
+            
             found=False
-            if (testSupport is None) or (i in testSupport):
-                # Check each set in the cover, if the new cell is consistent with that set, add it...
-                for j,s in enumerate(cover):
-                    if self.consistencyRadius(assignment,testSupport=s+[i],tol=tol) < threshold:
-                        found=True
-                        cover[j].append(i)
-                        break
+            # Check each set in the cover, if the new cell is consistent with that set, add it...
+            for j,s in enumerate(cover):
+                if self.consistencyRadius(assignment,testSupport=s+[i],tol=tol) < threshold:
+                    found=True
+                    cover[j].append(i)
+                    break
 
             # ... otherwise it starts a new set in the cover
             if not found:
@@ -814,12 +822,13 @@ class Sheaf(CellComplex):
         radius=0
         count_comparison = 0
         for c1 in assignment1.sectionCells:
-            for c2 in assignment2.sectionCells:
-                if c1.support == c2.support and ((testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport) and (c2.source in testSupport))):
-                    rad = self.cells[c1.support].metric(c1.value,c2.value)
-                    count_comparison += 1
-                    if rad > radius:
-                        radius = rad
+            if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
+                for c2 in assignment2.sectionCells:
+                    if c1.support == c2.support and ((testSupport is None) or (c2.source in testSupport)):
+                        rad = self.cells[c1.support].metric(c1.value,c2.value)
+                        count_comparison += 1
+                        if rad > radius:
+                            radius = rad
                         
         if count_comparison == 0:
             radius = np.inf
