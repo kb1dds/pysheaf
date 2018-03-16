@@ -772,8 +772,8 @@ class Sheaf(CellComplex):
 
         # Consider each cell...
         for i,c in enumerate(self.cells):
+            found=False
             if (testSupport is None) or (i in testSupport):
-                found=False
                 # Check each set in the cover, if the new cell is consistent with that set, add it...
                 for j,s in enumerate(cover):
                     if self.consistencyRadius(assignment,testSupport=s+[i],tol=tol) < threshold:
