@@ -791,6 +791,14 @@ class Sheaf(CellComplex):
         
         return max_radius, radii
     
+    def maxTestSupport(self,activeCells):
+        elementsTestSupport = activeCells
+        for i in range(len(elementsTestSupport)):
+            for cf in self.cofaces(elementsTestSupport[i]):
+                if not cf.index in elementsTestSupport:
+                    elementsTestSupport.append(cf.index)
+        return elementsTestSupport
+    
     def coverConsistency(self,assignment,cover,tol=1e-5):
         """Compute the consistency of a cover against an assignment"""
         return np.mean([self.consistencyRadius(assignment,testSupport=a,tol=tol) for a in cover])
@@ -952,25 +960,27 @@ class Sheaf(CellComplex):
             Tech. Rep. DFVLR-FB 88-28, DLR German Aerospace Center, 
             Institute for Flight Mechanics, Koln, Germany.
         """
-    
         initial_guess, bounds = self.serializeAssignment(assignment,activeCells)
-        res=scipy.optimize.minimize( fun = lambda sec: self.assignmentMetric(assignment,self.deserializeAssignment(sec,activeCells,assignment), testSupport=testSupport),
+        res=scipy.optimize.minimize( fun = lambda sec: ((self.assignmentMetric(assignment,self.deserializeAssignment(sec,activeCells,assignment), testSupport=testSupport))),
                                     x0 = initial_guess,
                                     method = 'SLSQP', 
                                     bounds = bounds,
                                     constraints = ({'type' : 'eq',
                                                     'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg,activeCells,assignment),testSupport=testSupport)}), 
                                     tol = tol, 
-                                    options = {'maxiter' : int(100)})
+                                    options = {'maxiter' : int(100), 'disp' : True})
         globalsection = self.deserializeAssignment(res.x,activeCells,assignment)
-        #print res.success
-        #print res.message
+        print res.items()
+#        print res.success
+#        print res.status
+#        print res.message
+#        print res.maxcv
         return globalsection
     
     
     
     
-    def ga_optimization_function(self,  space_des_2_opt, assignment,individual,activeCells=None,testSupport=None):
+    def ga_optimization_function(self,  space_des_2_opt, assignment,individual,activeCells=None,testSupport=None, tol=1e-5):
         """Write the function for the genetic algorithm to optimize similar to fun for scipy.optimize.minimize"""
         
         #Assign a high cost to eliminate individuals with nans from the population
@@ -1002,7 +1012,20 @@ class Sheaf(CellComplex):
             new_assignment = self.maximalExtend(new_assignment,multiassign=multiassign,tol=1e-5)
         
             cost = self.assignmentMetric(assignment, new_assignment, testSupport=testSupport)
+            
+            #Constrain value by the consistencyRadius (Note: min is 0)
+            radii = self.consistencyRadius(new_assignment)
+            
+            if radii < tol:
+                pass
+            else:
+                cost = cost+radii            
+            
+            
             #Sum to formulate cost (NOTE: GA maximizes instead of minimizes so we need a negative sign)
+            
+            
+            
             cost = -cost
         return (float(cost),)
         
@@ -1125,7 +1148,7 @@ class Sheaf(CellComplex):
             else:
                 #Use the cells denoted as active in sheaf
                 active = False
-                if cell.id in activeCells:
+                if int(cell.id) in activeCells:
                     active = True
                     
             if active:
@@ -1170,9 +1193,37 @@ class Sheaf(CellComplex):
             initial_guess = None
             
         #Ensure that any assigned individual to the initial population is the correct length
-        if np.any(initial_guess_p):
-            if np.size(initial_guess_p) != self.cells[0].stalkDim:
-                initial_guess_p = None
+        #Needs to be modified to take either an array or an set of Sections
+        
+        #Deserialize initial_guess_p if it is expressed as a section
+        if isinstance(initial_guess_p, Section):
+            setOfArrays = [[] for r in range(len(opt_sp_id_len))]
+            setActiveCells = [s[0] for s in opt_sp_id_len]
+            for sec in initial_guess_p.sectionCells:
+                if sec.support in setActiveCells:
+                    ind_opt = (np.abs(np.array(setActiveCells) - sec.support)).argmin()
+                    if np.size(sec.value) == opt_sp_id_len[ind_opt][1]:
+                        setOfArrays[ind_opt] = sec.value
+                    else:
+                        initial_guess_p = None
+                        break
+                else:
+                    warnings.warn("initial_guess_p does not contain a sectionCell for every activeCell")
+                    initial_guess_p = None
+                    break
+            
+            #Pull all the section values into a single array
+            #TBD: Try to streamline
+            if initial_guess_p != None:
+                initial_guess_p = np.array([])
+                for a_i in setOfArrays:
+                    initial_guess_p = np.hstack((initial_guess_p, a_i))
+                
+        else:
+            #Keep original functionality
+            if np.any(initial_guess_p):
+                if np.size(initial_guess_p) != self.cells[0].stalkDim:
+                    initial_guess_p = None
         
         
         #Start of unique to the genetic algorithm
@@ -1233,15 +1284,25 @@ class Sheaf(CellComplex):
         #Define the upper and lower bounds for each attribute in the optimization
         lower_bounds = []
         upper_bounds = []
-        for bnds in bounds:
+        for i,bnds in enumerate(bounds):
             if bnds[0] is not None:
                 lower_bounds.append(float(bnds[0]))
             else:
-                lower_bounds.append(bnds[0])
+                warnings.warn("Bounds not specified on an activeCell")
+                if initial_guess_p is not None:
+                    lower_bounds.append(initial_guess_p[i]-100*initial_guess_p[i])
+                else:
+                    warnings.warn("Initial guess can't be turned into bounds")
+                    lower_bounds.append(bnds[0])
             if bnds[1] is not None:
                 upper_bounds.append(float(bnds[1]))
             else:
-                upper_bounds.append(bnds[1])
+                warnings.warn("Bounds not specified on an activeCell")
+                if initial_guess_p is not None:
+                    upper_bounds.append(initial_guess_p[i]+100*initial_guess_p[i])
+                else:
+                    warnings.warn("Initial guess can't be turned into bounds")
+                    upper_bounds.append(bnds[1])
                 
                 
          #Old Bounds Definition       
