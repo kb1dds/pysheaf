@@ -792,7 +792,7 @@ class Sheaf(CellComplex):
         return max_radius, radii
     
     def maxTestSupport(self,activeCells):
-        elementsTestSupport = activeCells
+        elementsTestSupport = copy.deepcopy(activeCells)
         for i in range(len(elementsTestSupport)):
             for cf in self.cofaces(elementsTestSupport[i]):
                 if not cf.index in elementsTestSupport:
@@ -860,6 +860,9 @@ class Sheaf(CellComplex):
                         num_generations - the number of iterations that the genetic algorithm runs
                         num_ele_Hallfame - the number of top individuals that should be reported in the hall of fame (hof)
         """
+        if activeCells != None and not (set(testSupport) <= set(self.maxTestSupport(activeCells))):
+            raise ValueError("Given testSupport is larger than the largest comparison set given activeCells")
+        
         if method == 'SLSQP':
             if self.isNumeric():
                 globalsection = self.optimize_SLSQP(assignment, activeCells, testSupport, tol)
@@ -971,10 +974,6 @@ class Sheaf(CellComplex):
                                     options = {'maxiter' : int(100), 'disp' : True})
         globalsection = self.deserializeAssignment(res.x,activeCells,assignment)
         print res.items()
-#        print res.success
-#        print res.status
-#        print res.message
-#        print res.maxcv
         return globalsection
     
     
@@ -1019,13 +1018,10 @@ class Sheaf(CellComplex):
             if radii < tol:
                 pass
             else:
-                cost = cost+radii            
+                cost = cost+(radii)**2   
             
             
             #Sum to formulate cost (NOTE: GA maximizes instead of minimizes so we need a negative sign)
-            
-            
-            
             cost = -cost
         return (float(cost),)
         
@@ -1292,8 +1288,7 @@ class Sheaf(CellComplex):
                 if initial_guess_p is not None:
                     lower_bounds.append(initial_guess_p[i]-100*initial_guess_p[i])
                 else:
-                    warnings.warn("Initial guess can't be turned into bounds")
-                    lower_bounds.append(bnds[0])
+                    raise ValueError("Initial guess can't be turned into bounds")
             if bnds[1] is not None:
                 upper_bounds.append(float(bnds[1]))
             else:
@@ -1301,8 +1296,7 @@ class Sheaf(CellComplex):
                 if initial_guess_p is not None:
                     upper_bounds.append(initial_guess_p[i]+100*initial_guess_p[i])
                 else:
-                    warnings.warn("Initial guess can't be turned into bounds")
-                    upper_bounds.append(bnds[1])
+                    raise ValueError("Initial guess can't be turned into bounds")
                 
                 
          #Old Bounds Definition       

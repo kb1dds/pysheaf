@@ -146,8 +146,7 @@ def construct_sheaf():
                                        ps.SheafCoface(index=8,
                                                       orientation=1,
                                                       restriction=ps.LinearMorphism(np.array([[0,1]])))], # U3->V3
-                              bounds=[(70,80),(-pi, pi)]
-                              ),
+                              bounds=[(70,80),(-pi, pi)]), # U3->V3
                  ps.SheafCell(dimension=1,
                               compactClosure=True,
                               stalkDim=2,
@@ -158,8 +157,7 @@ def construct_sheaf():
                                        ps.SheafCoface(index=7,
                                                       orientation=1,
                                                       restriction=ps.LinearMorphism(np.array([[1,0]])))], # U4->V2
-                              bounds = [(60,70),(-pi, pi)]
-                              ),
+                              bounds = [(60,70),(-pi, pi)]), # U4->V2
                  ps.SheafCell(dimension=1,
                               compactClosure=True,
                               stalkDim=2,
@@ -170,8 +168,7 @@ def construct_sheaf():
                                        ps.SheafCoface(index=7,
                                                       orientation=-1,
                                                       restriction=ps.SetMorphism(D))], # U5->V2
-                              bounds=[(-55,-75),(40, 50)]
-                              ), 
+                              bounds=[(-55,-75),(40, 50)]), 
                  ps.SheafCell(dimension=2,
                               compactClosure=True,
                               stalkDim=1,
@@ -234,8 +231,9 @@ print 'Case 1 consistency radius after removing faulty sensor ' + str(s1.consist
 print 'Case 2 consistency radius after removing faulty sensor ' + str(s1.consistencyRadius(input_data[1],testSupport=[0,1,2,3,4,6,7,8]))
 print 'Case 3 consistency radius after removing faulty sensor ' + str(s1.consistencyRadius(input_data[2],testSupport=[0,1,2,3,4,6,7,8]))
 
-#Verify that fuseAssignment runs properly when using testSupport
-#Check SLSQP
+#Verify that fuseAssignment runs properly when using testSupport and cellAssignment
+
+#Check SLSQP (Currently Commented due to weakness as an optimizer for SLSQP)
 #fused_data_gen_SLSQP_testSupport = s1.fuseAssignment(input_data[1], activeCells=None, testSupport=[0,1,2,3,4,6,7,8], method='SLSQP')
 #fused_data_gen_SLSQP_testSupport = s1.fuseAssignment(input_data[1], activeCells=None, method='SLSQP')
 #fused_assignmentMetric_SLSQP_testSupport = [s1.assignmentMetric(input_data[1], s1.maximalExtend(fused_data_gen_SLSQP_testSupport),testSupport=[0,1,2,3,4,6,7,8])]
@@ -251,20 +249,14 @@ print 'Case 3 consistency radius after removing faulty sensor ' + str(s1.consist
 #
 #print fused_data_gen_SLSQP_activeCells.sectionCells[0].support
 #print fused_data_gen_SLSQP_activeCells.sectionCells[0].value
-
+#
 ##Check GA with only testSupport
-initial_cond = np.array([-70.668,42.809,11431,495,164,1.05])
-initial_cond = ps.Section([ps.SectionCell(support=0,value=np.array([-70.668,42.809,11431,495,164,1.05])), # X
+initial_cond_ts = ps.Section([ps.SectionCell(support=0,value=np.array([-70.668,42.809,11431,495,164,1.05])), # X
                          ])
-fused_data_gen_GA = s1.fuseAssignment(input_data[1], testSupport=[0,1,2,3,4,6,7,8], method='GA', options={'initial_pop_size':10, 'num_generations':1000, 'initial_guess_p':initial_cond})
+fused_data_gen_GA_ts = s1.fuseAssignment(input_data[1], testSupport=[0,1,2,3,4,6,7,8], method='GA', options={'initial_pop_size':10, 'num_generations':1000, 'initial_guess_p':initial_cond_ts})
 
 
-fused_assignmentMetric_GA = [s1.assignmentMetric(input_data[1], s1.maximalExtend(fused_data_gen_GA),testSupport=[0,1,2,3,4,6,7,8])]
-print fused_assignmentMetric_GA
-
-print s1.consistencyRadiusSheafCells(fused_data_gen_GA)
-print [x.support for x in fused_data_gen_GA.sectionCells]
-print [x.value for x in fused_data_gen_GA.sectionCells]
+fused_assignmentMetric_GA_ts = [s1.assignmentMetric(input_data[1], s1.maximalExtend(fused_data_gen_GA_ts),testSupport=[0,1,2,3,4,6,7,8])]
 
 
 
@@ -277,6 +269,18 @@ fused_data_gen_GA = s1.fuseAssignment(input_data[1], activeCells=[3,4,5], testSu
 
 
 fused_assignmentMetric_GA = [s1.assignmentMetric(input_data[1], s1.maximalExtend(fused_data_gen_GA),testSupport=[0,1,2,3,4,6,7,8])]
+
+
+#Print Results
+
+#Print check GA with only testSupport
+print fused_assignmentMetric_GA_ts
+
+print s1.consistencyRadiusSheafCells(fused_data_gen_GA_ts)
+print [x.support for x in fused_data_gen_GA_ts.sectionCells]
+print [x.value for x in fused_data_gen_GA_ts.sectionCells]
+
+#Print check GA with testSupport and cellAssignment
 print fused_assignmentMetric_GA
 
 print s1.consistencyRadiusSheafCells(fused_data_gen_GA)
