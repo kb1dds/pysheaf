@@ -192,7 +192,7 @@ class CellComplex:
 
     def starCells(self,cells):
         """Cells in star over a subset of a cell complex"""
-        return list(set(cells+[cf.index for c in cells for cf in self.cofaces(c)]))
+        return set(cells).union({cf.index for c in cells for cf in self.cofaces(c)})
 
     def homology(self,k,subcomplex=None,compactSupport=False,tol=1e-5):
         """Compute (relative) homology of the cell complex"""
@@ -1889,7 +1889,7 @@ class Section:
 
     def support(self):
         """List the cells in the support of this section"""
-        return list(set([sc.support for sc in self.sectionCells]))
+        return {sc.support for sc in self.sectionCells}
 
     def extend(self,sheaf,cell,value=None,tol=1e-5):
         """Extend the section to another cell; returns True if successful"""
