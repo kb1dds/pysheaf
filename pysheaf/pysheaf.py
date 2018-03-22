@@ -773,37 +773,27 @@ class Sheaf(CellComplex):
         cover=[]
 
         if testSupport is None:
-            cellList=range(len(self.cells))
+            cellSet=set(range(len(self.cells)))
         else:
-            cellList=testSupport
+            cellSet=set(testSupport)
 
         # Consider each cell...
-        while cellList:
-            i=cellList.pop()
-            c=self.cells[i]
+        while cellSet:
+            i=cellSet.pop()
 
             found=False
             # Check each set in the cover, if the new cell is consistent with that set, add it...
             for j,s in enumerate(cover):
-                if self.consistencyRadius(assignment,testSupport=s+[i],tol=tol) < threshold:
+                if self.consistencyRadius(assignment,testSupport=s.union([i]),tol=tol) < threshold:
                     found=True
-                    cover[j]=list(set(cover[j]).union(self.starCells([i])))
-                    for k in self.starCells([i]):
-                        try:
-                            cellList.remove(k)
-                        except:
-                            pass
+                    cover[j].update(self.starCells([i]))
+                    cellSet.difference_update(self.starCells([i]))
                     break
 
             # ... otherwise it starts a new set in the cover
             if not found:
-                cover.append(self.starCells([i]))
-                for k in self.starCells([i]):
-                    try:
-                        cellList.remove(k)
-                    except:
-                        pass
-
+                cover.append(set(self.starCells([i])))
+                cellSet.difference_update(self.starCells([i]))
 
         return cover
 
