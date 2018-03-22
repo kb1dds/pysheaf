@@ -745,32 +745,62 @@ class Sheaf(CellComplex):
                     assignment.sectionCells.append(SectionCell(cf.index,cf.restriction(assignment.sectionCells[i].value),source=assignment.sectionCells[i].support))
         return assignment
 
-    def consistencyRadii(self,assignment_input,testSupport=None,tol=1e-5):
+    def consistencyRadii(self,assignment,testSupport=None,tol=1e-5):
         """Compute all radii for consistency across an assignment"""
 
-        radii=set([])
-        
-        # Extend along restriction maps
-        assignment=copy.deepcopy(assignment_input)
-        assignment=self.maximalExtend(assignment,multiassign=True,tol=tol)
+        radii=[]
         
         for c1 in assignment.sectionCells:
             if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
                 for c2 in assignment.sectionCells:
-                    if c1.support == c2.support and ((testSupport is None) or (c2.source in testSupport)):
-                        rad = self.cells[c1.support].metric(c1.value,c2.value)
-                        radii.add(rad)
+                    if (testSupport is None) or (c2.source in testSupport):
+                        if c1.support == c2.support:
+                            radii.append(self.cells[c1.support].metric(c1.value,c2.value))
+                        else:
+                            for cf1 in self.cofaces(c1.support):
+                                if cf1.index == c2.support:
+                                    radii.append(self.cells[cf1.index].metric(cf1.restriction(c1.value),c2.value))
+                                else:
+                                    for cf2 in self.cofaces(c2.support):
+                                        if cf1.index == cf2.index:
+                                            radii.append(self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value)))
 
-        return radii
+        return np.unique(radii)
 
-    def consistencyRadius(self,assignment_input,testSupport=None,tol=1e-5):
+    def consistencyRadius(self,assignment,testSupport=None,tol=1e-5):
         """Compute the consistency radius of an approximate section"""
+
+        radius = 0.
+        count_comparison=0
         
-        radii=self.consistencyRadii(assignment_input,testSupport,tol)
-        if len(radii) == 0:
+        for c1 in assignment.sectionCells:
+            if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
+                for c2 in assignment.sectionCells:
+                    if (testSupport is None) or (c2.source in testSupport):
+                        if c1.support == c2.support:
+                            rad=self.cells[c1.support].metric(c1.value,c2.value)
+                            if rad > radius:
+                                count_comparison+=1
+                                radius = rad
+                        else:
+                            for cf1 in self.cofaces(c1.support):
+                                if cf1.index == c2.support:
+                                    rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),c2.value)
+                                    if rad > radius:
+                                        count_comparison+=1
+                                        radius = rad
+                                else:
+                                    for cf2 in self.cofaces(c2.support):
+                                        if cf1.index == cf2.index:
+                                            rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value))
+                                            if rad > radius:
+                                                count_comparison+=1
+                                                radius = rad
+
+        if count_comparison == 0:
             warnings.warn("No SectionCells in the assignment match, therefore nothing was compared by consistencyRadius")
         
-        return max(radii)
+        return radius
 
     def consistentCover(self,assignment,threshold,testSupport=None,tol=1e-5):
         """Construct a cover of the base space such that each element is consistent to within the given threshold.  Note: the assignment must be supported on the entire space."""
