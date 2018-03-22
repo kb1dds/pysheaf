@@ -741,32 +741,36 @@ class Sheaf(CellComplex):
         """Take a partial assignment and extend it to a maximal assignment that's non-conflicting (if multiassign=False) or one in which multiple values can be given to a given cell (if multiassign=True)"""
         for i in range(len(assignment.sectionCells)):
             for cf in self.cofaces(assignment.sectionCells[i].support):
-                if not assignment.extend(self,cf.index,tol=tol) and multiassign:
+                if multiassign or (not assignment.extend(self,cf.index,tol=tol)):
                     assignment.sectionCells.append(SectionCell(cf.index,cf.restriction(assignment.sectionCells[i].value),source=assignment.sectionCells[i].support))
         return assignment
 
-    def consistencyRadius(self,assignment_input,testSupport=None,tol=1e-5):
-        """Compute the consistency radius of an approximate section"""
+    def consistencyRadii(self,assignment_input,testSupport=None,tol=1e-5):
+        """Compute all radii for consistency across an assignment"""
+
+        radii=set([])
+        
         # Extend along restriction maps
         assignment=copy.deepcopy(assignment_input)
         assignment=self.maximalExtend(assignment,multiassign=True,tol=tol)
         
-        radius=0
-        count_comparison = 0
-            
         for c1 in assignment.sectionCells:
             if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
                 for c2 in assignment.sectionCells:
                     if c1.support == c2.support and ((testSupport is None) or (c2.source in testSupport)):
                         rad = self.cells[c1.support].metric(c1.value,c2.value)
-                        count_comparison += 1
-                        if rad > radius:
-                            radius = rad
+                        radii.add(rad)
+
+        return radii
+
+    def consistencyRadius(self,assignment_input,testSupport=None,tol=1e-5):
+        """Compute the consistency radius of an approximate section"""
         
-        if count_comparison == 0:
+        radii=self.consistencyRadii(assignment_input,testSupport,tol)
+        if len(radii) == 0:
             warnings.warn("No SectionCells in the assignment match, therefore nothing was compared by consistencyRadius")
         
-        return radius
+        return max(radii)
 
     def consistentCover(self,assignment,threshold,testSupport=None,tol=1e-5):
         """Construct a cover of the base space such that each element is consistent to within the given threshold.  Note: the assignment must be supported on the entire space."""
@@ -1895,8 +1899,12 @@ class Section:
         """Extend the section to another cell; returns True if successful"""
         
         # If the desired cell is already in the support, do nothing
-        if cell in self.support():
-            return
+        for sc in self.sectionCells:
+            if cell == sc.support:
+                if (value is None) or sheaf.cells[sc.support].metric(sc.value,value) < tol:
+                    return True
+                else:
+                    return False
 
         # Is the desired cell a coface of a cell in the support?
         for s in self.sectionCells:
@@ -1910,6 +1918,9 @@ class Section:
                     #if value is not None and np.any(np.abs(val - value)>tol):
                         return False
                     value = val
+                    break
+            if value is not None:
+                break
 
         # Are there are any cofaces for the desired cell in the support?
         if value is None: # Attempt to assign a new value...
