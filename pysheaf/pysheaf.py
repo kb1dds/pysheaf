@@ -10,7 +10,6 @@ import random
 # import matplotlib.pyplot as plt
 import networkx as nx
 import scipy.optimize
-import copy
 
 import warnings
 
