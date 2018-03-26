@@ -287,3 +287,16 @@ print s1.consistencyRadiusSheafCells(fused_data_gen_GA)
 print [x.support for x in fused_data_gen_GA.sectionCells]
 print [x.value for x in fused_data_gen_GA.sectionCells]
 
+
+#Expected Output from print statements
+#[2.1122311651805501] #Approximate due to Optimization
+#(0, {0: 0.0, 1: 0.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0, 6: 0.0, 7: 0.0, 8: 0.0})
+#[0, 2, 3, 8, 4, 6, 7, 5]
+#[Individual([ -7.06680000e+01,   4.27900426e+01,   1.16255819e+04, #Approximate due to Optimization
+#         4.95128977e+02,   1.87395696e+02,   8.63761369e-01]), array([   -70.668     ,     42.79004263,  11625.58188352,    495.12897738,
+#          187.39569627]), array([ 75.95750426,   0.86376137]), array([ 0.86376137]), array([ 59.66631662,   0.86376137]), array([ 75.95750426]), array([ 59.66631662]), array([-65.41516923,  44.24899379])]
+#[2.0529927047803938] #Approximate due to Optimization
+#(1.6244367036416407, {3: 0.0, 4: 0.0, 5: 0.0, 6: 1.576096381612217, 7: 1.5518695638922395, 8: 1.6244367036416407})
+#[3, 4, 5, 6, 8, 7]
+#[Individual([ 75.1470073 ,  -1.40703877]), Individual([ 62.8984726 ,   0.21739793]), Individual([-64.35907821,  44.34630588]), array([ 75.1470073]), array([-1.40703877]), array([ 62.8984726])] #Approximate due to Optimization
+

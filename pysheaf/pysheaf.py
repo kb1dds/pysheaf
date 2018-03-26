@@ -10,9 +10,9 @@ import random
 # import matplotlib.pyplot as plt
 import networkx as nx
 import scipy.optimize
-import copy
 
 import warnings
+import copy
 
 import covers # For cover optimzation
 
@@ -192,7 +192,7 @@ class CellComplex:
 
     def starCells(self,cells):
         """Cells in star over a subset of a cell complex"""
-        return list(set(cells+[cf.index for c in cells for cf in self.cofaces(c)]))
+        return set(cells).union({cf.index for c in cells for cf in self.cofaces(c)})
 
     def homology(self,k,subcomplex=None,compactSupport=False,tol=1e-5):
         """Compute (relative) homology of the cell complex"""
@@ -741,25 +741,34 @@ class Sheaf(CellComplex):
         """Take a partial assignment and extend it to a maximal assignment that's non-conflicting (if multiassign=False) or one in which multiple values can be given to a given cell (if multiassign=True)"""
         for i in range(len(assignment.sectionCells)):
             for cf in self.cofaces(assignment.sectionCells[i].support):
-                if not assignment.extend(self,cf.index,tol=tol) and multiassign:
+                if multiassign or (not assignment.extend(self,cf.index,tol=tol)):
                     assignment.sectionCells.append(SectionCell(cf.index,cf.restriction(assignment.sectionCells[i].value),source=assignment.sectionCells[i].support))
         return assignment
 
-    def consistencyRadius(self,assignment_input,testSupport=None,tol=1e-5):
-        """Compute the consistency radius of an approximate section"""
-        # Extend along restriction maps
-        assignment=copy.deepcopy(assignment_input)
-        assignment=self.maximalExtend(assignment,multiassign=True,tol=tol)
-        
-        radius = self.assignmentMetric(assignment, assignment, testSupport)
-        
-        if radius == np.inf:
-            radius = 0
-        
-        return radius
+    def consistencyRadii(self,assignment,testSupport=None,tol=1e-5):
+        """Compute all radii for consistency across an assignment"""
+
+        radii=[]
+        for c1 in assignment.sectionCells:
+            if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
+                for c2 in assignment.sectionCells:
+                    if (testSupport is None) or (c2.source in testSupport):
+                        if c1.support == c2.support:
+                            radii.append(self.cells[c1.support].metric(c1.value,c2.value))
+                        else:
+                            for cf1 in self.cofaces(c1.support):
+                                if cf1.index == c2.support:
+                                    radii.append(self.cells[cf1.index].metric(cf1.restriction(c1.value),c2.value))
+                                else:
+                                    for cf2 in self.cofaces(c2.support):
+                                        if cf1.index == cf2.index:
+                                            radii.append(self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value)))
+
+        return np.unique(radii)
     
     def consistencyRadiusSheafCells(self,assignment_input,testSupport=None,tol=1e-5):
         """Compute the consistency radius of an approximate section"""
+        #TBD: Functional, but should be reworked to not require a call to deepcopy
         # Extend along restriction maps
         assignment=copy.deepcopy(assignment_input)
         assignment=self.maximalExtend(assignment,multiassign=True,tol=tol)
@@ -786,10 +795,41 @@ class Sheaf(CellComplex):
                     if rad > max_radius:
                         max_radius = rad
                         
+        return max_radius, radii
+                        
+
+    def consistencyRadius(self,assignment,testSupport=None,tol=1e-5):
+        """Compute the consistency radius of an approximate section"""
+
+        radius = 0.
+        count_comparison=0
+        
+        for c1 in assignment.sectionCells:
+            if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
+                for c2 in assignment.sectionCells:
+                    if (testSupport is None) or (c2.source in testSupport):
+                        if c1.support == c2.support:
+                            rad=self.cells[c1.support].metric(c1.value,c2.value)
+                            if rad > radius:
+                                count_comparison+=1
+                                radius = rad
+                        else:
+                            for cf1 in self.cofaces(c1.support):
+                                if cf1.index == c2.support:
+                                    rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),c2.value)
+                                    if rad > radius:
+                                        count_comparison+=1
+                                        radius = rad
+                                else:
+                                    for cf2 in self.cofaces(c2.support):
+                                        if cf1.index == cf2.index:
+                                            rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value))
+                                            if rad > radius:
+                                                count_comparison+=1
+                                                radius = rad
         if count_comparison == 0:
             warnings.warn("No SectionCells in the assignments match, therefore nothing was compared by assignmentMetric")
-        
-        return max_radius, radii
+        return radius
     
     def maxTestSupport(self,activeCells):
         elementsTestSupport = copy.deepcopy(activeCells)
@@ -799,38 +839,69 @@ class Sheaf(CellComplex):
                     elementsTestSupport.append(cf.index)
         return elementsTestSupport
     
-    def coverConsistency(self,assignment,cover,tol=1e-5):
+    def consistentCover(self,assignment,threshold,testSupport=None,tol=1e-5):
+        """Construct a cover of the base space such that each element is consistent to within the given threshold.  Note: the assignment must be supported on the entire space."""
+        cover=[]
+
+        if testSupport is None:
+            cellSet=set(range(len(self.cells)))
+        else:
+            cellSet=set(testSupport)
+
+        # Consider each cell...
+        while cellSet:
+            i=cellSet.pop()
+
+            found=False
+            # Check each set in the cover, if the new cell is consistent with that set, add it...
+            for j,s in enumerate(cover):
+                if self.consistencyRadius(assignment,testSupport=s.union([i]),tol=tol) < threshold:
+                    found=True
+                    cover[j].update(self.starCells([i]))
+                    cellSet.difference_update(self.starCells([i]))
+                    break
+
+            # ... otherwise it starts a new set in the cover
+            if not found:
+                cover.append(set(self.starCells([i])))
+                cellSet.difference_update(self.starCells([i]))
+
+        return cover
+
+    def coverMeanConsistency(self,assignment,cover,tol=1e-5):
         """Compute the consistency of a cover against an assignment"""
         return np.mean([self.consistencyRadius(assignment,testSupport=a,tol=tol) for a in cover])
 
+    def coverMaxConsistency(self,assignment,cover,tol=1e-5):
+        """Compute the maximum consistency radius of a cover against an assignment"""
+        return np.max([self.consistencyRadius(assignment,testSupport=a,tol=tol) for a in cover])
+
     def coverFigureofMerit(self,assignment,cover,weights=(1./3,1./3,1./3),tol=1e-5):
         """Compute figure of merit for a cover against an assignment.  NOTE: Silently assumes all cell metrics return values between 0 and 1.  Wierd results will occur otherwise."""
-        return weights[0]*self.coverConsistency(assignment,cover,tol)+weights[1]*(1-covers.normalized_coarseness(cover))+weights[2]*covers.normalized_elementwise_overlap(cover)
+        return -weights[0]*self.coverMaxConsistency(assignment,cover,tol)+weights[1]*(1-covers.normalized_coarseness(cover))+weights[2]*covers.normalized_elementwise_overlap(cover)
 
-    def mostConsistentCover(self,assignment,dimension=0,weights=(1./3,1./3,1./3),tol=1e-5):
-        """Compute the open cover that is most consistent with a given assignment.  The cover is built from stars over elements with given dimension.  Assumes that the assignment is supported on cells of that dimension.  Also assumes all cell metrics are bounded between 0 and 1 (unless weights are tuned appropriately).  Weights are (consistency, coarseness, overlap).  Caution: this is likely to be extremely slow for large base spaces!!!"""
-        bestCov=None # Default: no cover
-        bestFOM=np.inf
-        for roots in covers.partitions_iter([i for i,c in enumerate(self.cells) if c.dimension==dimension]):
-            cov=[self.starCells(op) for op in roots]
-            FOM = self.coverFigureofMerit(assignment,cov)
-            if FOM < bestFOM:
-                # Improved cover found
-                bestCov=cov
-                bestFOM=FOM
-        return bestCov
+    def mostConsistentCover(self,assignment,testSupport=None,weights=(1./3,1./3,1./3),tol=1e-5):
+        """Compute the open cover that is most consistent with a given assignment.  The cover is built from stars over elements with given dimension.  Assumes that the assignment is supported on cells specified in testSupport.  Also assumes all cell metrics are bounded between 0 and 1 (unless weights are tuned appropriately).  Weights are (consistency, coarseness, overlap).  Caution: this is likely to be extremely slow for large base spaces!!!"""
+        optimal_thres=scipy.optimize.bisect(lambda thres: self.coverFigureofMerit(assignment,
+                                                                                  self.consistentCover(assignment,thres,testSupport),
+                                                                                  weights=weights,
+                                                                                  tol=tol),
+                                            a=0,
+                                            b=self.consistencyRadius(assignment)*1.01)
+        return self.consistentCover(assignment,optimal_thres)
 
     def assignmentMetric(self,assignment1,assignment2, testSupport=None):
         """Compute the distance between two assignments"""
         radius=0
         count_comparison = 0
         for c1 in assignment1.sectionCells:
-            for c2 in assignment2.sectionCells:
-                if c1.support == c2.support and ((testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport) and (c2.support in testSupport) and (c2.source in testSupport))):
-                    rad = self.cells[c1.support].metric(c1.value,c2.value)
-                    count_comparison += 1
-                    if rad > radius:
-                        radius = rad
+            if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
+                for c2 in assignment2.sectionCells:
+                    if c1.support == c2.support and ((testSupport is None) or (c2.source in testSupport)):
+                        rad = self.cells[c1.support].metric(c1.value,c2.value)
+                        count_comparison += 1
+                        if rad > radius:
+                            radius = rad
                         
         if count_comparison == 0:
             radius = np.inf
@@ -1979,14 +2050,18 @@ class Section:
 
     def support(self):
         """List the cells in the support of this section"""
-        return list(set([sc.support for sc in self.sectionCells]))
+        return {sc.support for sc in self.sectionCells}
 
     def extend(self,sheaf,cell,value=None,tol=1e-5):
         """Extend the section to another cell; returns True if successful"""
         
         # If the desired cell is already in the support, do nothing
-        if cell in self.support():
-            return
+        for sc in self.sectionCells:
+            if cell == sc.support:
+                if (value is None) or sheaf.cells[sc.support].metric(sc.value,value) < tol:
+                    return True
+                else:
+                    return False
 
         # Is the desired cell a coface of a cell in the support?
         for s in self.sectionCells:
@@ -2000,6 +2075,9 @@ class Section:
                     #if value is not None and np.any(np.abs(val - value)>tol):
                         return False
                     value = val
+                    break
+            if value is not None:
+                break
 
         # Are there are any cofaces for the desired cell in the support?
         if value is None: # Attempt to assign a new value...
