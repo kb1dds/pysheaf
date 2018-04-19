@@ -838,7 +838,7 @@ class Sheaf(CellComplex):
             cdd[cover_element].append(cell)
 
         # Render consistent cells into an open cover
-        return [self.starCells(s) for s in col.values()]
+        return [self.starCells(s) for s in cdd.values()]
         
     def coverMeanConsistency(self,assignment,cover,tol=1e-5):
         """Compute the consistency of a cover against an assignment"""
