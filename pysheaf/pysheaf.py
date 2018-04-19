@@ -786,30 +786,31 @@ class Sheaf(CellComplex):
         
         return radius
 
-    def consistencyGraph(self,assignment):
+    def consistencyGraph(self,assignment,testSupport=None):
         """Construct a NetworkX graph whose vertices are cells, in which each edge connects two cells with a common coface weighted by the distance between their respective values.  Note: the assignment must be supported on the entire space."""
         G=nx.Graph()
         G.add_nodes_from(range(len(self.cells)))
-        edgedata=[]
         for c1 in assignment.sectionCells:
             if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
                 for c2 in assignment.sectionCells:
                     if (testSupport is None) or (c2.source in testSupport):
                         if c1.support == c2.support:
                             rad=self.cells[c1.support].metric(c1.value,c2.value)
-                            edgedata.append((c1.support,c2.support,rad))
+                            if ((c1.support,c2.support) not in G.edges()) or G[c1.support][c2.support]['weight'] < rad:
+                                G.add_edge(c1.support,c2.support,weight=rad)
                         else:
                             for cf1 in self.cofaces(c1.support):
                                 if cf1.index == c2.support:
                                     rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),c2.value)
-                                    edgedata.append((cf1.index,c2.support,rad))
+                                    if ((c1.support,c2.support) not in G.edges()) or G[c1.support][c2.support]['weight'] < rad:
+                                        G.add_edge(c1.support,c2.support,weight=rad)
                                 else:
                                     for cf2 in self.cofaces(c2.support):
                                         if cf1.index == cf2.index:
                                             rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value))
-                                            edgedata.append((cf1.index,cf2.index,rad))
+                                            if ((c1.support,c2.support) not in G.edges()) or G[c1.support][c2.support]['weight'] < rad:
+                                                G.add_edge(c1.support,c2.support,weight=rad)
 
-        G.add_weighted_edges_from(edgedata)
         return G
 
     def consistentCover(self,assignment,threshold,testSupport=None,consistencyGraph=None,tol=1e-5):
