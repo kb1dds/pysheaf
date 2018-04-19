@@ -776,10 +776,10 @@ class Sheaf(CellComplex):
 
         radius = 0.
         count_comparison=0
-        for (i,j,rad) in cG.edges(nbunch=cellSet,data='weight'):
+        for (i,j,data) in cG.edges(nbunch=cellSet,data=True):
             count_comparison+=1
-            if rad > radius:
-                radius = rad
+            if data['type'] < 3 and data['weight'] > radius:  # Note: only uses cells in direct coface relation to each other
+                radius = data['weight']
 
         if count_comparison == 0:
             warnings.warn("No SectionCells in the assignment match, therefore nothing was compared by consistencyRadius")
@@ -787,7 +787,7 @@ class Sheaf(CellComplex):
         return radius
 
     def consistencyGraph(self,assignment,testSupport=None):
-        """Construct a NetworkX graph whose vertices are cells, in which each edge connects two cells with a common coface weighted by the distance between their respective values.  Note: the assignment must be supported on the entire space."""
+        """Construct a NetworkX graph whose vertices are cells, in which each edge connects two cells with a common coface weighted by the distance between their respective values.  Note: the assignment must be supported on the entire space. Edges also have a type attribute, explaining the kind of relationship between cells: (1 = two values assigned to this cell, 2 = one cell is a coface of the other, 3 = cells have a common coface.)"""
         G=nx.Graph()
         G.add_nodes_from(range(len(self.cells)))
         for c1 in assignment.sectionCells:
@@ -797,19 +797,19 @@ class Sheaf(CellComplex):
                         if c1.support == c2.support:
                             rad=self.cells[c1.support].metric(c1.value,c2.value)
                             if ((c1.support,c2.support) not in G.edges()) or G[c1.support][c2.support]['weight'] < rad:
-                                G.add_edge(c1.support,c2.support,weight=rad)
+                                G.add_edge(c1.support,c2.support,weight=rad,type=1)
                         else:
                             for cf1 in self.cofaces(c1.support):
                                 if cf1.index == c2.support:
                                     rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),c2.value)
                                     if ((c1.support,c2.support) not in G.edges()) or G[c1.support][c2.support]['weight'] < rad:
-                                        G.add_edge(c1.support,c2.support,weight=rad)
+                                        G.add_edge(c1.support,c2.support,weight=rad,type=2)
                                 else:
                                     for cf2 in self.cofaces(c2.support):
                                         if cf1.index == cf2.index:
                                             rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value))
-                                            if ((c1.support,c2.support) not in G.edges()) or G[c1.support][c2.support]['weight'] < rad:
-                                                G.add_edge(c1.support,c2.support,weight=rad)
+                                            if ((c1.support,c2.support) not in G.edges()) or (G[c1.support][c2.support]['type'] == 2 and G[c1.support][c2.support]['weight'] < rad):
+                                                G.add_edge(c1.support,c2.support,weight=rad,type=3)
 
         return G
 
