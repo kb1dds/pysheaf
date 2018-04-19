@@ -23,6 +23,8 @@ from deap import creator
 from deap import tools
 from deap import algorithms
 
+from collections import defaultdict
+
 
 
 ## Data structures
@@ -744,92 +746,100 @@ class Sheaf(CellComplex):
                     assignment.sectionCells.append(SectionCell(cf.index,cf.restriction(assignment.sectionCells[i].value),source=assignment.sectionCells[i].support))
         return assignment
 
-    def consistencyRadii(self,assignment,testSupport=None,tol=1e-5):
+    def consistencyRadii(self,assignment,testSupport=None,consistencyGraph=None,tol=1e-5):
         """Compute all radii for consistency across an assignment"""
-
-        radii=[]
-        
-        for c1 in assignment.sectionCells:
-            if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
-                for c2 in assignment.sectionCells:
-                    if (testSupport is None) or (c2.source in testSupport):
-                        if c1.support == c2.support:
-                            radii.append(self.cells[c1.support].metric(c1.value,c2.value))
-                        else:
-                            for cf1 in self.cofaces(c1.support):
-                                if cf1.index == c2.support:
-                                    radii.append(self.cells[cf1.index].metric(cf1.restriction(c1.value),c2.value))
-                                else:
-                                    for cf2 in self.cofaces(c2.support):
-                                        if cf1.index == cf2.index:
-                                            radii.append(self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value)))
-
-        return np.unique(radii)
-
-    def consistencyRadius(self,assignment,testSupport=None,tol=1e-5):
-        """Compute the consistency radius of an approximate section"""
-
-        radius = 0.
-        count_comparison=0
-        
-        for c1 in assignment.sectionCells:
-            if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
-                for c2 in assignment.sectionCells:
-                    if (testSupport is None) or (c2.source in testSupport):
-                        if c1.support == c2.support:
-                            rad=self.cells[c1.support].metric(c1.value,c2.value)
-                            if rad > radius:
-                                count_comparison+=1
-                                radius = rad
-                        else:
-                            for cf1 in self.cofaces(c1.support):
-                                if cf1.index == c2.support:
-                                    rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),c2.value)
-                                    if rad > radius:
-                                        count_comparison+=1
-                                        radius = rad
-                                else:
-                                    for cf2 in self.cofaces(c2.support):
-                                        if cf1.index == cf2.index:
-                                            rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value))
-                                            if rad > radius:
-                                                count_comparison+=1
-                                                radius = rad
-
-        if count_comparison == 0:
-            warnings.warn("No SectionCells in the assignment match, therefore nothing was compared by consistencyRadius")
-        
-        return radius
-
-    def consistentCover(self,assignment,threshold,testSupport=None,tol=1e-5):
-        """Construct a cover of the base space such that each element is consistent to within the given threshold.  Note: the assignment must be supported on the entire space."""
-        cover=[]
 
         if testSupport is None:
             cellSet=set(range(len(self.cells)))
         else:
             cellSet=set(testSupport)
 
-        # Consider each cell...
-        while cellSet:
-            i=cellSet.pop()
+        if consistencyGraph is None:
+            cG=self.consistencyGraph(assignment)
+        else:
+            cG=consistencyGraph
 
-            found=False
-            # Check each set in the cover, if the new cell is consistent with that set, add it...
-            for j,s in enumerate(cover):
-                if self.consistencyRadius(assignment,testSupport=s.union([i]),tol=tol) < threshold:
-                    found=True
-                    cover[j].update(self.starCells([i]))
-                    cellSet.difference_update(self.starCells([i]))
-                    break
+        return np.unique([rad for (i,j,rad) in cG.edges(nbunch=cellSet,data='weight')])
 
-            # ... otherwise it starts a new set in the cover
-            if not found:
-                cover.append(set(self.starCells([i])))
-                cellSet.difference_update(self.starCells([i]))
+    def consistencyRadius(self,assignment,testSupport=None,consistencyGraph=None,tol=1e-5):
+        """Compute the consistency radius of an approximate section"""
 
-        return cover
+        if testSupport is None:
+            cellSet=set(range(len(self.cells)))
+        else:
+            cellSet=set(testSupport)
 
+        if consistencyGraph is None:
+            cG=self.consistencyGraph(assignment)
+        else:
+            cG=consistencyGraph
+
+        radius = 0.
+        count_comparison=0
+        for (i,j,rad) in cG.edges(nbunch=cellSet,data='weight'):
+            count_comparison+=1
+            if rad > radius:
+                radius = rad
+
+        if count_comparison == 0:
+            warnings.warn("No SectionCells in the assignment match, therefore nothing was compared by consistencyRadius")
+        
+        return radius
+
+    def consistencyGraph(self,assignment):
+        """Construct a NetworkX graph whose vertices are cells, in which each edge connects two cells with a common coface weighted by the distance between their respective values.  Note: the assignment must be supported on the entire space."""
+        G=nx.Graph()
+        G.add_nodes_from(range(len(self.cells)))
+        edgedata=[]
+        for c1 in assignment.sectionCells:
+            if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
+                for c2 in assignment.sectionCells:
+                    if (testSupport is None) or (c2.source in testSupport):
+                        if c1.support == c2.support:
+                            rad=self.cells[c1.support].metric(c1.value,c2.value)
+                            edgedata.append((c1.support,c2.support,rad))
+                        else:
+                            for cf1 in self.cofaces(c1.support):
+                                if cf1.index == c2.support:
+                                    rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),c2.value)
+                                    edgedata.append((cf1.index,c2.support,rad))
+                                else:
+                                    for cf2 in self.cofaces(c2.support):
+                                        if cf1.index == cf2.index:
+                                            rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value))
+                                            edgedata.append((cf1.index,cf2.index,rad))
+
+        G.add_weighted_edges_from(edgedata)
+        return G
+
+    def consistentCover(self,assignment,threshold,testSupport=None,consistencyGraph=None,tol=1e-5):
+        """Construct a cover of the base space such that each element is consistent to within the given threshold.  Note: the assignment must be supported on the entire space."""
+
+        if testSupport is None:
+            cellSet=set(range(len(self.cells)))
+        else:
+            cellSet=set(testSupport)
+
+        if consistencyGraph is None:
+            cG=self.consistencyGraph(assignment)
+        else:
+            cG=consistencyGraph
+
+        # Construct inconsistency graph.  Edges indicate cells that cannot be in the same cover element
+        G=nx.Graph()
+        G.add_edges_from([(i,j) for (i,j,k) in cG.edges(nbunch=cellSet,data='weight') if k > threshold])
+
+        # Solve graph coloring problem: nodes (cells) get colored by cover element
+        color_dict=nx.coloring.greedy_color(G)
+
+        # Re-sort into groups of consistent cells
+        cdd=defaultdict(list)
+        for cell,cover_element in color_dict.items():
+            cdd[cover_element].append(cell)
+
+        # Render consistent cells into an open cover
+        return [self.starCells(s) for s in col.values()]
+        
     def coverMeanConsistency(self,assignment,cover,tol=1e-5):
         """Compute the consistency of a cover against an assignment"""
         return np.mean([self.consistencyRadius(assignment,testSupport=a,tol=tol) for a in cover])
