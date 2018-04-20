@@ -833,6 +833,11 @@ class Sheaf(CellComplex):
         else:
             cG=consistencyGraph
 
+        G=nx.Graph()
+        G.add_nodes_from(cellSet)
+        G.add_edges_from([(i,j) for (i,j,k) in cG.edges(nbunch=cellSet,data='weight') if k < threshold and i != j])
+        return [self.starCells(s) for s in nx.connected_components(G)]
+
         # Construct inconsistency graph.  Edges indicate cells that cannot be in the same cover element
         G=nx.Graph()
         G.add_nodes_from(cellSet)
