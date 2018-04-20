@@ -837,22 +837,6 @@ class Sheaf(CellComplex):
         G.add_nodes_from(cellSet)
         G.add_edges_from([(i,j) for (i,j,k) in cG.edges(nbunch=cellSet,data='weight') if k < threshold and i != j])
         return [self.starCells(s) for s in nx.connected_components(G)]
-
-        # Construct inconsistency graph.  Edges indicate cells that cannot be in the same cover element
-        G=nx.Graph()
-        G.add_nodes_from(cellSet)
-        G.add_edges_from([(i,j) for (i,j,k) in cG.edges(nbunch=cellSet,data='weight') if k > threshold and i != j])
-
-        # Solve graph coloring problem: nodes (cells) get colored by cover element
-        color_dict=nx.coloring.greedy_color(G)
-
-        # Re-sort into groups of consistent cells
-        cdd=defaultdict(list)
-        for cell,cover_element in color_dict.items():
-            cdd[cover_element].append(cell)
-
-        # Render consistent cells into an open cover
-        return [self.starCells(s) for s in cdd.values()]
         
     def coverMeanConsistency(self,assignment,cover,tol=1e-5):
         """Compute the consistency of a cover against an assignment"""
