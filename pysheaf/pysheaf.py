@@ -755,7 +755,7 @@ class Sheaf(CellComplex):
             cellSet=set(testSupport)
 
         if consistencyGraph is None:
-            cG=self.consistencyGraph(assignment)
+            cG=self.consistencyGraph(assignment,testSupport)
         else:
             cG=consistencyGraph
 
@@ -770,7 +770,7 @@ class Sheaf(CellComplex):
             cellSet=set(testSupport)
 
         if consistencyGraph is None:
-            cG=self.consistencyGraph(assignment)
+            cG=self.consistencyGraph(assignment,testSupport)
         else:
             cG=consistencyGraph
 
@@ -788,8 +788,15 @@ class Sheaf(CellComplex):
 
     def consistencyGraph(self,assignment,testSupport=None):
         """Construct a NetworkX graph whose vertices are cells, in which each edge connects two cells with a common coface weighted by the distance between their respective values.  Note: the assignment must be supported on the entire space. Edges also have a type attribute, explaining the kind of relationship between cells: (1 = two values assigned to this cell, 2 = one cell is a coface of the other, 3 = cells have a common coface.)"""
+        
+        if testSupport is None:
+            cellSet=set(range(len(self.cells)))
+        else:
+            cellSet=set(testSupport)
+
         G=nx.Graph()
-        G.add_nodes_from(range(len(self.cells)))
+        G.add_nodes_from(cellSet)
+        
         for c1 in assignment.sectionCells:
             if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
                 for c2 in assignment.sectionCells:
@@ -822,13 +829,14 @@ class Sheaf(CellComplex):
             cellSet=set(testSupport)
 
         if consistencyGraph is None:
-            cG=self.consistencyGraph(assignment)
+            cG=self.consistencyGraph(assignment,testSupport)
         else:
             cG=consistencyGraph
 
         # Construct inconsistency graph.  Edges indicate cells that cannot be in the same cover element
         G=nx.Graph()
-        G.add_edges_from([(i,j) for (i,j,k) in cG.edges(nbunch=cellSet,data='weight') if k > threshold])
+        G.add_nodes_from(cellSet)
+        G.add_edges_from([(i,j) for (i,j,k) in cG.edges(nbunch=cellSet,data='weight') if k > threshold and i != j])
 
         # Solve graph coloring problem: nodes (cells) get colored by cover element
         color_dict=nx.coloring.greedy_color(G)
@@ -885,7 +893,8 @@ class Sheaf(CellComplex):
     def fuseAssignment(self,assignment, activeCells=None, testSupport=None, method='SLSQP', options={}, tol=1e-5):
         """
         Compute the nearest global section to a given assignment
-        Currently there are two optimization schemes to choose from
+        Currently there are three optimization schemes to choose from
+        'KernelProj': This algorithm only works for sheaves of vector spaces and uses the kernel projector for the 0-coboundary map
         'SLSQP': This algorithm is scipy.optimize.minimize's default for bounded optimization
             Parameters:
                 assignment: the partial assignment of the sheaf to fuse
@@ -917,6 +926,26 @@ class Sheaf(CellComplex):
                 for st_overlap in overlap:
                     add_parameters[st_overlap] = options[st_overlap]
             globalsection = self.optimize_GA(assignment, tol, initial_pop_size=add_parameters['initial_pop_size'], mutation_rate = add_parameters['mutation_rate'], num_generations= add_parameters['num_generations'] ,num_ele_Hallfame=add_parameters['num_ele_Hallfame'], initial_guess_p = add_parameters['initial_guess_p'])
+        elif method == 'KernelProj':
+            if not self.isLinear():
+                raise NotImplementedError('KernelProj only works for sheaves of vector spaces')
+            
+            # Construct the coboundary map
+            d = self.coboundary(k=0)
+            ks,ksizes,kidx=self.kcells(k=0)
+            asg,bounds = self.serializeAssignment(assignment,activeCells=ks)
+            
+            # Construct the kernel projector
+            AAt=np.dot(d,d.transpose())
+            AAti=np.linalg.pinv(AAt)
+            AtAAti=np.dot(d.transpose(),AAti)
+            projector=np.eye(d.shape[1])-np.dot(AtAAti,d)
+            
+            # Apply the kernel projector
+            gs=np.dot(projector,asg)
+
+            # Deserialize
+            globalsection=self.deserializeAssignment(gs,activeCells=ks,assignment=assignment)
         else:
             raise NotImplementedError('Invalid method')
         return globalsection
