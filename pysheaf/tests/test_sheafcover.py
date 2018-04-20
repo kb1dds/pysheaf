@@ -3,7 +3,7 @@ import pysheaf as ps
 import numpy as np
 
 
-class TestCell(unittest.TestCase):
+class TestSheafCover(unittest.TestCase):
     def setUp(self):
         self.testSheaf=ps.Sheaf([ps.SheafCell(dimension=0,stalkDim=1,cofaces=[ps.SheafCoface(index=1,restriction=np.array([1])),
                                                                               ps.SheafCoface(index=2,restriction=np.array([1]))]),
@@ -60,7 +60,6 @@ class TestCell(unittest.TestCase):
         self.assertEqual(len(cover),2)
         self.assertEqual(cover[0],{0,1,2})
         self.assertEqual(cover[1],{1,2,3})
-        
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
