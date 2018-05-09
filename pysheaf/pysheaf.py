@@ -142,6 +142,10 @@ class CellComplex:
         return [i for i in range(len(self.cells))
                 if i in cells or [cf for cf in self.cofaces(i) if cf.index in cells]]
 
+    def interior(self,cells):
+        """Compute the interior of a collection of cells"""
+        return [i for i in cells if set(self.starCells([i])).issubset(cells)]
+
     def cofaces(self,c,cells=[]):
         """Iterate over cofaces (of all dimensions) of a given cell; optional argument specifies which cells are permissible cofaces
         Warning: duplicates are possible!"""
@@ -814,14 +818,14 @@ class Sheaf(CellComplex):
                                 else:
                                     for cf2 in self.cofaces(c2.support):
                                         if cf1.index == cf2.index:
-                                            rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value))
+                                            rad=0.5*self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value)) # Note the factor of 0.5
                                             if ((c1.support,c2.support) not in G.edges()) or (G[c1.support][c2.support]['type'] == 2 and G[c1.support][c2.support]['weight'] < rad):
                                                 G.add_edge(c1.support,c2.support,weight=rad,type=3)
 
         return G
 
-    def consistentCover(self,assignment,threshold,testSupport=None,consistencyGraph=None,tol=1e-5):
-        """Construct a cover of the base space such that each element is consistent to within the given threshold.  Note: the assignment must be supported on the entire space."""
+    def consistentPartition(self,assignment,threshold,testSupport=None,consistencyGraph=None,tol=1e-5):
+        """Construct a maximal collection of subsets of cells such that each subset is consistent to within the given threshold.  Note: the assignment must be supported on the entire space."""
 
         if testSupport is None:
             cellSet=set(range(len(self.cells)))
@@ -845,9 +849,34 @@ class Sheaf(CellComplex):
         cdd=defaultdict(list)
         for cell,cover_element in color_dict.items():
             cdd[cover_element].append(cell)
- 
-        # Render consistent cells into an open cover
-        return [self.starCells(s) for s in cdd.values()]
+
+        return {frozenset(s) for s in cdd.values()}
+
+    def consistentCollection(self,assignment,threshold,testSupport=None,consistencyGraph=None,tol=1e-5):
+        """Construct a maximal collection of open sets such that each subset is consistent to within the given threshold.  Note: the assignment must be supported on the entire space."""
+        # First obtain a collection of consistent open sets.  These are disjoint
+        initial_collection={frozenset(self.interior(s)) for s in self.consistentPartition(assignment,threshold,testSupport,consistencyGraph,tol)}
+
+        additions = True
+        collection = set()
+
+        while additions:
+            additions=False
+            for u in initial_collection:
+                added_u=False
+                for v in initial_collection:
+                    if u is not v:
+                        u_v = u.union(v)
+                        if self.consistencyRadius(assignment,testSupport=u_v)<threshold:
+                            added_u=True
+                            additions=True
+                            collection.add(u_v)
+                if not added_u:
+                    collection.add(u)
+                initial_collection=collection
+                collection=set()
+
+        return initial_collection
         
     def coverMeanConsistency(self,assignment,cover,tol=1e-5):
         """Compute the consistency of a cover against an assignment"""
@@ -864,12 +893,12 @@ class Sheaf(CellComplex):
     def mostConsistentCover(self,assignment,testSupport=None,weights=(1./3,1./3,1./3),tol=1e-5):
         """Compute the open cover that is most consistent with a given assignment.  The cover is built from stars over elements with given dimension.  Assumes that the assignment is supported on cells specified in testSupport.  Also assumes all cell metrics are bounded between 0 and 1 (unless weights are tuned appropriately).  Weights are (consistency, coarseness, overlap).  Caution: this is likely to be extremely slow for large base spaces!!!"""
         optimal_thres=scipy.optimize.bisect(lambda thres: self.coverFigureofMerit(assignment,
-                                                                                  self.consistentCover(assignment,thres,testSupport),
+                                                                                  self.consistentCollection(assignment,thres,testSupport),
                                                                                   weights=weights,
                                                                                   tol=tol),
                                             a=0,
                                             b=self.consistencyRadius(assignment)*1.01)
-        return self.consistentCover(assignment,optimal_thres)
+        return self.consistentCollection(assignment,optimal_thres)
 
     def assignmentMetric(self,assignment1,assignment2, testSupport=None):
         """Compute the distance between two assignments"""
