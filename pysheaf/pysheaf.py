@@ -13,6 +13,7 @@ import scipy.optimize
 
 import warnings
 import copy
+import time
 
 import covers # For cover optimzation
 
@@ -755,18 +756,18 @@ class Sheaf(CellComplex):
                     if (testSupport is None) or (c2.source in testSupport):
                         if c1.support == c2.support:
                             radii.append(self.cells[c1.support].metric(c1.value,c2.value))
-                        else:
-                            for cf1 in self.cofaces(c1.support):
-                                if cf1.index == c2.support:
-                                    radii.append(self.cells[cf1.index].metric(cf1.restriction(c1.value),c2.value))
-                                else:
-                                    for cf2 in self.cofaces(c2.support):
-                                        if cf1.index == cf2.index:
-                                            radii.append(self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value)))
+                        
+                        for cf1 in self.cofaces(c1.support):
+                            if cf1.index == c2.support:
+                                radii.append(self.cells[cf1.index].metric(cf1.restriction(c1.value),c2.value))
+                            else:
+                                for cf2 in self.cofaces(c2.support):
+                                    if cf1.index == cf2.index:
+                                        radii.append(self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value)))
 
         return np.unique(radii)
     
-    def consistencyRadiusSheafCells(self,assignment_input,testSupport=None,tol=1e-5):
+    def isSheaf(self,assignment_input,tol=1e-5):
         """Compute the consistency radius of an approximate section"""
         #TBD: Functional, but should be reworked to not require a call to deepcopy
         # Extend along restriction maps
@@ -775,19 +776,16 @@ class Sheaf(CellComplex):
         
         #Set the dictionary for consistencies of cells
         radii = dict()
-        if testSupport is None:
-            for c1 in assignment.sectionCells:
-                radii[c1.support] = 0.0
-        else:
-            for c1 in testSupport:
-                radii[c1] = 0.0
+        
+        for c1 in assignment.sectionCells:
+            radii[c1.support] = 0.0
                 
                 
         max_radius=0
         count_comparison = 0
         for c1 in assignment.sectionCells:
             for c2 in assignment.sectionCells:
-                if c1.support == c2.support and ((testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport) and (c2.support in testSupport) and (c2.source in testSupport))):
+                if c1.support == c2.support:
                     rad = self.cells[c1.support].metric(c1.value,c2.value)
                     count_comparison += 1
                     if rad > radii[c1.support]:
@@ -795,7 +793,9 @@ class Sheaf(CellComplex):
                     if rad > max_radius:
                         max_radius = rad
                         
-        return max_radius, radii
+        issheaf = not np.any(radii.values())
+                
+        return issheaf, max_radius, radii
                         
 
     def consistencyRadius(self,assignment,testSupport=None,tol=1e-5):
@@ -813,22 +813,22 @@ class Sheaf(CellComplex):
                             if rad > radius:
                                 count_comparison+=1
                                 radius = rad
-                        else:
-                            for cf1 in self.cofaces(c1.support):
-                                if cf1.index == c2.support:
-                                    rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),c2.value)
-                                    if rad > radius:
-                                        count_comparison+=1
-                                        radius = rad
-                                else:
-                                    for cf2 in self.cofaces(c2.support):
-                                        if cf1.index == cf2.index:
-                                            rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value))
-                                            if rad > radius:
-                                                count_comparison+=1
-                                                radius = rad
+
+                        for cf1 in self.cofaces(c1.support):
+                            if cf1.index == c2.support:
+                                rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),c2.value)
+                                if rad > radius:
+                                    count_comparison+=1
+                                    radius = rad
+                            else:
+                                for cf2 in self.cofaces(c2.support):
+                                    if cf1.index == cf2.index:
+                                        rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value))
+                                        if rad > radius:
+                                            count_comparison+=1
+                                            radius = rad
         if count_comparison == 0:
-            warnings.warn("No SectionCells in the assignments match, therefore nothing was compared by assignmentMetric")
+            warnings.warn("No SectionCells in the assignments match, therefore nothing was compared")
         return radius
     
     def maxTestSupport(self,activeCells):
@@ -1083,8 +1083,16 @@ class Sheaf(CellComplex):
         
             cost = self.assignmentMetric(assignment, new_assignment, testSupport=testSupport)
             
+            #If consistency is not guarenteed force consistency check
+            #TBD: verify neccessity
+            #if activeCells != None:
             #Constrain value by the consistencyRadius (Note: min is 0)
+            t0 = time.clock()
             radii = self.consistencyRadius(new_assignment)
+            t1 = time.clock()
+            
+            t_finish = t1-t0
+            print t_finish
             
             if radii < tol:
                 pass

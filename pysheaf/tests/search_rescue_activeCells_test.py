@@ -223,7 +223,7 @@ input_data=[ps.Section([ps.SectionCell(support=0,value=np.array([-70.668,42.809,
 
 
 # Exhibit the consistency radius of the partially-filled Section with the input data
-consistency_radii=[(s1.consistencyRadiusSheafCells(case)) for case in input_data]
+consistency_radii=[(s1.isSheaf(case)) for case in input_data]
 print 'Raw consistency radii for each test case: ' + str(consistency_radii)
 
 # Demonstrate the consistency radius improves when faulty sensor (U5) is removed
@@ -276,14 +276,14 @@ fused_assignmentMetric_GA = [s1.assignmentMetric(input_data[1], s1.maximalExtend
 #Print check GA with only testSupport
 print fused_assignmentMetric_GA_ts
 
-print s1.consistencyRadiusSheafCells(fused_data_gen_GA_ts)
+print s1.isSheaf(fused_data_gen_GA_ts)
 print [x.support for x in fused_data_gen_GA_ts.sectionCells]
 print [x.value for x in fused_data_gen_GA_ts.sectionCells]
 
 #Print check GA with testSupport and cellAssignment
 print fused_assignmentMetric_GA
 
-print s1.consistencyRadiusSheafCells(fused_data_gen_GA)
+print s1.isSheaf(fused_data_gen_GA)
 print [x.support for x in fused_data_gen_GA.sectionCells]
 print [x.value for x in fused_data_gen_GA.sectionCells]
 
