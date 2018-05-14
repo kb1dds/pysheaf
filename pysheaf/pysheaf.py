@@ -25,6 +25,8 @@ from deap import creator
 from deap import tools
 from deap import algorithms
 
+from collections import defaultdict
+
 
 
 ## Data structures
@@ -141,6 +143,10 @@ class CellComplex:
         """Compute the closure of a collection of cells"""
         return [i for i in range(len(self.cells))
                 if i in cells or [cf for cf in self.cofaces(i) if cf.index in cells]]
+
+    def interior(self,cells):
+        """Compute the interior of a collection of cells"""
+        return [i for i in cells if set(self.starCells([i])).issubset(cells)]
 
     def cofaces(self,c,cells=[]):
         """Iterate over cofaces (of all dimensions) of a given cell; optional argument specifies which cells are permissible cofaces
@@ -746,26 +752,20 @@ class Sheaf(CellComplex):
                     assignment.sectionCells.append(SectionCell(cf.index,cf.restriction(assignment.sectionCells[i].value),source=assignment.sectionCells[i].support))
         return assignment
 
-    def consistencyRadii(self,assignment,testSupport=None,tol=1e-5):
+    def consistencyRadii(self,assignment,testSupport=None,consistencyGraph=None,tol=1e-5):
         """Compute all radii for consistency across an assignment"""
+        if testSupport is None:
+            cellSet=set(range(len(self.cells)))
+        else:
+            cellSet=set(testSupport)
 
-        radii=[]
-        for c1 in assignment.sectionCells:
-            if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
-                for c2 in assignment.sectionCells:
-                    if (testSupport is None) or (c2.source in testSupport):
-                        if c1.support == c2.support:
-                            radii.append(self.cells[c1.support].metric(c1.value,c2.value))
-                        
-                        for cf1 in self.cofaces(c1.support):
-                            if cf1.index == c2.support:
-                                radii.append(self.cells[cf1.index].metric(cf1.restriction(c1.value),c2.value))
-                            else:
-                                for cf2 in self.cofaces(c2.support):
-                                    if cf1.index == cf2.index:
-                                        radii.append(self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value)))
+        if consistencyGraph is None:
+            cG=self.consistencyGraph(assignment,testSupport)
+        else:
+            cG=consistencyGraph
 
-        return np.unique(radii)
+        return np.unique([rad for (i,j,rad) in cG.edges(nbunch=cellSet,data='weight')])
+    
     
     def isSheaf(self,assignment_input,tol=1e-5):
         """Compute the consistency radius of an approximate section"""
@@ -798,37 +798,30 @@ class Sheaf(CellComplex):
         return issheaf, max_radius, radii
                         
 
-    def consistencyRadius(self,assignment,testSupport=None,tol=1e-5):
+
+    def consistencyRadius(self,assignment,testSupport=None,consistencyGraph=None,tol=1e-5):
         """Compute the consistency radius of an approximate section"""
+
+        if testSupport is None:
+            cellSet=set(range(len(self.cells)))
+        else:
+            cellSet=set(testSupport)
+
+        if consistencyGraph is None:
+            cG=self.consistencyGraph(assignment,testSupport)
+        else:
+            cG=consistencyGraph
 
         radius = 0.
         count_comparison=0
-        
-        for c1 in assignment.sectionCells:
-            if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
-                for c2 in assignment.sectionCells:
-                    if (testSupport is None) or (c2.source in testSupport):
-                        if c1.support == c2.support:
-                            rad=self.cells[c1.support].metric(c1.value,c2.value)
-                            if rad > radius:
-                                count_comparison+=1
-                                radius = rad
+        for (i,j,data) in cG.edges(nbunch=cellSet,data=True):
+            count_comparison+=1
+            if data['type'] < 3 and data['weight'] > radius:  # Note: only uses cells in direct coface relation to each other
+                radius = data['weight']
 
-                        for cf1 in self.cofaces(c1.support):
-                            if cf1.index == c2.support:
-                                rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),c2.value)
-                                if rad > radius:
-                                    count_comparison+=1
-                                    radius = rad
-                            else:
-                                for cf2 in self.cofaces(c2.support):
-                                    if cf1.index == cf2.index:
-                                        rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value))
-                                        if rad > radius:
-                                            count_comparison+=1
-                                            radius = rad
         if count_comparison == 0:
-            warnings.warn("No SectionCells in the assignments match, therefore nothing was compared")
+            warnings.warn("No SectionCells in the assignment match, therefore nothing was compared by consistencyRadius")
+        
         return radius
     
     def maxTestSupport(self,activeCells):
@@ -838,36 +831,95 @@ class Sheaf(CellComplex):
                 if not cf.index in elementsTestSupport:
                     elementsTestSupport.append(cf.index)
         return elementsTestSupport
-    
-    def consistentCover(self,assignment,threshold,testSupport=None,tol=1e-5):
-        """Construct a cover of the base space such that each element is consistent to within the given threshold.  Note: the assignment must be supported on the entire space."""
-        cover=[]
+
+    def consistencyGraph(self,assignment,testSupport=None):
+        """Construct a NetworkX graph whose vertices are cells, in which each edge connects two cells with a common coface weighted by the distance between their respective values.  Note: the assignment must be supported on the entire space. Edges also have a type attribute, explaining the kind of relationship between cells: (1 = two values assigned to this cell, 2 = one cell is a coface of the other, 3 = cells have a common coface.)"""
+        
+        if testSupport is None:
+            cellSet=set(range(len(self.cells)))
+        else:
+            cellSet=set(testSupport)
+
+        G=nx.Graph()
+        G.add_nodes_from(cellSet)
+        
+        for c1 in assignment.sectionCells:
+            if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
+                for c2 in assignment.sectionCells:
+                    if (testSupport is None) or (c2.source in testSupport):
+                        if c1.support == c2.support:
+                            rad=self.cells[c1.support].metric(c1.value,c2.value)
+                            if ((c1.support,c2.support) not in G.edges()) or G[c1.support][c2.support]['weight'] < rad:
+                                G.add_edge(c1.support,c2.support,weight=rad,type=1)
+                        else:
+                            for cf1 in self.cofaces(c1.support):
+                                if cf1.index == c2.support:
+                                    rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),c2.value)
+                                    if ((c1.support,c2.support) not in G.edges()) or G[c1.support][c2.support]['weight'] < rad:
+                                        G.add_edge(c1.support,c2.support,weight=rad,type=2)
+                                else:
+                                    for cf2 in self.cofaces(c2.support):
+                                        if cf1.index == cf2.index:
+                                            rad=0.5*self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value)) # Note the factor of 0.5
+                                            if ((c1.support,c2.support) not in G.edges()) or (G[c1.support][c2.support]['type'] == 2 and G[c1.support][c2.support]['weight'] < rad):
+                                                G.add_edge(c1.support,c2.support,weight=rad,type=3)
+
+        return G
+
+    def consistentPartition(self,assignment,threshold,testSupport=None,consistencyGraph=None,tol=1e-5):
+        """Construct a maximal collection of subsets of cells such that each subset is consistent to within the given threshold.  Note: the assignment must be supported on the entire space."""
 
         if testSupport is None:
             cellSet=set(range(len(self.cells)))
         else:
             cellSet=set(testSupport)
 
-        # Consider each cell...
-        while cellSet:
-            i=cellSet.pop()
+        if consistencyGraph is None:
+            cG=self.consistencyGraph(assignment,testSupport)
+        else:
+            cG=consistencyGraph
 
-            found=False
-            # Check each set in the cover, if the new cell is consistent with that set, add it...
-            for j,s in enumerate(cover):
-                if self.consistencyRadius(assignment,testSupport=s.union([i]),tol=tol) < threshold:
-                    found=True
-                    cover[j].update(self.starCells([i]))
-                    cellSet.difference_update(self.starCells([i]))
-                    break
+        # Construct inconsistency graph.  Edges indicate cells that cannot be in the same cover element
+        G=nx.Graph()
+        G.add_nodes_from(cellSet)
+        G.add_edges_from([(i,j) for (i,j,k) in cG.edges(nbunch=cellSet,data='weight') if k > threshold and i != j])
+ 
+        # Solve graph coloring problem: nodes (cells) get colored by cover element
+        color_dict=nx.coloring.greedy_color(G)
+ 
+        # Re-sort into groups of consistent cells
+        cdd=defaultdict(list)
+        for cell,cover_element in color_dict.items():
+            cdd[cover_element].append(cell)
 
-            # ... otherwise it starts a new set in the cover
-            if not found:
-                cover.append(set(self.starCells([i])))
-                cellSet.difference_update(self.starCells([i]))
+        return {frozenset(s) for s in cdd.values()}
 
-        return cover
+    def consistentCollection(self,assignment,threshold,testSupport=None,consistencyGraph=None,tol=1e-5):
+        """Construct a maximal collection of open sets such that each subset is consistent to within the given threshold.  Note: the assignment must be supported on the entire space."""
+        # First obtain a collection of consistent open sets.  These are disjoint
+        initial_collection={frozenset(self.interior(s)) for s in self.consistentPartition(assignment,threshold,testSupport,consistencyGraph,tol)}
 
+        additions = True
+        collection = set()
+
+        while additions:
+            additions=False
+            for u in initial_collection:
+                added_u=False
+                for v in initial_collection:
+                    if u is not v:
+                        u_v = u.union(v)
+                        if self.consistencyRadius(assignment,testSupport=u_v)<threshold:
+                            added_u=True
+                            additions=True
+                            collection.add(u_v)
+                if not added_u:
+                    collection.add(u)
+                initial_collection=collection
+                collection=set()
+
+        return initial_collection
+        
     def coverMeanConsistency(self,assignment,cover,tol=1e-5):
         """Compute the consistency of a cover against an assignment"""
         return np.mean([self.consistencyRadius(assignment,testSupport=a,tol=tol) for a in cover])
@@ -883,12 +935,12 @@ class Sheaf(CellComplex):
     def mostConsistentCover(self,assignment,testSupport=None,weights=(1./3,1./3,1./3),tol=1e-5):
         """Compute the open cover that is most consistent with a given assignment.  The cover is built from stars over elements with given dimension.  Assumes that the assignment is supported on cells specified in testSupport.  Also assumes all cell metrics are bounded between 0 and 1 (unless weights are tuned appropriately).  Weights are (consistency, coarseness, overlap).  Caution: this is likely to be extremely slow for large base spaces!!!"""
         optimal_thres=scipy.optimize.bisect(lambda thres: self.coverFigureofMerit(assignment,
-                                                                                  self.consistentCover(assignment,thres,testSupport),
+                                                                                  self.consistentCollection(assignment,thres,testSupport),
                                                                                   weights=weights,
                                                                                   tol=tol),
                                             a=0,
                                             b=self.consistencyRadius(assignment)*1.01)
-        return self.consistentCover(assignment,optimal_thres)
+        return self.consistentCollection(assignment,optimal_thres)
 
     def assignmentMetric(self,assignment1,assignment2, testSupport=None):
         """Compute the distance between two assignments"""
@@ -912,7 +964,8 @@ class Sheaf(CellComplex):
     def fuseAssignment(self,assignment, activeCells=None, testSupport=None, method='SLSQP', options={}, tol=1e-5):
         """
         Compute the nearest global section to a given assignment
-        Currently there are two optimization schemes to choose from
+        Currently there are three optimization schemes to choose from
+        'KernelProj': This algorithm only works for sheaves of vector spaces and uses the kernel projector for the 0-coboundary map
         'SLSQP': This algorithm is scipy.optimize.minimize's default for bounded optimization
             Parameters:
                 assignment: the partial assignment of the sheaf to fuse
@@ -947,6 +1000,26 @@ class Sheaf(CellComplex):
                 for st_overlap in overlap:
                     add_parameters[st_overlap] = options[st_overlap]
             globalsection = self.optimize_GA(assignment, tol, activeCells=activeCells, testSupport=testSupport, initial_pop_size=add_parameters['initial_pop_size'], mutation_rate = add_parameters['mutation_rate'], num_generations= add_parameters['num_generations'] ,num_ele_Hallfame=add_parameters['num_ele_Hallfame'], initial_guess_p = add_parameters['initial_guess_p'])
+        elif method == 'KernelProj':
+            if not self.isLinear():
+                raise NotImplementedError('KernelProj only works for sheaves of vector spaces')
+            
+            # Construct the coboundary map
+            d = self.coboundary(k=0)
+            ks,ksizes,kidx=self.kcells(k=0)
+            asg,bounds = self.serializeAssignment(assignment,activeCells=ks)
+            
+            # Construct the kernel projector
+            AAt=np.dot(d,d.transpose())
+            AAti=np.linalg.pinv(AAt)
+            AtAAti=np.dot(d.transpose(),AAti)
+            projector=np.eye(d.shape[1])-np.dot(AtAAti,d)
+            
+            # Apply the kernel projector
+            gs=np.dot(projector,asg)
+
+            # Deserialize
+            globalsection=self.deserializeAssignment(gs,activeCells=ks,assignment=assignment)
         else:
             raise NotImplementedError('Invalid method')
         return globalsection
