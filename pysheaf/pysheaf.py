@@ -1141,7 +1141,7 @@ class Sheaf(CellComplex):
                                     constraints = ({'type' : 'eq',
                                                     'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg,activeCells,assignment),testSupport=testSupport)}), 
                                     tol = tol, 
-                                    options = {'maxiter' : int(100), 'disp' : True})
+                                    options = {'maxiter' : int(100)})
         globalsection = self.deserializeAssignment(res.x,activeCells,assignment)
         print res.items()
         return globalsection
