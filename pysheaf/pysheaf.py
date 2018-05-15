@@ -816,7 +816,7 @@ class Sheaf(CellComplex):
         count_comparison=0
         for (i,j,data) in cG.edges(nbunch=cellSet,data=True):
             count_comparison+=1
-            if data['type'] < 3 and data['weight'] > radius:  # Note: only uses cells in direct coface relation to each other
+            if data['weight'] > radius:  # Note: only uses cells in direct coface relation to each other
                 radius = data['weight']
 
         if count_comparison == 0:
@@ -865,6 +865,33 @@ class Sheaf(CellComplex):
                                                 G.add_edge(c1.support,c2.support,weight=rad,type=3)
 
         return G
+
+    def minimalExtend(self,assignment, activeCells=None, testSupport=None, method='nelder-mead', options={}, tol=1e-5):
+        """
+        Minimize consistency radius of an assignment given fixed cells
+        Currently, any optimization supported by scipy.optimize.minimize
+            Parameters:
+                assignment: the partial assignment of the sheaf to fuse
+                activeCells: set of cells whose values are to be changed (note None is not permitted)
+                testSupport: the set of cells over which consistency radius is assessed
+                tol: the tol of numeric values to be considered the same
+        """
+        if activeCells is None:
+            raise RuntimeError('activeCells must not be None')
+        
+        if self.isNumeric():
+            initial_guess, bounds = self.serializeAssignment(assignment,activeCells)
+            res=scipy.optimize.minimize( fun = lambda sec: self.consistencyRadius(self.deserializeAssignment(sec,activeCells,assignment), testSupport=testSupport),
+                                         x0 = initial_guess,
+                                         method = method, 
+                                         bounds = bounds,
+                                         tol = tol,
+                                         options = {'maxiter' : int(100)})
+            newassignment = self.deserializeAssignment(res.x,activeCells,assignment)
+            return newassignment
+        else:
+            raise NotImplementedError('Non-numeric sheaf')
+        return newassignment
 
     def consistentPartition(self,assignment,threshold,testSupport=None,consistencyGraph=None,tol=1e-5):
         """Construct a maximal collection of subsets of cells such that each subset is consistent to within the given threshold.  Note: the assignment must be supported on the entire space."""
@@ -960,7 +987,6 @@ class Sheaf(CellComplex):
             warnings.warn("No SectionCells in the assignments match, therefore nothing was compared by assignmentMetric")
         return radius
     
-
     def fuseAssignment(self,assignment, activeCells=None, testSupport=None, method='SLSQP', options={}, tol=1e-5):
         """
         Compute the nearest global section to a given assignment
@@ -1119,9 +1145,6 @@ class Sheaf(CellComplex):
         globalsection = self.deserializeAssignment(res.x,activeCells,assignment)
         print res.items()
         return globalsection
-    
-    
-    
     
     def ga_optimization_function(self,  space_des_2_opt, assignment,individual,activeCells=None,testSupport=None, tol=1e-5):
         """Write the function for the genetic algorithm to optimize similar to fun for scipy.optimize.minimize"""
