@@ -1143,7 +1143,6 @@ class Sheaf(CellComplex):
                                     tol = tol, 
                                     options = {'maxiter' : int(100)})
         globalsection = self.deserializeAssignment(res.x,activeCells,assignment)
-        print res.items()
         return globalsection
     
     def ga_optimization_function(self,  space_des_2_opt, assignment,individual,activeCells=None,testSupport=None, tol=1e-5):
