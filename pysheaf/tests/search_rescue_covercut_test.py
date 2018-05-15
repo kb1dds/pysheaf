@@ -205,16 +205,5 @@ print 'Case 1 consistency radius after removing faulty sensor ' + str(s1.consist
 print 'Case 2 consistency radius after removing faulty sensor ' + str(s1.consistencyRadius(input_data[1],testSupport=[0,1,2,3,4,6,7,8]))
 print 'Case 3 consistency radius after removing faulty sensor ' + str(s1.consistencyRadius(input_data[2],testSupport=[0,1,2,3,4,6,7,8]))
 
-# Iterate over all possible covers rooted on U2, U3, U4, U5
-bestCov=None
-bestFOM=np.inf
-for roots in covers.partitions_iter([i for i,c in enumerate(s1.cells) if c.dimension==1]):
-    cov=[s1.starCells(op) for op in roots]
-    print str(cov)
-    FOM = s1.coverFigureofMerit(input_data[2],cov)
-    if FOM < bestFOM:
-        print 'Improved FOM found: ' + str(FOM) + '; ' + str(cov)
-        bestCov=cov
-        bestFOM=FOM
-
-print 'Best FOM found: ' + str(bestFOM) + '; ' + str(bestCov)
+for i in range(len(input_data)):
+    print 'Case ' + str(i+1) + ' optimal cover: ' + str(s1.mostConsistentCover(input_data[i]))

@@ -10,9 +10,10 @@ import random
 # import matplotlib.pyplot as plt
 import networkx as nx
 import scipy.optimize
-import copy
 
 import warnings
+import copy
+import time
 
 import covers # For cover optimzation
 
@@ -23,6 +24,8 @@ from deap import base
 from deap import creator
 from deap import tools
 from deap import algorithms
+
+from collections import defaultdict
 
 
 
@@ -141,6 +144,10 @@ class CellComplex:
         return [i for i in range(len(self.cells))
                 if i in cells or [cf for cf in self.cofaces(i) if cf.index in cells]]
 
+    def interior(self,cells):
+        """Compute the interior of a collection of cells"""
+        return [i for i in cells if set(self.starCells([i])).issubset(cells)]
+
     def cofaces(self,c,cells=[]):
         """Iterate over cofaces (of all dimensions) of a given cell; optional argument specifies which cells are permissible cofaces
         Warning: duplicates are possible!"""
@@ -192,7 +199,7 @@ class CellComplex:
 
     def starCells(self,cells):
         """Cells in star over a subset of a cell complex"""
-        return list(set(cells+[cf.index for c in cells for cf in self.cofaces(c)]))
+        return set(cells).union({cf.index for c in cells for cf in self.cofaces(c)})
 
     def homology(self,k,subcomplex=None,compactSupport=False,tol=1e-5):
         """Compute (relative) homology of the cell complex"""
@@ -741,74 +748,250 @@ class Sheaf(CellComplex):
         """Take a partial assignment and extend it to a maximal assignment that's non-conflicting (if multiassign=False) or one in which multiple values can be given to a given cell (if multiassign=True)"""
         for i in range(len(assignment.sectionCells)):
             for cf in self.cofaces(assignment.sectionCells[i].support):
-                if not assignment.extend(self,cf.index,tol=tol) and multiassign:
+                if multiassign or (not assignment.extend(self,cf.index,tol=tol)):
                     assignment.sectionCells.append(SectionCell(cf.index,cf.restriction(assignment.sectionCells[i].value),source=assignment.sectionCells[i].support))
         return assignment
 
-    def consistencyRadius(self,assignment_input,testSupport=None,tol=1e-5):
+    def consistencyRadii(self,assignment,testSupport=None,consistencyGraph=None,tol=1e-5):
+        """Compute all radii for consistency across an assignment"""
+        if testSupport is None:
+            cellSet=set(range(len(self.cells)))
+        else:
+            cellSet=set(testSupport)
+
+        if consistencyGraph is None:
+            cG=self.consistencyGraph(assignment,testSupport)
+        else:
+            cG=consistencyGraph
+
+        return np.unique([rad for (i,j,rad) in cG.edges(nbunch=cellSet,data='weight')])
+    
+    
+    def isSheaf(self,assignment_input,tol=1e-5):
         """Compute the consistency radius of an approximate section"""
+        #TBD: Functional, but should be reworked to not require a call to deepcopy
         # Extend along restriction maps
         assignment=copy.deepcopy(assignment_input)
         assignment=self.maximalExtend(assignment,multiassign=True,tol=tol)
         
-        radius=0
+        #Set the dictionary for consistencies of cells
+        radii = dict()
+        
+        for c1 in assignment.sectionCells:
+            radii[c1.support] = 0.0
+                
+                
+        max_radius=0
         count_comparison = 0
         for c1 in assignment.sectionCells:
             for c2 in assignment.sectionCells:
-                if c1.support == c2.support and ((testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport) and (c2.source in testSupport))):
+                if c1.support == c2.support:
                     rad = self.cells[c1.support].metric(c1.value,c2.value)
                     count_comparison += 1
-                    if rad > radius:
-                        radius = rad
-        
+                    if rad > radii[c1.support]:
+                        radii[c1.support] = rad
+                    if rad > max_radius:
+                        max_radius = rad
+                        
+        issheaf = not np.any(radii.values())
+                
+        return issheaf, max_radius, radii
+                        
+
+
+    def consistencyRadius(self,assignment,testSupport=None,consistencyGraph=None,tol=1e-5):
+        """Compute the consistency radius of an approximate section"""
+
+        if testSupport is None:
+            cellSet=set(range(len(self.cells)))
+        else:
+            cellSet=set(testSupport)
+
+        if consistencyGraph is None:
+            cG=self.consistencyGraph(assignment,testSupport)
+        else:
+            cG=consistencyGraph
+
+        radius = 0.
+        count_comparison=0
+        for (i,j,data) in cG.edges(nbunch=cellSet,data=True):
+            count_comparison+=1
+            if data['weight'] > radius:  # Note: only uses cells in direct coface relation to each other
+                radius = data['weight']
+
         if count_comparison == 0:
             warnings.warn("No SectionCells in the assignment match, therefore nothing was compared by consistencyRadius")
         
         return radius
+    
+    def maxTestSupport(self,activeCells):
+        elementsTestSupport = copy.deepcopy(activeCells)
+        for i in range(len(elementsTestSupport)):
+            for cf in self.cofaces(elementsTestSupport[i]):
+                if not cf.index in elementsTestSupport:
+                    elementsTestSupport.append(cf.index)
+        return elementsTestSupport
 
-    def coverConsistency(self,assignment,cover,tol=1e-5):
+    def consistencyGraph(self,assignment,testSupport=None):
+        """Construct a NetworkX graph whose vertices are cells, in which each edge connects two cells with a common coface weighted by the distance between their respective values.  Note: the assignment must be supported on the entire space. Edges also have a type attribute, explaining the kind of relationship between cells: (1 = two values assigned to this cell, 2 = one cell is a coface of the other, 3 = cells have a common coface.)"""
+        
+        if testSupport is None:
+            cellSet=set(range(len(self.cells)))
+        else:
+            cellSet=set(testSupport)
+
+        G=nx.Graph()
+        G.add_nodes_from(cellSet)
+        
+        for c1 in assignment.sectionCells:
+            if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
+                for c2 in assignment.sectionCells:
+                    if (testSupport is None) or (c2.source in testSupport):
+                        if c1.support == c2.support:
+                            rad=self.cells[c1.support].metric(c1.value,c2.value)
+                            if ((c1.support,c2.support) not in G.edges()) or G[c1.support][c2.support]['weight'] < rad:
+                                G.add_edge(c1.support,c2.support,weight=rad,type=1)
+                        else:
+                            for cf1 in self.cofaces(c1.support):
+                                if cf1.index == c2.support:
+                                    rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),c2.value)
+                                    if ((c1.support,c2.support) not in G.edges()) or G[c1.support][c2.support]['weight'] < rad:
+                                        G.add_edge(c1.support,c2.support,weight=rad,type=2)
+                                else:
+                                    for cf2 in self.cofaces(c2.support):
+                                        if cf1.index == cf2.index:
+                                            rad=0.5*self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value)) # Note the factor of 0.5
+                                            if ((c1.support,c2.support) not in G.edges()) or (G[c1.support][c2.support]['type'] == 2 and G[c1.support][c2.support]['weight'] < rad):
+                                                G.add_edge(c1.support,c2.support,weight=rad,type=3)
+
+        return G
+
+    def minimalExtend(self,assignment, activeCells=None, testSupport=None, method='nelder-mead', options={}, tol=1e-5):
+        """
+        Minimize consistency radius of an assignment given fixed cells
+        Currently, any optimization supported by scipy.optimize.minimize
+            Parameters:
+                assignment: the partial assignment of the sheaf to fuse
+                activeCells: set of cells whose values are to be changed (note None is not permitted)
+                testSupport: the set of cells over which consistency radius is assessed
+                tol: the tol of numeric values to be considered the same
+        """
+        if activeCells is None:
+            raise RuntimeError('activeCells must not be None')
+        
+        if self.isNumeric():
+            initial_guess, bounds = self.serializeAssignment(assignment,activeCells)
+            res=scipy.optimize.minimize( fun = lambda sec: self.consistencyRadius(self.deserializeAssignment(sec,activeCells,assignment), testSupport=testSupport),
+                                         x0 = initial_guess,
+                                         method = method, 
+                                         bounds = bounds,
+                                         tol = tol,
+                                         options = {'maxiter' : int(100)})
+            newassignment = self.deserializeAssignment(res.x,activeCells,assignment)
+            return newassignment
+        else:
+            raise NotImplementedError('Non-numeric sheaf')
+        return newassignment
+
+    def consistentPartition(self,assignment,threshold,testSupport=None,consistencyGraph=None,tol=1e-5):
+        """Construct a maximal collection of subsets of cells such that each subset is consistent to within the given threshold.  Note: the assignment must be supported on the entire space."""
+
+        if testSupport is None:
+            cellSet=set(range(len(self.cells)))
+        else:
+            cellSet=set(testSupport)
+
+        if consistencyGraph is None:
+            cG=self.consistencyGraph(assignment,testSupport)
+        else:
+            cG=consistencyGraph
+
+        # Construct inconsistency graph.  Edges indicate cells that cannot be in the same cover element
+        G=nx.Graph()
+        G.add_nodes_from(cellSet)
+        G.add_edges_from([(i,j) for (i,j,k) in cG.edges(nbunch=cellSet,data='weight') if k > threshold and i != j])
+ 
+        # Solve graph coloring problem: nodes (cells) get colored by cover element
+        color_dict=nx.coloring.greedy_color(G)
+ 
+        # Re-sort into groups of consistent cells
+        cdd=defaultdict(list)
+        for cell,cover_element in color_dict.items():
+            cdd[cover_element].append(cell)
+
+        return {frozenset(s) for s in cdd.values()}
+
+    def consistentCollection(self,assignment,threshold,testSupport=None,consistencyGraph=None,tol=1e-5):
+        """Construct a maximal collection of open sets such that each subset is consistent to within the given threshold.  Note: the assignment must be supported on the entire space."""
+        # First obtain a collection of consistent open sets.  These are disjoint
+        initial_collection={frozenset(self.interior(s)) for s in self.consistentPartition(assignment,threshold,testSupport,consistencyGraph,tol)}
+
+        additions = True
+        collection = set()
+
+        while additions:
+            additions=False
+            for u in initial_collection:
+                added_u=False
+                for v in initial_collection:
+                    if u is not v:
+                        u_v = u.union(v)
+                        if self.consistencyRadius(assignment,testSupport=u_v)<threshold:
+                            added_u=True
+                            additions=True
+                            collection.add(u_v)
+                if not added_u:
+                    collection.add(u)
+                initial_collection=collection
+                collection=set()
+
+        return initial_collection
+        
+    def coverMeanConsistency(self,assignment,cover,tol=1e-5):
         """Compute the consistency of a cover against an assignment"""
         return np.mean([self.consistencyRadius(assignment,testSupport=a,tol=tol) for a in cover])
 
+    def coverMaxConsistency(self,assignment,cover,tol=1e-5):
+        """Compute the maximum consistency radius of a cover against an assignment"""
+        return np.max([self.consistencyRadius(assignment,testSupport=a,tol=tol) for a in cover])
+
     def coverFigureofMerit(self,assignment,cover,weights=(1./3,1./3,1./3),tol=1e-5):
         """Compute figure of merit for a cover against an assignment.  NOTE: Silently assumes all cell metrics return values between 0 and 1.  Wierd results will occur otherwise."""
-        return weights[0]*self.coverConsistency(assignment,cover,tol)+weights[1]*(1-covers.normalized_coarseness(cover))+weights[2]*covers.normalized_elementwise_overlap(cover)
+        return -weights[0]*self.coverMaxConsistency(assignment,cover,tol)+weights[1]*(1-covers.normalized_coarseness(cover))+weights[2]*covers.normalized_elementwise_overlap(cover)
 
-    def mostConsistentCover(self,assignment,dimension=0,weights=(1./3,1./3,1./3),tol=1e-5):
-        """Compute the open cover that is most consistent with a given assignment.  The cover is built from stars over elements with given dimension.  Assumes that the assignment is supported on cells of that dimension.  Also assumes all cell metrics are bounded between 0 and 1 (unless weights are tuned appropriately).  Weights are (consistency, coarseness, overlap).  Caution: this is likely to be extremely slow for large base spaces!!!"""
-        bestCov=None # Default: no cover
-        bestFOM=np.inf
-        for roots in covers.partitions_iter([i for i,c in enumerate(self.cells) if c.dimension==dimension]):
-            cov=[self.starCells(op) for op in roots]
-            FOM = self.coverFigureofMerit(assignment,cov)
-            if FOM < bestFOM:
-                # Improved cover found
-                bestCov=cov
-                bestFOM=FOM
-        return bestCov
+    def mostConsistentCover(self,assignment,testSupport=None,weights=(1./3,1./3,1./3),tol=1e-5):
+        """Compute the open cover that is most consistent with a given assignment.  The cover is built from stars over elements with given dimension.  Assumes that the assignment is supported on cells specified in testSupport.  Also assumes all cell metrics are bounded between 0 and 1 (unless weights are tuned appropriately).  Weights are (consistency, coarseness, overlap).  Caution: this is likely to be extremely slow for large base spaces!!!"""
+        optimal_thres=scipy.optimize.bisect(lambda thres: self.coverFigureofMerit(assignment,
+                                                                                  self.consistentCollection(assignment,thres,testSupport),
+                                                                                  weights=weights,
+                                                                                  tol=tol),
+                                            a=0,
+                                            b=self.consistencyRadius(assignment)*1.01)
+        return self.consistentCollection(assignment,optimal_thres)
 
     def assignmentMetric(self,assignment1,assignment2, testSupport=None):
         """Compute the distance between two assignments"""
         radius=0
         count_comparison = 0
         for c1 in assignment1.sectionCells:
-            for c2 in assignment2.sectionCells:
-                if c1.support == c2.support and ((testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport) and (c2.source in testSupport))):
-                    rad = self.cells[c1.support].metric(c1.value,c2.value)
-                    count_comparison += 1
-                    if rad > radius:
-                        radius = rad
+            if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
+                for c2 in assignment2.sectionCells:
+                    if c1.support == c2.support and ((testSupport is None) or (c2.source in testSupport)):
+                        rad = self.cells[c1.support].metric(c1.value,c2.value)
+                        count_comparison += 1
+                        if rad > radius:
+                            radius = rad
                         
         if count_comparison == 0:
             radius = np.inf
             warnings.warn("No SectionCells in the assignments match, therefore nothing was compared by assignmentMetric")
         return radius
     
-
     def fuseAssignment(self,assignment, activeCells=None, testSupport=None, method='SLSQP', options={}, tol=1e-5):
         """
         Compute the nearest global section to a given assignment
-        Currently there are two optimization schemes to choose from
+        Currently there are three optimization schemes to choose from
+        'KernelProj': This algorithm only works for sheaves of vector spaces and uses the kernel projector for the 0-coboundary map
         'SLSQP': This algorithm is scipy.optimize.minimize's default for bounded optimization
             Parameters:
                 assignment: the partial assignment of the sheaf to fuse
@@ -827,6 +1010,9 @@ class Sheaf(CellComplex):
                         num_generations - the number of iterations that the genetic algorithm runs
                         num_ele_Hallfame - the number of top individuals that should be reported in the hall of fame (hof)
         """
+        if activeCells != None and not (set(testSupport) <= set(self.maxTestSupport(activeCells))):
+            raise ValueError("Given testSupport is larger than the largest comparison set given activeCells")
+        
         if method == 'SLSQP':
             if self.isNumeric():
                 globalsection = self.optimize_SLSQP(assignment, activeCells, testSupport, tol)
@@ -839,7 +1025,27 @@ class Sheaf(CellComplex):
             if len(overlap) > 0:
                 for st_overlap in overlap:
                     add_parameters[st_overlap] = options[st_overlap]
-            globalsection = self.optimize_GA(assignment, tol, initial_pop_size=add_parameters['initial_pop_size'], mutation_rate = add_parameters['mutation_rate'], num_generations= add_parameters['num_generations'] ,num_ele_Hallfame=add_parameters['num_ele_Hallfame'], initial_guess_p = add_parameters['initial_guess_p'])
+            globalsection = self.optimize_GA(assignment, tol, activeCells=activeCells, testSupport=testSupport, initial_pop_size=add_parameters['initial_pop_size'], mutation_rate = add_parameters['mutation_rate'], num_generations= add_parameters['num_generations'] ,num_ele_Hallfame=add_parameters['num_ele_Hallfame'], initial_guess_p = add_parameters['initial_guess_p'])
+        elif method == 'KernelProj':
+            if not self.isLinear():
+                raise NotImplementedError('KernelProj only works for sheaves of vector spaces')
+            
+            # Construct the coboundary map
+            d = self.coboundary(k=0)
+            ks,ksizes,kidx=self.kcells(k=0)
+            asg,bounds = self.serializeAssignment(assignment,activeCells=ks)
+            
+            # Construct the kernel projector
+            AAt=np.dot(d,d.transpose())
+            AAti=np.linalg.pinv(AAt)
+            AtAAti=np.dot(d.transpose(),AAti)
+            projector=np.eye(d.shape[1])-np.dot(AtAAti,d)
+            
+            # Apply the kernel projector
+            gs=np.dot(projector,asg)
+
+            # Deserialize
+            globalsection=self.deserializeAssignment(gs,activeCells=ks,assignment=assignment)
         else:
             raise NotImplementedError('Invalid method')
         return globalsection
@@ -927,25 +1133,20 @@ class Sheaf(CellComplex):
             Tech. Rep. DFVLR-FB 88-28, DLR German Aerospace Center, 
             Institute for Flight Mechanics, Koln, Germany.
         """
-    
         initial_guess, bounds = self.serializeAssignment(assignment,activeCells)
-        res=scipy.optimize.minimize( fun = lambda sec: self.assignmentMetric(assignment,self.deserializeAssignment(sec,activeCells,assignment), testSupport=testSupport),
+        res=scipy.optimize.minimize( fun = lambda sec: ((self.assignmentMetric(assignment,self.deserializeAssignment(sec,activeCells,assignment), testSupport=testSupport))),
                                     x0 = initial_guess,
                                     method = 'SLSQP', 
                                     bounds = bounds,
                                     constraints = ({'type' : 'eq',
                                                     'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg,activeCells,assignment),testSupport=testSupport)}), 
                                     tol = tol, 
-                                    options = {'maxiter' : int(100)})
+                                    options = {'maxiter' : int(100), 'disp' : True})
         globalsection = self.deserializeAssignment(res.x,activeCells,assignment)
-        #print res.success
-        #print res.message
+        print res.items()
         return globalsection
     
-    
-    
-    
-    def ga_optimization_function(self,  space_des_2_opt, assignment,individual):
+    def ga_optimization_function(self,  space_des_2_opt, assignment,individual,activeCells=None,testSupport=None, tol=1e-5):
         """Write the function for the genetic algorithm to optimize similar to fun for scipy.optimize.minimize"""
         
         #Assign a high cost to eliminate individuals with nans from the population
@@ -955,25 +1156,53 @@ class Sheaf(CellComplex):
             
         else:
             #write a new assignment from the individual so that one can use maximal extend.
+            multiassign = False
+            
             new_assignment = []
             start_index = 0
             for i in range(len(space_des_2_opt)):
                 new_assignment.append(SectionCell(support=space_des_2_opt[i][0], value=individual[(start_index):(start_index+space_des_2_opt[i][1])]))
                 start_index += space_des_2_opt[i][1]
+                
+                
+            if activeCells is not None:
+                for sec in assignment.sectionCells:
+                    if not (sec.support in activeCells):
+                        new_assignment.append(sec)
+                        multiassign=True
+                
         
             new_assignment = Section(new_assignment)
         
             #start of optimization function
-            new_assignment = self.maximalExtend(new_assignment,multiassign=False,tol=1e-5)
+            new_assignment = self.maximalExtend(new_assignment,multiassign=multiassign,tol=1e-5)
         
-            cost = self.assignmentMetric(assignment, new_assignment)
+            cost = self.assignmentMetric(assignment, new_assignment, testSupport=testSupport)
+            
+            #If consistency is not guarenteed force consistency check
+            #TBD: verify neccessity
+            #if activeCells != None:
+            #Constrain value by the consistencyRadius (Note: min is 0)
+            t0 = time.clock()
+            radii = self.consistencyRadius(new_assignment)
+            t1 = time.clock()
+            
+            t_finish = t1-t0
+            print t_finish
+            
+            if radii < tol:
+                pass
+            else:
+                cost = cost+(radii)**2   
+            
+            
             #Sum to formulate cost (NOTE: GA maximizes instead of minimizes so we need a negative sign)
             cost = -cost
         return (float(cost),)
         
 
     
-    def optimize_GA(self, assignment, tol=1e-5, initial_pop_size=100, mutation_rate = .3, num_generations=100 ,num_ele_Hallfame=1, initial_guess_p = None):
+    def optimize_GA(self, assignment, tol=1e-5, activeCells=None, testSupport=None, initial_pop_size=100, mutation_rate = .3, num_generations=100 ,num_ele_Hallfame=1, initial_guess_p = None):
         """
         Compute the nearest global section to a given assignment using 
         a genetic algorithm. 
@@ -995,6 +1224,9 @@ class Sheaf(CellComplex):
             opt_sp_id_len - the space the algorithm is optimizing over
         
         """
+        ##########################################################################################
+        # Helper Functions for Algorithm
+        ##########################################################################################
         
         #add as a potential selection function to match Matlab GA
         def selnormGeom(individuals, k, prob_sel_best= 0.08, fit_attr="fitness"):
@@ -1069,13 +1301,28 @@ class Sheaf(CellComplex):
             
             return individual,
         
+        ###################################################################################################
+        #Beginning of Algoithm Run
+        ###################################################################################################
+        
+        
+        
+        
         #Get the spaces to optimize over while saving their indices in the complex and length as well as the bounds
         bounds = []
-        opt_sp_id_len = []
+        opt_sp_id_len = [] #stores the cell id and 
         
         for cell in self.cells:
-            iscoface = any([alt_cell.isCoface(int(cell.id)) for alt_cell in self.cells if alt_cell.id != cell.id])
-            if not iscoface:
+            if activeCells is None:
+                #Use the 0-dimension cells in sheaf
+                active = not any([alt_cell.isCoface(int(cell.id)) for alt_cell in self.cells if alt_cell.id != cell.id]) #should be done differently for speed
+            else:
+                #Use the cells denoted as active in sheaf
+                active = False
+                if int(cell.id) in activeCells:
+                    active = True
+                    
+            if active:
                 opt_sp_id_len.append((int(cell.id), cell.stalkDim))
                 if cell.bounds !=None:
                     #Ensure that the length of the specfied bounds is equivalent to the stalkDim
@@ -1088,7 +1335,8 @@ class Sheaf(CellComplex):
                     #This will not work (error out if stalkDim = None) however why are you trying to optimize over an empty cell
                     for x in range(cell.stalkDim):
                         bnds.append(tuple([None, None]))
-                    bounds.extend(bnds)
+                    bounds.extend(bnds)            
+        
         
         #Create initial guess if that index is specfied for that section
         initial_guess = [[0 for j in range(opt_sp_id_len[i][1])] for i in range(len(opt_sp_id_len))]
@@ -1116,9 +1364,37 @@ class Sheaf(CellComplex):
             initial_guess = None
             
         #Ensure that any assigned individual to the initial population is the correct length
-        if np.any(initial_guess_p):
-            if np.size(initial_guess_p) != self.cells[0].stalkDim:
-                initial_guess_p = None
+        #Needs to be modified to take either an array or an set of Sections
+        
+        #Deserialize initial_guess_p if it is expressed as a section
+        if isinstance(initial_guess_p, Section):
+            setOfArrays = [[] for r in range(len(opt_sp_id_len))]
+            setActiveCells = [s[0] for s in opt_sp_id_len]
+            for sec in initial_guess_p.sectionCells:
+                if sec.support in setActiveCells:
+                    ind_opt = (np.abs(np.array(setActiveCells) - sec.support)).argmin()
+                    if np.size(sec.value) == opt_sp_id_len[ind_opt][1]:
+                        setOfArrays[ind_opt] = sec.value
+                    else:
+                        initial_guess_p = None
+                        break
+                else:
+                    warnings.warn("initial_guess_p does not contain a sectionCell for every activeCell")
+                    initial_guess_p = None
+                    break
+            
+            #Pull all the section values into a single array
+            #TBD: Try to streamline
+            if initial_guess_p != None:
+                initial_guess_p = np.array([])
+                for a_i in setOfArrays:
+                    initial_guess_p = np.hstack((initial_guess_p, a_i))
+                
+        else:
+            #Keep original functionality
+            if np.any(initial_guess_p):
+                if np.size(initial_guess_p) != self.cells[0].stalkDim:
+                    initial_guess_p = None
         
         
         #Start of unique to the genetic algorithm
@@ -1173,12 +1449,34 @@ class Sheaf(CellComplex):
             pop.insert(0, initial_g)   
             
         #Define a function to calculate the fitness of an individual
-        cost = partial(self.ga_optimization_function, opt_sp_id_len, assignment)
+        cost = partial(self.ga_optimization_function, opt_sp_id_len, assignment, activeCells=activeCells, testSupport=testSupport)
         toolbox.register("evaluate", cost)
         
         #Define the upper and lower bounds for each attribute in the optimization
-        lower_bounds = [float(bnds[0]) for bnds in bounds]
-        upper_bounds = [float(bnds[1]) for bnds in bounds]
+        lower_bounds = []
+        upper_bounds = []
+        for i,bnds in enumerate(bounds):
+            if bnds[0] is not None:
+                lower_bounds.append(float(bnds[0]))
+            else:
+                warnings.warn("Bounds not specified on an activeCell")
+                if initial_guess_p is not None:
+                    lower_bounds.append(initial_guess_p[i]-100*initial_guess_p[i])
+                else:
+                    raise ValueError("Initial guess can't be turned into bounds")
+            if bnds[1] is not None:
+                upper_bounds.append(float(bnds[1]))
+            else:
+                warnings.warn("Bounds not specified on an activeCell")
+                if initial_guess_p is not None:
+                    upper_bounds.append(initial_guess_p[i]+100*initial_guess_p[i])
+                else:
+                    raise ValueError("Initial guess can't be turned into bounds")
+                
+                
+         #Old Bounds Definition       
+#        lower_bounds = [float(bnds[0]) for bnds in bounds]
+#        upper_bounds = [float(bnds[1]) for bnds in bounds]
         
         #Define the function to do the mating between two individuals in the previous population
         #Note: Any toolbox.register that are commented out are other possibilities for the function
@@ -1856,14 +2154,18 @@ class Section:
 
     def support(self):
         """List the cells in the support of this section"""
-        return list(set([sc.support for sc in self.sectionCells]))
+        return {sc.support for sc in self.sectionCells}
 
     def extend(self,sheaf,cell,value=None,tol=1e-5):
         """Extend the section to another cell; returns True if successful"""
         
         # If the desired cell is already in the support, do nothing
-        if cell in self.support():
-            return
+        for sc in self.sectionCells:
+            if cell == sc.support:
+                if (value is None) or sheaf.cells[sc.support].metric(sc.value,value) < tol:
+                    return True
+                else:
+                    return False
 
         # Is the desired cell a coface of a cell in the support?
         for s in self.sectionCells:
@@ -1877,6 +2179,9 @@ class Section:
                     #if value is not None and np.any(np.abs(val - value)>tol):
                         return False
                     value = val
+                    break
+            if value is not None:
+                break
 
         # Are there are any cofaces for the desired cell in the support?
         if value is None: # Attempt to assign a new value...
