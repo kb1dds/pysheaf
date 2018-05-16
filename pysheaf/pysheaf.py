@@ -765,7 +765,25 @@ class Sheaf(CellComplex):
             cG=consistencyGraph
 
         return np.unique([rad for (i,j,rad) in cG.edges(nbunch=cellSet,data='weight')])
-    
+
+    def consistencyRadius(self,assignment,testSupport=None,consistencyGraph=None,ord=np.inf,tol=1e-5):
+        """Compute the consistency radius of an approximate section"""
+
+        if testSupport is None:
+            cellSet=set(range(len(self.cells)))
+        else:
+            cellSet=set(testSupport)
+
+        if consistencyGraph is None:
+            cG=self.consistencyGraph(assignment,testSupport)
+        else:
+            cG=consistencyGraph
+
+        radii=[rad for (i,j,rad) in cG.edges(nbunch=cellSet,data='weight')]
+        if len(radii) == 0:
+            warnings.warn("No SectionCells in the assignments match, therefore nothing was compared by consistencyRadius")
+            return 0.
+        return np.linalg.norm(radii,ord=ord)    
     
     def isSheaf(self,assignment_input,tol=1e-5):
         """Compute the consistency radius of an approximate section"""
@@ -796,33 +814,6 @@ class Sheaf(CellComplex):
         issheaf = not np.any(radii.values())
                 
         return issheaf, max_radius, radii
-                        
-
-
-    def consistencyRadius(self,assignment,testSupport=None,consistencyGraph=None,tol=1e-5):
-        """Compute the consistency radius of an approximate section"""
-
-        if testSupport is None:
-            cellSet=set(range(len(self.cells)))
-        else:
-            cellSet=set(testSupport)
-
-        if consistencyGraph is None:
-            cG=self.consistencyGraph(assignment,testSupport)
-        else:
-            cG=consistencyGraph
-
-        radius = 0.
-        count_comparison=0
-        for (i,j,data) in cG.edges(nbunch=cellSet,data=True):
-            count_comparison+=1
-            if data['weight'] > radius:  # Note: only uses cells in direct coface relation to each other
-                radius = data['weight']
-
-        if count_comparison == 0:
-            warnings.warn("No SectionCells in the assignment match, therefore nothing was compared by consistencyRadius")
-        
-        return radius
     
     def maxTestSupport(self,activeCells):
         elementsTestSupport = copy.deepcopy(activeCells)
@@ -866,7 +857,7 @@ class Sheaf(CellComplex):
 
         return G
 
-    def minimalExtend(self,assignment, activeCells=None, testSupport=None, method='nelder-mead', options={}, tol=1e-5):
+    def minimalExtend(self,assignment, activeCells=None, testSupport=None, method='nelder-mead', ord = np.inf, options={}, tol=1e-5):
         """
         Minimize consistency radius of an assignment given fixed cells
         Currently, any optimization supported by scipy.optimize.minimize
@@ -881,7 +872,7 @@ class Sheaf(CellComplex):
         
         if self.isNumeric():
             initial_guess, bounds = self.serializeAssignment(assignment,activeCells)
-            res=scipy.optimize.minimize( fun = lambda sec: self.consistencyRadius(self.deserializeAssignment(sec,activeCells,assignment), testSupport=testSupport),
+            res=scipy.optimize.minimize( fun = lambda sec: self.consistencyRadius(self.deserializeAssignment(sec,activeCells,assignment), testSupport=testSupport, ord=ord),
                                          x0 = initial_guess,
                                          method = method, 
                                          bounds = bounds,
@@ -893,7 +884,7 @@ class Sheaf(CellComplex):
             raise NotImplementedError('Non-numeric sheaf')
         return newassignment
 
-    def consistentPartition(self,assignment,threshold,testSupport=None,consistencyGraph=None,tol=1e-5):
+    def consistentPartition(self,assignment,threshold,testSupport=None,consistencyGraph=None,ord=np.inf,tol=1e-5):
         """Construct a maximal collection of subsets of cells such that each subset is consistent to within the given threshold.  Note: the assignment must be supported on the entire space."""
 
         if testSupport is None:
@@ -921,10 +912,10 @@ class Sheaf(CellComplex):
 
         return {frozenset(s) for s in cdd.values()}
 
-    def consistentCollection(self,assignment,threshold,testSupport=None,consistencyGraph=None,tol=1e-5):
+    def consistentCollection(self,assignment,threshold,testSupport=None,consistencyGraph=None,ord=np.inf,tol=1e-5):
         """Construct a maximal collection of open sets such that each subset is consistent to within the given threshold.  Note: the assignment must be supported on the entire space."""
         # First obtain a collection of consistent open sets.  These are disjoint
-        initial_collection={frozenset(self.interior(s)) for s in self.consistentPartition(assignment,threshold,testSupport,consistencyGraph,tol)}
+        initial_collection={frozenset(self.interior(s)) for s in self.consistentPartition(assignment,threshold,testSupport,consistencyGraph,ord=ord,tol=tol)}
 
         additions = True
         collection = set()
@@ -936,7 +927,7 @@ class Sheaf(CellComplex):
                 for v in initial_collection:
                     if u is not v:
                         u_v = u.union(v)
-                        if self.consistencyRadius(assignment,testSupport=u_v)<threshold:
+                        if self.consistencyRadius(assignment,testSupport=u_v,ord=ord)<threshold:
                             added_u=True
                             additions=True
                             collection.add(u_v)
@@ -947,47 +938,47 @@ class Sheaf(CellComplex):
 
         return initial_collection
         
-    def coverMeanConsistency(self,assignment,cover,tol=1e-5):
+    def coverMeanConsistency(self,assignment,cover,ord=np.inf,tol=1e-5):
         """Compute the consistency of a cover against an assignment"""
-        return np.mean([self.consistencyRadius(assignment,testSupport=a,tol=tol) for a in cover])
+        return np.mean([self.consistencyRadius(assignment,testSupport=a,tol=tol,ord=ord) for a in cover])
 
-    def coverMaxConsistency(self,assignment,cover,tol=1e-5):
+    def coverMaxConsistency(self,assignment,cover,ord=np.inf,tol=1e-5):
         """Compute the maximum consistency radius of a cover against an assignment"""
-        return np.max([self.consistencyRadius(assignment,testSupport=a,tol=tol) for a in cover])
+        return np.max([self.consistencyRadius(assignment,testSupport=a,tol=tol,ord=ord) for a in cover])
 
-    def coverFigureofMerit(self,assignment,cover,weights=(1./3,1./3,1./3),tol=1e-5):
+    def coverFigureofMerit(self,assignment,cover,weights=(1./3,1./3,1./3),ord=np.inf,tol=1e-5):
         """Compute figure of merit for a cover against an assignment.  NOTE: Silently assumes all cell metrics return values between 0 and 1.  Wierd results will occur otherwise."""
-        return -weights[0]*self.coverMaxConsistency(assignment,cover,tol)+weights[1]*(1-covers.normalized_coarseness(cover))+weights[2]*covers.normalized_elementwise_overlap(cover)
+        return -weights[0]*self.coverMaxConsistency(assignment,cover,ord=ord,tol=tol)+weights[1]*(1-covers.normalized_coarseness(cover))+weights[2]*covers.normalized_elementwise_overlap(cover)
 
-    def mostConsistentCover(self,assignment,testSupport=None,weights=(1./3,1./3,1./3),tol=1e-5):
+    def mostConsistentCover(self,assignment,testSupport=None,weights=(1./3,1./3,1./3),ord=np.inf,tol=1e-5):
         """Compute the open cover that is most consistent with a given assignment.  The cover is built from stars over elements with given dimension.  Assumes that the assignment is supported on cells specified in testSupport.  Also assumes all cell metrics are bounded between 0 and 1 (unless weights are tuned appropriately).  Weights are (consistency, coarseness, overlap).  Caution: this is likely to be extremely slow for large base spaces!!!"""
         optimal_thres=scipy.optimize.bisect(lambda thres: self.coverFigureofMerit(assignment,
-                                                                                  self.consistentCollection(assignment,thres,testSupport),
+                                                                                  self.consistentCollection(assignment,thres,testSupport,ord=ord),
                                                                                   weights=weights,
+                                                                                  ord=ord,
                                                                                   tol=tol),
                                             a=0,
-                                            b=self.consistencyRadius(assignment)*1.01)
-        return self.consistentCollection(assignment,optimal_thres)
+                                            b=self.consistencyRadius(assignment,ord=ord)*1.01)
+        return self.consistentCollection(assignment,optimal_thres,ord=ord)
 
-    def assignmentMetric(self,assignment1,assignment2, testSupport=None):
+    def assignmentMetric(self,assignment1,assignment2, testSupport=None, ord=np.inf):
         """Compute the distance between two assignments"""
         radius=0
         count_comparison = 0
+        radii=[]
         for c1 in assignment1.sectionCells:
             if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
                 for c2 in assignment2.sectionCells:
                     if c1.support == c2.support and ((testSupport is None) or (c2.source in testSupport)):
-                        rad = self.cells[c1.support].metric(c1.value,c2.value)
-                        count_comparison += 1
-                        if rad > radius:
-                            radius = rad
-                        
-        if count_comparison == 0:
+                        radii.append(self.cells[c1.support].metric(c1.value,c2.value))
+
+    
+        if len(radii) == 0:
             radius = np.inf
             warnings.warn("No SectionCells in the assignments match, therefore nothing was compared by assignmentMetric")
-        return radius
+        return np.linalg.norm(radii,ord=ord)
     
-    def fuseAssignment(self,assignment, activeCells=None, testSupport=None, method='SLSQP', options={}, tol=1e-5):
+    def fuseAssignment(self,assignment, activeCells=None, testSupport=None, method='SLSQP', options={}, ord=np.inf, tol=1e-5):
         """
         Compute the nearest global section to a given assignment
         Currently there are three optimization schemes to choose from
@@ -1010,12 +1001,12 @@ class Sheaf(CellComplex):
                         num_generations - the number of iterations that the genetic algorithm runs
                         num_ele_Hallfame - the number of top individuals that should be reported in the hall of fame (hof)
         """
-        if activeCells != None and not (set(testSupport) <= set(self.maxTestSupport(activeCells))):
+        if activeCells is not None and testSupport is not None and not (set(testSupport) <= set(self.maxTestSupport(activeCells))):
             raise ValueError("Given testSupport is larger than the largest comparison set given activeCells")
         
         if method == 'SLSQP':
             if self.isNumeric():
-                globalsection = self.optimize_SLSQP(assignment, activeCells, testSupport, tol)
+                globalsection = self.optimize_SLSQP(assignment, activeCells, testSupport, ord, tol)
             else:
                 # The fallback situation, where we need to iterate over global sections manually...
                 raise NotImplementedError
@@ -1029,6 +1020,9 @@ class Sheaf(CellComplex):
         elif method == 'KernelProj':
             if not self.isLinear():
                 raise NotImplementedError('KernelProj only works for sheaves of vector spaces')
+
+            if ord != 2:
+                warn('Kernel projection requires order 2 in fuseAssignment')
             
             # Construct the coboundary map
             d = self.coboundary(k=0)
@@ -1123,7 +1117,7 @@ class Sheaf(CellComplex):
         return x0,bounds
                 
     
-    def optimize_SLSQP(self, assignment, activeCells=None, testSupport=None, tol=1e-5):
+    def optimize_SLSQP(self, assignment, activeCells=None, testSupport=None, ord=np.inf, tol=1e-5):
         """
         Compute the nearest global section to a given assignment using 
         scipy.optimize.minimize. When there are constraints specified, 
@@ -1134,12 +1128,12 @@ class Sheaf(CellComplex):
             Institute for Flight Mechanics, Koln, Germany.
         """
         initial_guess, bounds = self.serializeAssignment(assignment,activeCells)
-        res=scipy.optimize.minimize( fun = lambda sec: ((self.assignmentMetric(assignment,self.deserializeAssignment(sec,activeCells,assignment), testSupport=testSupport))),
+        res=scipy.optimize.minimize( fun = lambda sec: ((self.assignmentMetric(assignment,self.deserializeAssignment(sec,activeCells,assignment), testSupport=testSupport, ord=ord))),
                                     x0 = initial_guess,
                                     method = 'SLSQP', 
                                     bounds = bounds,
                                     constraints = ({'type' : 'eq',
-                                                    'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg,activeCells,assignment),testSupport=testSupport)}), 
+                                                    'fun' : lambda asg: self.consistencyRadius(self.deserializeAssignment(asg,activeCells,assignment),testSupport=testSupport, ord=ord)}), 
                                     tol = tol, 
                                     options = {'maxiter' : int(100)})
         globalsection = self.deserializeAssignment(res.x,activeCells,assignment)
