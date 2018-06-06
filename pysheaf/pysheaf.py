@@ -195,7 +195,7 @@ class CellComplex:
         if not cells:
             return list(set(self.faces(start) + cflist))
         else:
-	    return list(set.intersection(set(self.faces(start) + cflist),cells))
+            return list(set.intersection(set(self.faces(start) + cflist),cells))
 
     def starCells(self,cells):
         """Cells in star over a subset of a cell complex"""
