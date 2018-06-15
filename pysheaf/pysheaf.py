@@ -863,22 +863,25 @@ class Sheaf(CellComplex):
         Currently, any optimization supported by scipy.optimize.minimize
             Parameters:
                 assignment: the partial assignment of the sheaf to fuse
-                activeCells: set of cells whose values are to be changed (note None is not permitted)
+                activeCells: set of cells whose values are to be changed (if None, all cells outside the support of the assignment will be changed, but nothing in the support of the assignment will be changed)
                 testSupport: the set of cells over which consistency radius is assessed
                 tol: the tol of numeric values to be considered the same
         """
         if activeCells is None:
-            raise RuntimeError('activeCells must not be None')
-        
+            support=[sc.support for sc in assignment.sectionCells]
+            ac=[idx for idx in range(len(self.cells)) if idx not in support]
+        else:
+            ac=activeCells
+            
         if self.isNumeric():
-            initial_guess, bounds = self.serializeAssignment(assignment,activeCells)
-            res=scipy.optimize.minimize( fun = lambda sec: self.consistencyRadius(self.deserializeAssignment(sec,activeCells,assignment), testSupport=testSupport, ord=ord),
+            initial_guess, bounds = self.serializeAssignment(assignment,ac)
+            res=scipy.optimize.minimize( fun = lambda sec: self.consistencyRadius(self.deserializeAssignment(sec,ac,assignment), testSupport=testSupport, ord=ord),
                                          x0 = initial_guess,
                                          method = method, 
                                          bounds = bounds,
                                          tol = tol,
                                          options = {'maxiter' : int(100)})
-            newassignment = self.deserializeAssignment(res.x,activeCells,assignment)
+            newassignment = self.deserializeAssignment(res.x,ac,assignment)
             return newassignment
         else:
             raise NotImplementedError('Non-numeric sheaf')
