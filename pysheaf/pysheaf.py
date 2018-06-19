@@ -880,11 +880,6 @@ class Sheaf(CellComplex):
             if ord != 2:
                 warn('Kernel projection requires order 2 in minimalExtend')
                 
-            # Build block matrix in which block columns are stalks over activeCells and block rows are stalks over cells supported in assignment
-            # Blocks are ultimate restriction maps (not just one hops!)
-            mat=np.zeros((sum([self.cells[i].stalkDim for i in support]),
-                          sum([self.cells[i].stalkDim for i in ac])))
-            
             # Compile dictionary of rows
             rowstarts=dict()
             rowidx=0
@@ -892,26 +887,29 @@ class Sheaf(CellComplex):
                 rowstarts[i]=rowidx
                 rowidx+=self.cells[i].stalkDim
                 
-            colidx=0 # Current column
+            newassignment = Section([sc for sc in assignment.sectionCells])
+                
+            # Optimize each active cell independently
             for i in ac:
                 if self.cells[i].stalkDim > 0:
+                    # Matrix of all restrictions out of this cell into the support
+                    mat=np.zeros((sum([self.cells[j].stalkDim for j in support]),
+                                  self.cells[i].stalkDim))
+
                     for cf in self.cofaces(i): # Iterate over all cofaces of this activeCell
                         try:
                             supportidx=support.index(cf.index)
-                            mat[rowstarts[supportidx]:rowstarts[supportidx]+self.cells[supportidx].stalkDim,
-                                colidx:colidx+self.cells[i].stalkDim]=cf.restriction.matrix
+                            mat[rowstarts[supportidx]:rowstarts[supportidx]+self.cells[supportidx].stalkDim,:]=cf.restriction.matrix
                         except ValueError:
                             pass
+            
+                # Use least squares to solve for assignment rooted at this cell given the existing assignment
+                asg,bnds=self.serializeAssignment(assignment,activeCells=support) # Confusingly, activeSupport here refers *only* to the support of the assignment
+                result=np.linalg.lstsq(mat,asg)
+                
+                newassignment.sectionCells.append(SectionCell(i,result[0]))
 
-                colidx+=self.cells[i].stalkDim
-            
-            # Use least squares to solve for global assignment given existing assignment
-            asg,bnds=self.serializeAssignment(assignment,activeCells=support) # Confusingly, activeSupport here refers *only* to the support of the assignment
-            print mat
-            result=np.linalg.lstsq(mat,asg)
-            
-            # Deserialize assignment
-            return self.deserializeAssignment(result[0],ac,assignment)
+            return newassignment
         elif self.isNumeric():
             initial_guess, bounds = self.serializeAssignment(assignment,ac)
             res=scipy.optimize.minimize( fun = lambda sec: self.consistencyRadius(self.deserializeAssignment(sec,ac,assignment), testSupport=testSupport, ord=ord),
