@@ -893,7 +893,7 @@ class Sheaf(CellComplex):
                 rowidx+=self.cells[i].stalkDim
                 
             colidx=0 # Current column
-            for i in activeCells:
+            for i in ac:
                 if self.cells[i].stalkDim > 0:
                     for cf in self.cofaces(i): # Iterate over all cofaces of this activeCell
                         try:
@@ -906,7 +906,8 @@ class Sheaf(CellComplex):
                 colidx+=self.cells[i].stalkDim
             
             # Use least squares to solve for global assignment given existing assignment
-            asg=self.serializeAssignment(assignment,activeCells=support) # Confusingly, activeSupport here refers *only* to the support of the assignment
+            asg,bnds=self.serializeAssignment(assignment,activeCells=support) # Confusingly, activeSupport here refers *only* to the support of the assignment
+            print mat
             result=np.linalg.lstsq(mat,asg)
             
             # Deserialize assignment
