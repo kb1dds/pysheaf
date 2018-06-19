@@ -872,8 +872,21 @@ class Sheaf(CellComplex):
             ac=[idx for idx in range(len(self.cells)) if idx not in support]
         else:
             ac=activeCells
+        
+        if method == 'KernelProj':
+            if not self.isLinear():
+                raise NotImplementedError('KernelProj only works for sheaves of vector spaces')
+
+            if ord != 2:
+                warn('Kernel projection requires order 2 in fuseAssignment')
+                
+            # Build block matrix in which block columns are stalks over activeCells and block rows are stalks over cells supported in assignment
+            # Blocks are ultimate restriction maps (not just one hops!)
             
-        if self.isNumeric():
+            # Use (constrained?) least squares to solve for global assignment given existing assignment
+            
+            # Deserialize assignment
+        elif self.isNumeric():
             initial_guess, bounds = self.serializeAssignment(assignment,ac)
             res=scipy.optimize.minimize( fun = lambda sec: self.consistencyRadius(self.deserializeAssignment(sec,ac,assignment), testSupport=testSupport, ord=ord),
                                          x0 = initial_guess,
