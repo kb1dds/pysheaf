@@ -878,14 +878,39 @@ class Sheaf(CellComplex):
                 raise NotImplementedError('KernelProj only works for sheaves of vector spaces')
 
             if ord != 2:
-                warn('Kernel projection requires order 2 in fuseAssignment')
+                warn('Kernel projection requires order 2 in minimalExtend')
                 
             # Build block matrix in which block columns are stalks over activeCells and block rows are stalks over cells supported in assignment
             # Blocks are ultimate restriction maps (not just one hops!)
+            mat=np.zeros((sum([self.cells[i].stalkDim for i in support]),
+                          sum([self.cells[i].stalkDim for i in ac])))
             
-            # Use (constrained?) least squares to solve for global assignment given existing assignment
+            # Compile dictionary of rows
+            rowstarts=dict()
+            rowidx=0
+            for i in support:
+                rowstarts[i]=rowidx
+                rowidx+=self.cells[i].stalkDim
+                
+            colidx=0 # Current column
+            for i in activeCells:
+                if self.cells[i].stalkDim > 0:
+                    for cf in self.cofaces(i): # Iterate over all cofaces of this activeCell
+                        try:
+                            supportidx=support.index(cf.index)
+                            mat[rowstarts[supportidx]:rowstarts[supportidx]+self.cells[supportidx].stalkDim,
+                                colidx:colidx+self.cells[i].stalkDim]=cf.restriction.matrix
+                        except ValueError:
+                            pass
+
+                colidx+=self.cells[i].stalkDim
+            
+            # Use least squares to solve for global assignment given existing assignment
+            asg=self.serializeAssignment(assignment,activeCells=support) # Confusingly, activeSupport here refers *only* to the support of the assignment
+            result=np.linalg.lstsq(mat,asg)
             
             # Deserialize assignment
+            return self.deserializeAssignment(result[0],ac,assignment)
         elif self.isNumeric():
             initial_guess, bounds = self.serializeAssignment(assignment,ac)
             res=scipy.optimize.minimize( fun = lambda sec: self.consistencyRadius(self.deserializeAssignment(sec,ac,assignment), testSupport=testSupport, ord=ord),
