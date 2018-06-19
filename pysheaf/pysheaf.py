@@ -195,7 +195,7 @@ class CellComplex:
         if not cells:
             return list(set(self.faces(start) + cflist))
         else:
-	    return list(set.intersection(set(self.faces(start) + cflist),cells))
+            return list(set.intersection(set(self.faces(start) + cflist),cells))
 
     def starCells(self,cells):
         """Cells in star over a subset of a cell complex"""
@@ -863,22 +863,62 @@ class Sheaf(CellComplex):
         Currently, any optimization supported by scipy.optimize.minimize
             Parameters:
                 assignment: the partial assignment of the sheaf to fuse
-                activeCells: set of cells whose values are to be changed (note None is not permitted)
+                activeCells: set of cells whose values are to be changed (if None, all cells outside the support of the assignment will be changed, but nothing in the support of the assignment will be changed)
                 testSupport: the set of cells over which consistency radius is assessed
                 tol: the tol of numeric values to be considered the same
         """
         if activeCells is None:
-            raise RuntimeError('activeCells must not be None')
+            support=[sc.support for sc in assignment.sectionCells]
+            ac=[idx for idx in range(len(self.cells)) if idx not in support]
+        else:
+            ac=activeCells
         
-        if self.isNumeric():
-            initial_guess, bounds = self.serializeAssignment(assignment,activeCells)
-            res=scipy.optimize.minimize( fun = lambda sec: self.consistencyRadius(self.deserializeAssignment(sec,activeCells,assignment), testSupport=testSupport, ord_norm=ord_norm),
+        if method == 'KernelProj':
+            if not self.isLinear():
+                raise NotImplementedError('KernelProj only works for sheaves of vector spaces')
+
+            if ord != 2:
+                warn('Kernel projection requires order 2 in minimalExtend')
+                
+            # Compile dictionary of rows
+            rowstarts=dict()
+            rowidx=0
+            for i in support:
+                rowstarts[i]=rowidx
+                rowidx+=self.cells[i].stalkDim
+                
+            newassignment = Section([sc for sc in assignment.sectionCells])
+                
+            # Optimize each active cell independently
+            for i in ac:
+                if self.cells[i].stalkDim > 0:
+                    # Matrix of all restrictions out of this cell into the support
+                    mat=np.zeros((sum([self.cells[j].stalkDim for j in support]),
+                                  self.cells[i].stalkDim))
+
+                    for cf in self.cofaces(i): # Iterate over all cofaces of this activeCell
+                        try:
+                            supportidx=support.index(cf.index)
+                            mat[rowstarts[supportidx]:rowstarts[supportidx]+self.cells[supportidx].stalkDim,:]=cf.restriction.matrix
+                        except ValueError:
+                            pass
+            
+                # Use least squares to solve for assignment rooted at this cell given the existing assignment
+                asg,bnds=self.serializeAssignment(assignment,activeCells=support) # Confusingly, activeSupport here refers *only* to the support of the assignment
+                result=np.linalg.lstsq(mat,asg)
+                
+                newassignment.sectionCells.append(SectionCell(i,result[0]))
+
+            return newassignment
+        elif self.isNumeric():
+            initial_guess, bounds = self.serializeAssignment(assignment,ac)
+            res=scipy.optimize.minimize( fun = lambda sec: self.consistencyRadius(self.deserializeAssignment(sec,ac,assignment), testSupport=testSupport, ord=ord),
                                          x0 = initial_guess,
                                          method = method, 
                                          bounds = bounds,
                                          tol = tol,
                                          options = {'maxiter' : int(100)})
-            newassignment = self.deserializeAssignment(res.x,activeCells,assignment)
+            newassignment = self.deserializeAssignment(res.x,ac,assignment)
             return newassignment
         else:
             raise NotImplementedError('Non-numeric sheaf')
