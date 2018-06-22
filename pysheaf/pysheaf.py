@@ -905,7 +905,7 @@ class Sheaf(CellComplex):
             
                 # Use least squares to solve for assignment rooted at this cell given the existing assignment
                 asg,bnds=self.serializeAssignment(assignment,activeCells=support) # Confusingly, activeSupport here refers *only* to the support of the assignment
-                result=np.linalg.lstsq(mat,asg)
+                result=np.linalg.lstsq(mat,asg,rcond=None)
                 
                 newassignment.sectionCells.append(SectionCell(i,result[0]))
 
