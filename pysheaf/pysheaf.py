@@ -1232,40 +1232,6 @@ class Sheaf(CellComplex):
 
         globalsection = self.deserializeAssignment_ga(hof[0], opt_sp_id_len)
         return globalsection
-            
-
-
-    def partitionAssignment(self,assignment,tol=1e-5):
-        """Take an assignment to some cells of a sheaf and return a collection of disjoint maximal sets of cells on which this assignment is a local section"""
-        # Extend assignment to all cofaces
-        assignment=self.maximalExtend(self,assignment,multiassign=False)
-
-        # Filter the cofaces into a cell complex in which the only attachments that are included as those whose data in the sheaf are consistent
-        cells=[]
-        for i,c in enumerate(self.cells):
-            found=False
-            for s in assignment.sectionCells:
-                if s.support == i:
-                    val=s.value
-                    found=True
-                    break
-            if found:
-                cofaces=[]
-                for cf in c.cofaces:
-                    vv=cf.restriction(val)
-                    for s in assignment.sectionCells:
-                        if s.support == cf.index and np.all(np.abs(vv-s.value)) < tol:
-                            cofaces.append(cf)
-                            break
-
-                cells.append(Cell(c.dimension,c.compactClosure,cofaces))
-            else:
-                cells.append(Cell(c.dimension,c.compactClosure,cofaces=[]))
-
-        cplx=CellComplex(cells)
-
-        # Compute the components of the complex
-        return cplx.components()
 
     def pushForward(self,targetComplex,map):
         """Compute the pushforward sheaf and morphism along a map"""
