@@ -15,8 +15,6 @@ import warnings
 import copy
 import time
 
-import covers # For cover optimzation
-
 #import all DEAP related functions for genetic algorithms
 from functools import partial
 
