@@ -236,7 +236,7 @@ print 'Case 3 consistency radius after removing faulty sensor ' + str(s1.consist
 #Check SLSQP (Currently Commented due to weakness as an optimizer for SLSQP)
 #fused_data_gen_SLSQP_testSupport = s1.fuseAssignment(input_data[1], activeCells=None, testSupport=[0,1,2,3,4,6,7,8], method='SLSQP')
 #fused_data_gen_SLSQP_testSupport = s1.fuseAssignment(input_data[1], activeCells=None, method='SLSQP')
-#fused_assignmentMetric_SLSQP_testSupport = [s1.assignmentMetric(input_data[1], s1.maximalExtend(fused_data_gen_SLSQP_testSupport),testSupport=[0,1,2,3,4,6,7,8])]
+#fused_assignmentMetric_SLSQP_testSupport = [s1.assignmentMetric(input_data[1], fused_data_gen_SLSQP_testSupport.maximalExtend(s1),testSupport=[0,1,2,3,4,6,7,8])]
 #print fused_assignmentMetric_SLSQP_testSupport
 #
 #print fused_data_gen_SLSQP_testSupport.assignmentCells[0].support
@@ -244,7 +244,7 @@ print 'Case 3 consistency radius after removing faulty sensor ' + str(s1.consist
 #
 #fused_data_gen_SLSQP_activeCells = s1.fuseAssignment(input_data[1], activeCells=[0,3,4,5,6,7,8], method='SLSQP')
 #
-#fused_assignmentMetric_SLSQP_activeCells = [s1.assignmentMetric(input_data[1], s1.maximalExtend(fused_data_gen_SLSQP_activeCells))]
+#fused_assignmentMetric_SLSQP_activeCells = [s1.assignmentMetric(input_data[1], fused_data_gen_SLSQP_activeCells.maximalExtend(s1))]
 #print fused_assignmentMetric_SLSQP_activeCells
 #
 #print fused_data_gen_SLSQP_activeCells.assignmentCells[0].support
@@ -256,7 +256,7 @@ initial_cond_ts = ps.Assignment([ps.AssignmentCell(support=0,value=np.array([-70
 fused_data_gen_GA_ts = s1.fuseAssignment(input_data[1], testSupport=[0,1,2,3,4,6,7,8], method='GA', options={'initial_pop_size':10, 'num_generations':1000, 'initial_guess_p':initial_cond_ts})
 
 
-fused_assignmentMetric_GA_ts = [s1.assignmentMetric(input_data[1], s1.maximalExtend(fused_data_gen_GA_ts),testSupport=[0,1,2,3,4,6,7,8])]
+fused_assignmentMetric_GA_ts = [s1.assignmentMetric(input_data[1], fused_data_gen_GA_ts.maximalExtend(s1),testSupport=[0,1,2,3,4,6,7,8])]
 
 
 
@@ -268,7 +268,7 @@ initial_cond = ps.Assignment([ps.AssignmentCell(support=3,value=np.array([77.2,0
 fused_data_gen_GA = s1.fuseAssignment(input_data[1], activeCells=[3,4,5], testSupport=s1.maxTestSupport([3,4,5]), method='GA', options={'initial_pop_size':10, 'num_generations':1000, 'initial_guess_p':initial_cond})
 
 
-fused_assignmentMetric_GA = [s1.assignmentMetric(input_data[1], s1.maximalExtend(fused_data_gen_GA),testSupport=[0,1,2,3,4,6,7,8])]
+fused_assignmentMetric_GA = [s1.assignmentMetric(input_data[1], fused_data_gen_GA.maximalExtend(s1),testSupport=[0,1,2,3,4,6,7,8])]
 
 
 #Print Results

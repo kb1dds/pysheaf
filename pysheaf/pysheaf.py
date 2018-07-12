@@ -480,14 +480,6 @@ class Sheaf(CellComplex):
         """Compute the k-th Betti number of the sheaf"""
         return self.cohomology(k,compactSupport).shape[1]
 
-    def maximalExtend(self,assignment,multiassign=False,tol=1e-5):
-        """Take a partial assignment and extend it to a maximal assignment that's non-conflicting (if multiassign=False) or one in which multiple values can be given to a given cell (if multiassign=True)"""
-        for i in range(len(assignment.assignmentCells)):
-            for cf in self.cofaces(assignment.assignmentCells[i].support):
-                if multiassign or (not assignment.extend(self,cf.index,tol=tol)):
-                    assignment.assignmentCells.append(AssignmentCell(cf.index,cf.restriction(assignment.assignmentCells[i].value),source=assignment.assignmentCells[i].support))
-        return assignment
-
     def consistencyRadii(self,assignment,testSupport=None,consistencyGraph=None,tol=1e-5):
         """Compute all radii for consistency across an assignment"""
         if testSupport is None:
@@ -888,7 +880,7 @@ class Sheaf(CellComplex):
             new_assignment = Assignment(new_assignment)
         
             #start of optimization function
-            new_assignment = self.maximalExtend(new_assignment,multiassign=multiassign,tol=1e-5)
+            new_assignment.maximalExtend(self,multiassign=multiassign,tol=1e-5)
         
             cost = self.assignmentMetric(assignment, new_assignment, testSupport=testSupport)
             
@@ -1348,6 +1340,15 @@ class Assignment:
 
         return True
 
+    def maximalExtend(self,sheaf,multiassign=False,tol=1e-5):
+        """Extend this Assignment to a maximal assignment that's non-conflicting (if multiassign=False) or one in which multiple values can be given to a given cell (if multiassign=True)"""
+        for sc in self.assignmentCells:
+            for cf in sheaf.cofaces(sc.support):
+                if multiassign or (not self.extend(sheaf,cf.index,tol=tol)):
+                    self.assignmentCells.append(AssignmentCell(cf.index,
+                                                               cf.restriction(sc.value),
+                                                               source=sc.support))
+        return
 
 ## Functions
 
