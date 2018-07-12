@@ -159,7 +159,7 @@ class CellComplex:
     def components(self,cells=[]):
         """Compute connected components; optional argument specifies permissible cells"""
         if not cells:
-            cellsleft=range(len(self.cells))
+            cellsleft=list(range(len(self.cells)))
         else:
             cellsleft=cells
 
@@ -215,7 +215,7 @@ class CellComplex:
 
         # Remove image
         if dp1.any():
-            map,j1,j2,j3=np.linalg.lstsq(ker,dp1,rcond=None)
+            map,j1,j2,j3=np.linalg.lstsq(ker,dp1)
             Hk=np.dot(ker,cokernel(map,tol));
         else:
             Hk=ker
@@ -530,19 +530,19 @@ class Sheaf(CellComplex):
                     if (testSupport is None) or (c2.source in testSupport):
                         if c1.support == c2.support:
                             rad=self.cells[c1.support].metric(c1.value,c2.value)
-                            if ((c1.support,c2.support) not in G.edges()) or G[c1.support][c2.support]['weight'] < rad:
+                            if (not G.has_edge(c1.support,c2.support)) or G[c1.support][c2.support]['weight'] < rad:
                                 G.add_edge(c1.support,c2.support,weight=rad,type=1)
                         else:
                             for cf1 in self.cofaces(c1.support):
                                 if cf1.index == c2.support:
                                     rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),c2.value)
-                                    if ((c1.support,c2.support) not in G.edges()) or G[c1.support][c2.support]['weight'] < rad:
+                                    if (not G.has_edge(c1.support,c2.support)) or G[c1.support][c2.support]['weight'] < rad:
                                         G.add_edge(c1.support,c2.support,weight=rad,type=2)
                                 else:
                                     for cf2 in self.cofaces(c2.support):
                                         if cf1.index == cf2.index:
                                             rad=0.5*self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value)) # Note the factor of 0.5
-                                            if ((c1.support,c2.support) not in G.edges()) or (G[c1.support][c2.support]['type'] == 2 and G[c1.support][c2.support]['weight'] < rad):
+                                            if (not G.has_edge(c1.support,c2.support)) or (G[c1.support][c2.support]['type'] == 2 and G[c1.support][c2.support]['weight'] < rad):
                                                 G.add_edge(c1.support,c2.support,weight=rad,type=3)
 
         return G
@@ -557,8 +557,8 @@ class Sheaf(CellComplex):
                 testSupport: the set of cells over which consistency radius is assessed
                 tol: the tol of numeric values to be considered the same
         """
+        support=[sc.support for sc in assignment.assignmentCells]
         if activeCells is None:
-            support=[sc.support for sc in assignment.assignmentCells]
             ac=[idx for idx in range(len(self.cells)) if idx not in support]
         else:
             ac=activeCells
@@ -595,7 +595,7 @@ class Sheaf(CellComplex):
             
                 # Use least squares to solve for assignment rooted at this cell given the existing assignment
                 asg,bnds=self.serializeAssignment(assignment,activeCells=support) # Confusingly, activeSupport here refers *only* to the support of the assignment
-                result=np.linalg.lstsq(mat,asg,rcond=None)
+                result=np.linalg.lstsq(mat,asg)
                 
                 newassignment.assignmentCells.append(AssignmentCell(i,result[0]))
 
@@ -792,7 +792,7 @@ class Sheaf(CellComplex):
         bounded=False
         bounds=None
         if activeCells is None:
-            activeCells = range(len(self.cells))
+            activeCells = list(range(len(self.cells)))
         for i in activeCells:
             if self.cells[i].bounds is not None:
                 bounded=True
@@ -939,8 +939,8 @@ class Sheaf(CellComplex):
             chosen = [] #editted the structure of th output to reflect the structure of pysheaf
             fit = np.zeros((n,1))  #Allocates space for the prop of select
             x = np.zeros((n,2))    #Sorted list of id and rank
-            x[:, 0] = range(n,0,-1) # Get original location of the element
-            to_sort = zip(individuals, range(n)) #need to keep original index associated
+            x[:, 0] = list(range(n,0,-1)) # Get original location of the element
+            to_sort = list(zip(individuals, list(range(n)))) #need to keep original index associated
             s_inds = sorted(to_sort, key= lambda ind: getattr(ind[0], fit_attr).values[0]) #Sort by the fitnesses
             x[:, 1] = [b for a,b in s_inds]
             r =q/(1-((1-q)**n))  # normalize the distribution, q prime
@@ -992,7 +992,7 @@ class Sheaf(CellComplex):
             elif len(up) < size:
                 raise IndexError("up must be at least the size of individual: %d < %d" % (len(up), size))
             
-            for i, xl, xu in zip(xrange(size), low, up):
+            for i, xl, xu in zip(range(size), low, up):
                 if random.random() < indpb:
                     individual[i] = random.uniform(xl, xu)
             
@@ -1459,7 +1459,7 @@ def perm_parity(lst):
     for i in range(0,len(lst)-1):
         if lst[i] != i:
             parity *= -1
-            mn = min(range(i,len(lst)), key=lst.__getitem__)
+            mn = min(list(range(i,len(lst))), key=lst.__getitem__)
             lst[i],lst[mn] = lst[mn],lst[i]
     return parity
 
