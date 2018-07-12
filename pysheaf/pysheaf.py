@@ -237,8 +237,6 @@ class CellComplex:
             km1=self.skeleton(k-1,compactSupport)
 
         # Allocate output matrix
-#        print "ks=", ks
-#        print "km1=", km1
         rows=len(km1)
         cols=len(ks)
 #         d=np.zeros((rows,cols),dtype=np.complex)
@@ -247,16 +245,10 @@ class CellComplex:
             
             # Loop over all k-1-cells, writing them into the output matrix
             for i in range(len(km1)):
-#                print i, self.cells[km1[i]]
                 # Loop over faces with compact closure
-#                print "cofaces=", [cf.index for cf in self.cells[km1[i]].cofaces]
                 for cf in self.cells[km1[i]].cofaces:
-
-#                    print cf.index, self.cells[cf.index], cf.orientation,
-#                    if self.cells[cf.index].compactClosure or compactSupport:
                     if self.cells[cf.index].compactClosure and cf.orientation != 0:
                         d[i,ks.index(cf.index)]=cf.orientation
-#                        print "ok"
             return d
         else:
             return d
@@ -893,7 +885,7 @@ class Sheaf(CellComplex):
             t1 = time.clock()
             
             t_finish = t1-t0
-            print t_finish
+            print(t_finish)
             
             if radii < tol:
                 pass
