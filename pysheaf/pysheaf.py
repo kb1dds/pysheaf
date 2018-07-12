@@ -538,19 +538,19 @@ class Sheaf(CellComplex):
                     if (testSupport is None) or (c2.source in testSupport):
                         if c1.support == c2.support:
                             rad=self.cells[c1.support].metric(c1.value,c2.value)
-                            if ((c1.support,c2.support) not in G.edges()) or G[c1.support][c2.support]['weight'] < rad:
+                            if (not G.has_edge(c1.support,c2.support)) or G[c1.support][c2.support]['weight'] < rad:
                                 G.add_edge(c1.support,c2.support,weight=rad,type=1)
                         else:
                             for cf1 in self.cofaces(c1.support):
                                 if cf1.index == c2.support:
                                     rad=self.cells[cf1.index].metric(cf1.restriction(c1.value),c2.value)
-                                    if ((c1.support,c2.support) not in G.edges()) or G[c1.support][c2.support]['weight'] < rad:
+                                    if (not G.has_edge(c1.support,c2.support)) or G[c1.support][c2.support]['weight'] < rad:
                                         G.add_edge(c1.support,c2.support,weight=rad,type=2)
                                 else:
                                     for cf2 in self.cofaces(c2.support):
                                         if cf1.index == cf2.index:
                                             rad=0.5*self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value)) # Note the factor of 0.5
-                                            if ((c1.support,c2.support) not in G.edges()) or (G[c1.support][c2.support]['type'] == 2 and G[c1.support][c2.support]['weight'] < rad):
+                                            if (not G.has_edge(c1.support,c2.support)) or (G[c1.support][c2.support]['type'] == 2 and G[c1.support][c2.support]['weight'] < rad):
                                                 G.add_edge(c1.support,c2.support,weight=rad,type=3)
 
         return G
