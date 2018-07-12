@@ -59,10 +59,10 @@ class TestConsistencyRadius(unittest.TestCase):
         self.assertAlmostEqual(0,self.testSheaf2.consistencyRadius(asg2_2,testSupport=[2]),4) # Local star 2
         self.assertAlmostEqual(0.,self.testSheaf2.consistencyRadius(asg2_2),4) # Union
 
-    def test_minimalExtend1(self):
+    def test_minimizeConsistencyRadius1(self):
         '''Test consistency radius after extending assignment on a small sheaf'''
         # Do the fusion to cell 2
-        asg2_2 = self.testSheaf2.minimalExtend(self.asg2_1,activeCells=[2],testSupport=[0,1,2])
+        asg2_2 = self.testSheaf2.minimizeConsistencyRadius(self.asg2_1,activeCells=[2],testSupport=[0,1,2])
         self.assertAlmostEqual(0.5,asg2_2.sectionCells[2].value,2) # Check that the correct value got found
 
         # Compute consistency radii
@@ -71,10 +71,10 @@ class TestConsistencyRadius(unittest.TestCase):
         self.assertAlmostEqual(0,self.testSheaf2.consistencyRadius(asg2_2,testSupport=[2]),4) # Local star 2
         self.assertAlmostEqual(0.5,self.testSheaf2.consistencyRadius(asg2_2),4) # Union
 
-    def test_minimalExtend2(self):
+    def test_minimizeConsistencyRadius2(self):
         '''Test consistency radius after extending assignment to unions on a small sheaf'''
         # Do the fusion to cells 2 and 3
-        asg2_3 = self.testSheaf2.minimalExtend(self.asg2_1,activeCells=[2,3])
+        asg2_3 = self.testSheaf2.minimizeConsistencyRadius(self.asg2_1,activeCells=[2,3])
 
         self.assertLess(1./3,asg2_3.sectionCells[2].value)
         self.assertLess(asg2_3.sectionCells[2].value,2./3)

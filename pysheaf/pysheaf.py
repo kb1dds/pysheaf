@@ -563,7 +563,7 @@ class Sheaf(CellComplex):
 
         return G
 
-    def minimalExtend(self,assignment, activeCells=None, testSupport=None, method='nelder-mead', ord = np.inf, options={}, tol=1e-5):
+    def minimizeConsistencyRadius(self,assignment, activeCells=None, testSupport=None, method='nelder-mead', ord = np.inf, options={}, tol=1e-5):
         """
         Minimize consistency radius of an assignment given fixed cells
         Currently, any optimization supported by scipy.optimize.minimize
@@ -584,7 +584,7 @@ class Sheaf(CellComplex):
                 raise NotImplementedError('KernelProj only works for sheaves of vector spaces')
 
             if ord != 2:
-                warn('Kernel projection requires order 2 in minimalExtend')
+                warn('Kernel projection requires order 2 in minimizeConsistencyRadius')
                 
             # Compile dictionary of rows
             rowstarts=dict()
