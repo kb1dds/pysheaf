@@ -565,8 +565,9 @@ class Sheaf(CellComplex):
                 testSupport: the set of cells over which consistency radius is assessed
                 tol: the tol of numeric values to be considered the same
         """
+        support=[sc.support for sc in assignment.assignmentCells]
+
         if activeCells is None:
-            support=[sc.support for sc in assignment.assignmentCells]
             ac=[idx for idx in range(len(self.cells)) if idx not in support]
         else:
             ac=activeCells
