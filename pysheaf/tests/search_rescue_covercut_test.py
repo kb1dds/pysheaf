@@ -167,36 +167,36 @@ s1=ps.Sheaf([ps.SheafCell(dimension=0,
                           stalkDim=1,
                           cofaces=[])]) # V3
 
-# Structure the data from Table 1 in the paper into various partially-filled Sections, one for each Case listed
-input_data=[ps.Section([ps.SectionCell(support=0,value=np.array([-70.649,42.753,11220,495,164,0.928])), # X
-                        ps.SectionCell(support=1,value=np.array([-70.662,42.829,11178])), # U1
-                        ps.SectionCell(support=2,value=np.array([-70.587,42.741,11346,495,164])), # U2
-                        ps.SectionCell(support=3,value=np.array([77.1,0.943])), # U3
-                        ps.SectionCell(support=4,value=np.array([61.3,0.890])), # U4
-                        ps.SectionCell(support=5,value=np.array([-64.599,44.243]))]), # U5
+# Structure the data from Table 1 in the paper into various partially-filled Assignments, one for each Case listed
+input_data=[ps.Assignment([ps.AssignmentCell(support=0,value=np.array([-70.649,42.753,11220,495,164,0.928])), # X
+                        ps.AssignmentCell(support=1,value=np.array([-70.662,42.829,11178])), # U1
+                        ps.AssignmentCell(support=2,value=np.array([-70.587,42.741,11346,495,164])), # U2
+                        ps.AssignmentCell(support=3,value=np.array([77.1,0.943])), # U3
+                        ps.AssignmentCell(support=4,value=np.array([61.3,0.890])), # U4
+                        ps.AssignmentCell(support=5,value=np.array([-64.599,44.243]))]), # U5
             
-            ps.Section([ps.SectionCell(support=0,value=np.array([-70.668,42.809,11431,495,164,1.05])), # X
-                        ps.SectionCell(support=1,value=np.array([-70.663,42.752,11299])), # U1
-                        ps.SectionCell(support=2,value=np.array([-70.657,42.773,11346,495,164])), # U2
-                        ps.SectionCell(support=3,value=np.array([77.2,0.930])), # U3
-                        ps.SectionCell(support=4,value=np.array([63.2,0.974])), # U4
-                        ps.SectionCell(support=5,value=np.array([-64.630,44.287]))]), # U5
+            ps.Assignment([ps.AssignmentCell(support=0,value=np.array([-70.668,42.809,11431,495,164,1.05])), # X
+                        ps.AssignmentCell(support=1,value=np.array([-70.663,42.752,11299])), # U1
+                        ps.AssignmentCell(support=2,value=np.array([-70.657,42.773,11346,495,164])), # U2
+                        ps.AssignmentCell(support=3,value=np.array([77.2,0.930])), # U3
+                        ps.AssignmentCell(support=4,value=np.array([63.2,0.974])), # U4
+                        ps.AssignmentCell(support=5,value=np.array([-64.630,44.287]))]), # U5
             
-            ps.Section([ps.SectionCell(support=0,value=np.array([-70.626,42.814,11239,419,311,1.02])), # X
-                        ps.SectionCell(support=1,value=np.array([-70.612,42.834,11237])), # U1
-                        ps.SectionCell(support=2,value=np.array([-70.617,42.834,11236,419,310])), # U2
-                        ps.SectionCell(support=3,value=np.array([77.2,0.985])), # U3
-                        ps.SectionCell(support=4,value=np.array([63.3,1.05])), # U4
-                        ps.SectionCell(support=5,value=np.array([-62.742,44.550]))]), # U5
+            ps.Assignment([ps.AssignmentCell(support=0,value=np.array([-70.626,42.814,11239,419,311,1.02])), # X
+                        ps.AssignmentCell(support=1,value=np.array([-70.612,42.834,11237])), # U1
+                        ps.AssignmentCell(support=2,value=np.array([-70.617,42.834,11236,419,310])), # U2
+                        ps.AssignmentCell(support=3,value=np.array([77.2,0.985])), # U3
+                        ps.AssignmentCell(support=4,value=np.array([63.3,1.05])), # U4
+                        ps.AssignmentCell(support=5,value=np.array([-62.742,44.550]))]), # U5
 
-            ps.Section([ps.SectionCell(support=1,value=np.array([-70.612,42.834,11237])), # U1
-                        ps.SectionCell(support=2,value=np.array([-70.617,42.834,11236,419,310])), # U2
-                        ps.SectionCell(support=3,value=np.array([77.2,0.985])), # U3
-                        ps.SectionCell(support=4,value=np.array([63.3,1.05])), # U4
-                        ps.SectionCell(support=5,value=np.array([-62.742,44.550]))])] 
+            ps.Assignment([ps.AssignmentCell(support=1,value=np.array([-70.612,42.834,11237])), # U1
+                        ps.AssignmentCell(support=2,value=np.array([-70.617,42.834,11236,419,310])), # U2
+                        ps.AssignmentCell(support=3,value=np.array([77.2,0.985])), # U3
+                        ps.AssignmentCell(support=4,value=np.array([63.3,1.05])), # U4
+                        ps.AssignmentCell(support=5,value=np.array([-62.742,44.550]))])] 
 
 
-# Exhibit the consistency radius of the partially-filled Section with the input data
+# Exhibit the consistency radius of the partially-filled Assignment with the input data
 consistency_radii=[s1.consistencyRadius(case) for case in input_data]
 print 'Raw consistency radii for each test case: ' + str(consistency_radii)
 

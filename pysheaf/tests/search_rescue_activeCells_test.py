@@ -184,7 +184,7 @@ def construct_sheaf():
                               stalkDim=1,
                               cofaces=[])]) # V3
 
-# Structure the data from Table 1 in the paper into various partially-filled Sections, one for each Case listed
+# Structure the data from Table 1 in the paper into various partially-filled Assignments, one for each Case listed
 global scene_bounds_0
 scene_bounds_0 = [(65,75),(40,50),(11000,11700),(400,600),(150,350),(.5,1.5)]
 
@@ -192,37 +192,37 @@ scene_bounds_0 = [(65,75),(40,50),(11000,11700),(400,600),(150,350),(.5,1.5)]
 construct_sheaf()
 
 #Define Input Data
-input_data=[ps.Section([ps.SectionCell(support=0,value=np.array([-70.668,42.809,11431,495,164,1.05]))]), # X (Verify that the sheaf's maps are commutative)
+input_data=[ps.Assignment([ps.AssignmentCell(support=0,value=np.array([-70.668,42.809,11431,495,164,1.05]))]), # X (Verify that the sheaf's maps are commutative)
             
-            ps.Section([ps.SectionCell(support=0,value=np.array([-70.668,42.809,11431,495,164,1.05])), # X
-                        ps.SectionCell(support=1,value=np.array([-70.663,42.752,11299])), # U1
-                        ps.SectionCell(support=2,value=np.array([-70.657,42.773,11346,495,164])), # U2
-                        ps.SectionCell(support=3,value=np.array([77.2,0.930])), # U3
-                        ps.SectionCell(support=4,value=np.array([63.2,0.974])), # U4
-                        ps.SectionCell(support=5,value=np.array([-64.630,44.287]))]), # U5
+            ps.Assignment([ps.AssignmentCell(support=0,value=np.array([-70.668,42.809,11431,495,164,1.05])), # X
+                        ps.AssignmentCell(support=1,value=np.array([-70.663,42.752,11299])), # U1
+                        ps.AssignmentCell(support=2,value=np.array([-70.657,42.773,11346,495,164])), # U2
+                        ps.AssignmentCell(support=3,value=np.array([77.2,0.930])), # U3
+                        ps.AssignmentCell(support=4,value=np.array([63.2,0.974])), # U4
+                        ps.AssignmentCell(support=5,value=np.array([-64.630,44.287]))]), # U5
     
-            ps.Section([ps.SectionCell(support=0,value=np.array([-70.649,42.753,11220,495,164,0.928])), # X
-                        ps.SectionCell(support=1,value=np.array([-70.662,42.829,11178])), # U1
-                        ps.SectionCell(support=2,value=np.array([-70.587,42.741,11346,495,164])), # U2
-                        ps.SectionCell(support=3,value=np.array([77.1,0.943])), # U3
-                        ps.SectionCell(support=4,value=np.array([61.3,0.890])), # U4
-                        ps.SectionCell(support=5,value=np.array([-64.599,44.243]))]), # U5
+            ps.Assignment([ps.AssignmentCell(support=0,value=np.array([-70.649,42.753,11220,495,164,0.928])), # X
+                        ps.AssignmentCell(support=1,value=np.array([-70.662,42.829,11178])), # U1
+                        ps.AssignmentCell(support=2,value=np.array([-70.587,42.741,11346,495,164])), # U2
+                        ps.AssignmentCell(support=3,value=np.array([77.1,0.943])), # U3
+                        ps.AssignmentCell(support=4,value=np.array([61.3,0.890])), # U4
+                        ps.AssignmentCell(support=5,value=np.array([-64.599,44.243]))]), # U5
 
-            ps.Section([ps.SectionCell(support=0,value=np.array([-70.626,42.814,11239,419,311,1.02])), # X
-                        ps.SectionCell(support=1,value=np.array([-70.612,42.834,11237])), # U1
-                        ps.SectionCell(support=2,value=np.array([-70.617,42.834,11236,419,310])), # U2
-                        ps.SectionCell(support=3,value=np.array([77.2,0.985])), # U3
-                        ps.SectionCell(support=4,value=np.array([63.3,1.05])), # U4
-                        ps.SectionCell(support=5,value=np.array([-62.742,44.550]))]), # U5
+            ps.Assignment([ps.AssignmentCell(support=0,value=np.array([-70.626,42.814,11239,419,311,1.02])), # X
+                        ps.AssignmentCell(support=1,value=np.array([-70.612,42.834,11237])), # U1
+                        ps.AssignmentCell(support=2,value=np.array([-70.617,42.834,11236,419,310])), # U2
+                        ps.AssignmentCell(support=3,value=np.array([77.2,0.985])), # U3
+                        ps.AssignmentCell(support=4,value=np.array([63.3,1.05])), # U4
+                        ps.AssignmentCell(support=5,value=np.array([-62.742,44.550]))]), # U5
 
-            ps.Section([ps.SectionCell(support=1,value=np.array([-70.612,42.834,11237])), # U1
-                        ps.SectionCell(support=2,value=np.array([-70.617,42.834,11236,419,310])), # U2
-                        ps.SectionCell(support=3,value=np.array([77.2,0.985])), # U3
-                        ps.SectionCell(support=4,value=np.array([63.3,1.05])), # U4
-                        ps.SectionCell(support=5,value=np.array([-62.742,44.550]))])] 
+            ps.Assignment([ps.AssignmentCell(support=1,value=np.array([-70.612,42.834,11237])), # U1
+                        ps.AssignmentCell(support=2,value=np.array([-70.617,42.834,11236,419,310])), # U2
+                        ps.AssignmentCell(support=3,value=np.array([77.2,0.985])), # U3
+                        ps.AssignmentCell(support=4,value=np.array([63.3,1.05])), # U4
+                        ps.AssignmentCell(support=5,value=np.array([-62.742,44.550]))])] 
 
 
-# Exhibit the consistency radius of the partially-filled Section with the input data
+# Exhibit the consistency radius of the partially-filled Assignment with the input data
 consistency_radii=[(s1.isSheaf(case)) for case in input_data]
 print 'Raw consistency radii for each test case: ' + str(consistency_radii)
 
@@ -239,19 +239,19 @@ print 'Case 3 consistency radius after removing faulty sensor ' + str(s1.consist
 #fused_assignmentMetric_SLSQP_testSupport = [s1.assignmentMetric(input_data[1], s1.maximalExtend(fused_data_gen_SLSQP_testSupport),testSupport=[0,1,2,3,4,6,7,8])]
 #print fused_assignmentMetric_SLSQP_testSupport
 #
-#print fused_data_gen_SLSQP_testSupport.sectionCells[0].support
-#print fused_data_gen_SLSQP_testSupport.sectionCells[0].value
+#print fused_data_gen_SLSQP_testSupport.assignmentCells[0].support
+#print fused_data_gen_SLSQP_testSupport.assignmentCells[0].value
 #
 #fused_data_gen_SLSQP_activeCells = s1.fuseAssignment(input_data[1], activeCells=[0,3,4,5,6,7,8], method='SLSQP')
 #
 #fused_assignmentMetric_SLSQP_activeCells = [s1.assignmentMetric(input_data[1], s1.maximalExtend(fused_data_gen_SLSQP_activeCells))]
 #print fused_assignmentMetric_SLSQP_activeCells
 #
-#print fused_data_gen_SLSQP_activeCells.sectionCells[0].support
-#print fused_data_gen_SLSQP_activeCells.sectionCells[0].value
+#print fused_data_gen_SLSQP_activeCells.assignmentCells[0].support
+#print fused_data_gen_SLSQP_activeCells.assignmentCells[0].value
 #
 ##Check GA with only testSupport
-initial_cond_ts = ps.Section([ps.SectionCell(support=0,value=np.array([-70.668,42.809,11431,495,164,1.05])), # X
+initial_cond_ts = ps.Assignment([ps.AssignmentCell(support=0,value=np.array([-70.668,42.809,11431,495,164,1.05])), # X
                          ])
 fused_data_gen_GA_ts = s1.fuseAssignment(input_data[1], testSupport=[0,1,2,3,4,6,7,8], method='GA', options={'initial_pop_size':10, 'num_generations':1000, 'initial_guess_p':initial_cond_ts})
 
@@ -261,9 +261,9 @@ fused_assignmentMetric_GA_ts = [s1.assignmentMetric(input_data[1], s1.maximalExt
 
 
 #Check GA with testSupport and cellAssignment
-initial_cond = ps.Section([ps.SectionCell(support=3,value=np.array([77.2,0.930])), # U3
-                        ps.SectionCell(support=4,value=np.array([63.2,0.974])), # U4
-                        ps.SectionCell(support=5,value=np.array([-64.630,44.287]))]) # U5
+initial_cond = ps.Assignment([ps.AssignmentCell(support=3,value=np.array([77.2,0.930])), # U3
+                        ps.AssignmentCell(support=4,value=np.array([63.2,0.974])), # U4
+                        ps.AssignmentCell(support=5,value=np.array([-64.630,44.287]))]) # U5
 
 fused_data_gen_GA = s1.fuseAssignment(input_data[1], activeCells=[3,4,5], testSupport=s1.maxTestSupport([3,4,5]), method='GA', options={'initial_pop_size':10, 'num_generations':1000, 'initial_guess_p':initial_cond})
 
@@ -277,15 +277,15 @@ fused_assignmentMetric_GA = [s1.assignmentMetric(input_data[1], s1.maximalExtend
 print fused_assignmentMetric_GA_ts
 
 print s1.isSheaf(fused_data_gen_GA_ts)
-print [x.support for x in fused_data_gen_GA_ts.sectionCells]
-print [x.value for x in fused_data_gen_GA_ts.sectionCells]
+print [x.support for x in fused_data_gen_GA_ts.assignmentCells]
+print [x.value for x in fused_data_gen_GA_ts.assignmentCells]
 
 #Print check GA with testSupport and cellAssignment
 print fused_assignmentMetric_GA
 
 print s1.isSheaf(fused_data_gen_GA)
-print [x.support for x in fused_data_gen_GA.sectionCells]
-print [x.value for x in fused_data_gen_GA.sectionCells]
+print [x.support for x in fused_data_gen_GA.assignmentCells]
+print [x.value for x in fused_data_gen_GA.assignmentCells]
 
 
 #Expected Output from print statements

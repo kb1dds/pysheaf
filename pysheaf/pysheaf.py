@@ -482,10 +482,10 @@ class Sheaf(CellComplex):
 
     def maximalExtend(self,assignment,multiassign=False,tol=1e-5):
         """Take a partial assignment and extend it to a maximal assignment that's non-conflicting (if multiassign=False) or one in which multiple values can be given to a given cell (if multiassign=True)"""
-        for i in range(len(assignment.sectionCells)):
-            for cf in self.cofaces(assignment.sectionCells[i].support):
+        for i in range(len(assignment.assignmentCells)):
+            for cf in self.cofaces(assignment.assignmentCells[i].support):
                 if multiassign or (not assignment.extend(self,cf.index,tol=tol)):
-                    assignment.sectionCells.append(SectionCell(cf.index,cf.restriction(assignment.sectionCells[i].value),source=assignment.sectionCells[i].support))
+                    assignment.assignmentCells.append(AssignmentCell(cf.index,cf.restriction(assignment.assignmentCells[i].value),source=assignment.assignmentCells[i].support))
         return assignment
 
     def consistencyRadii(self,assignment,testSupport=None,consistencyGraph=None,tol=1e-5):
@@ -503,7 +503,7 @@ class Sheaf(CellComplex):
         return np.unique([rad for (i,j,rad) in cG.edges(nbunch=cellSet,data='weight')])
 
     def consistencyRadius(self,assignment,testSupport=None,consistencyGraph=None,ord=np.inf,tol=1e-5):
-        """Compute the consistency radius of an approximate section"""
+        """Compute the consistency radius of an assignment"""
 
         if testSupport is None:
             cellSet=set(range(len(self.cells)))
@@ -517,7 +517,7 @@ class Sheaf(CellComplex):
 
         radii=[rad for (i,j,rad) in cG.edges(nbunch=cellSet,data='weight')]
         if len(radii) == 0:
-            warnings.warn("No SectionCells in the assignments match, therefore nothing was compared by consistencyRadius")
+            warnings.warn("No assignmentCells in the assignments match, therefore nothing was compared by consistencyRadius")
             return 0.
         return np.linalg.norm(radii,ord=ord)    
     
@@ -540,9 +540,9 @@ class Sheaf(CellComplex):
         G=nx.Graph()
         G.add_nodes_from(cellSet)
         
-        for c1 in assignment.sectionCells:
+        for c1 in assignment.assignmentCells:
             if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
-                for c2 in assignment.sectionCells:
+                for c2 in assignment.assignmentCells:
                     if (testSupport is None) or (c2.source in testSupport):
                         if c1.support == c2.support:
                             rad=self.cells[c1.support].metric(c1.value,c2.value)
@@ -574,7 +574,7 @@ class Sheaf(CellComplex):
                 tol: the tol of numeric values to be considered the same
         """
         if activeCells is None:
-            support=[sc.support for sc in assignment.sectionCells]
+            support=[sc.support for sc in assignment.assignmentCells]
             ac=[idx for idx in range(len(self.cells)) if idx not in support]
         else:
             ac=activeCells
@@ -593,7 +593,7 @@ class Sheaf(CellComplex):
                 rowstarts[i]=rowidx
                 rowidx+=self.cells[i].stalkDim
                 
-            newassignment = Section([sc for sc in assignment.sectionCells])
+            newassignment = Assignment([sc for sc in assignment.assignmentCells])
                 
             # Optimize each active cell independently
             for i in ac:
@@ -613,7 +613,7 @@ class Sheaf(CellComplex):
                 asg,bnds=self.serializeAssignment(assignment,activeCells=support) # Confusingly, activeSupport here refers *only* to the support of the assignment
                 result=np.linalg.lstsq(mat,asg,rcond=None)
                 
-                newassignment.sectionCells.append(SectionCell(i,result[0]))
+                newassignment.assignmentCells.append(AssignmentCell(i,result[0]))
 
             return newassignment
         elif self.isNumeric():
@@ -687,15 +687,15 @@ class Sheaf(CellComplex):
     def assignmentMetric(self,assignment1,assignment2, testSupport=None, ord=np.inf):
         """Compute the distance between two assignments"""
         radii=[]
-        for c1 in assignment1.sectionCells:
+        for c1 in assignment1.assignmentCells:
             if (testSupport is None) or ((c1.support in testSupport) and (c1.source in testSupport)):
-                for c2 in assignment2.sectionCells:
+                for c2 in assignment2.assignmentCells:
                     if c1.support == c2.support and ((testSupport is None) or (c2.source in testSupport)):
                         radii.append(self.cells[c1.support].metric(c1.value,c2.value))
     
         if len(radii) == 0:
             radii.append(np.inf)
-            warnings.warn("No SectionCells in the assignments match, therefore nothing was compared by assignmentMetric")
+            warnings.warn("No assignmentCells in the assignments match, therefore nothing was compared by assignmentMetric")
         return np.linalg.norm(radii,ord=ord)
     
     def fuseAssignment(self,assignment, activeCells=None, testSupport=None, method='SLSQP', options={}, ord=np.inf, tol=1e-5):
@@ -766,7 +766,7 @@ class Sheaf(CellComplex):
     
     
     def deserializeAssignment(self,vect,activeCells=None,assignment=None):
-        """Transform a vector of values for a numeric-valued sheaf into an assignment as a Section instance(Note: this is really a helper method and should generally not be used by external callers).  Inactive cells are filled from another assignment that's optionally supplied"""
+        """Transform a vector of values for a numeric-valued sheaf into an assignment as a Assignment instance(Note: this is really a helper method and should generally not be used by external callers).  Inactive cells are filled from another assignment that's optionally supplied"""
         if not self.isNumeric():
             raise TypeError('Cannot deserialize an assignment vector for a non-numeric sheaf')
     
@@ -776,33 +776,33 @@ class Sheaf(CellComplex):
         for i in range(len(self.cells)):
             if (activeCells is None) or (i in activeCells): # If the cell is active, pull its value from the vector
                 if self.cells[i].stalkDim > 0:
-                    scs.append(SectionCell(support=i,value=vect[idx:idx+self.cells[i].stalkDim]))
+                    scs.append(AssignmentCell(support=i,value=vect[idx:idx+self.cells[i].stalkDim]))
                     idx+=self.cells[i].stalkDim
             elif assignment is not None: # If the cell is not active, pull its value from the given assignment
-                for cell in assignment.sectionCells:
+                for cell in assignment.assignmentCells:
                     if i == cell.support:
                         scs.append(cell)
                     
-        return Section(scs)
+        return Assignment(scs)
     
     def deserializeAssignment_ga(self, vect, id_len):
         #write a new assignment from the individual so that one can use maximal extend.
         new_assignment = []
         start_index = 0
         for i in range(len(id_len)):
-            new_assignment.append(SectionCell(support=id_len[i][0], value=vect[(start_index):(start_index+id_len[i][1])]))
+            new_assignment.append(AssignmentCell(support=id_len[i][0], value=vect[(start_index):(start_index+id_len[i][1])]))
             start_index += id_len[i][1]
         
-        new_assignment = Section(new_assignment)
+        new_assignment = Assignment(new_assignment)
         
         return new_assignment
 
     def serializeAssignment(self,assignment,activeCells=None):
-        """Transform a partial assignment in a Section instance into a vector of values"""
+        """Transform a partial assignment in a Assignment instance into a vector of values"""
         if not self.isNumeric():
             raise TypeError('Cannot serialize an assignment vector for a non-numeric sheaf')
 
-        x0 = np.zeros((sum([c.stalkDim for i,c in enumerate(self.cells) if ((activeCells is None) or (i in activeCells))])),dtype=assignment.sectionCells[0].value.dtype)
+        x0 = np.zeros((sum([c.stalkDim for i,c in enumerate(self.cells) if ((activeCells is None) or (i in activeCells))])),dtype=assignment.assignmentCells[0].value.dtype)
 
         # If any components are bounded, collect the bounds (later)
         bounded=False
@@ -821,7 +821,7 @@ class Sheaf(CellComplex):
         for i in activeCells:
             if self.cells[i].stalkDim > 0:
                 idxarray.append(idx)
-                for cell in assignment.sectionCells:         # Pack data into vector.  If there are multiple values assigned, the one appearing last is used
+                for cell in assignment.assignmentCells:         # Pack data into vector.  If there are multiple values assigned, the one appearing last is used
                     if cell.support == i: 
                         x0[idx:idx+self.cells[i].stalkDim]=cell.value
                 idx+=self.cells[i].stalkDim
@@ -874,18 +874,18 @@ class Sheaf(CellComplex):
             new_assignment = []
             start_index = 0
             for i in range(len(space_des_2_opt)):
-                new_assignment.append(SectionCell(support=space_des_2_opt[i][0], value=individual[(start_index):(start_index+space_des_2_opt[i][1])]))
+                new_assignment.append(AssignmentCell(support=space_des_2_opt[i][0], value=individual[(start_index):(start_index+space_des_2_opt[i][1])]))
                 start_index += space_des_2_opt[i][1]
                 
                 
             if activeCells is not None:
-                for sec in assignment.sectionCells:
+                for sec in assignment.assignmentCells:
                     if not (sec.support in activeCells):
                         new_assignment.append(sec)
                         multiassign=True
                 
         
-            new_assignment = Section(new_assignment)
+            new_assignment = Assignment(new_assignment)
         
             #start of optimization function
             new_assignment = self.maximalExtend(new_assignment,multiassign=multiassign,tol=1e-5)
@@ -1053,7 +1053,7 @@ class Sheaf(CellComplex):
         
         #Create initial guess if that index is specfied for that section
         initial_guess = [[0 for j in range(opt_sp_id_len[i][1])] for i in range(len(opt_sp_id_len))]
-        for section in assignment.sectionCells:
+        for section in assignment.assignmentCells:
             id_list = [opt_sp_id_len[i][0] for i in range(len(opt_sp_id_len))]
             # all ids should be unique, enabling the the use of index
             try:
@@ -1077,13 +1077,13 @@ class Sheaf(CellComplex):
             initial_guess = None
             
         #Ensure that any assigned individual to the initial population is the correct length
-        #Needs to be modified to take either an array or an set of Sections
+        #Needs to be modified to take either an array or an set of Assignments
         
-        #Deserialize initial_guess_p if it is expressed as a section
-        if isinstance(initial_guess_p, Section):
+        #Deserialize initial_guess_p if it is expressed as a Assignment
+        if isinstance(initial_guess_p, Assignment):
             setOfArrays = [[] for r in range(len(opt_sp_id_len))]
             setActiveCells = [s[0] for s in opt_sp_id_len]
-            for sec in initial_guess_p.sectionCells:
+            for sec in initial_guess_p.assignmentCells:
                 if sec.support in setActiveCells:
                     ind_opt = (np.abs(np.array(setActiveCells) - sec.support)).argmin()
                     if np.size(sec.value) == opt_sp_id_len[ind_opt][1]:
@@ -1092,7 +1092,7 @@ class Sheaf(CellComplex):
                         initial_guess_p = None
                         break
                 else:
-                    warnings.warn("initial_guess_p does not contain a sectionCell for every activeCell")
+                    warnings.warn("initial_guess_p does not contain a AssignmentCell for every activeCell")
                     initial_guess_p = None
                     break
             
@@ -1233,38 +1233,6 @@ class Sheaf(CellComplex):
         globalsection = self.deserializeAssignment_ga(hof[0], opt_sp_id_len)
         return globalsection
 
-    def pushForward(self,targetComplex,map):
-        """Compute the pushforward sheaf and morphism along a map"""
-
-        sheafCells=[]
-        mor=[]
-        # Loop over cells in the target cell complex
-        for cidx in range(len(targetComplex.cells)):
-            c=targetComplex.cells[cidx]
-
-            # Compute which cells are in the preimage of this cell
-            bigPreimage=[d for d,r in map if r==cidx]
-
-            # For each cell, compute map on global sections over the star
-            # along each attachment
-            cfs=[]
-            for cf in c.cofaces:
-                smallPreimage=[d for d,r in map if r==cf.index]
-                rest=self.localRestriction(self.starCells(bigPreimage),
-                    self.starCells(smallPreimage))
-                cfs.append(SheafCoface(index=cf.index,
-                    orientation=cf.orientation,restriction=rest))
-
-            mor.append(SheafMorphismCell(bigPreimage,
-                [LinearMorphism(self.localRestriction(self.starCells(bigPreimage),[d])) for d in bigPreimage]))
-            if cfs:
-                sheafCells.append(SheafCell(c.dimension,cfs,c.compactClosure))
-            else:
-                ls,m=self.localSectional(self.starCells(bigPreimage))
-                sheafCells.append(SheafCell(c.dimension,[],c.compactClosure,stalkDim=ls.cobetti(0)))
-
-        return Sheaf(sheafCells),SheafMorphism(mor)
-
 class ConstantSheaf(Sheaf):
     def __init__(self,cells):
         """Construct a constant sheaf over a CellComplex"""
@@ -1297,10 +1265,10 @@ class SheafMorphism:
                                     maps=[selfmap*othermap for otherdest,othermap in zip(mc.destinations,mc.maps) for selfdest,selfmap in zip(self.morphismCells[otherdest].destinations,self.morphismCells[otherdest].maps)]) for mc in other.morphismCells]
         return SheafMorphism(morCells)
 
-# A local section
-class SectionCell:
+# An assignment to a sheaf
+class AssignmentCell:
     def __init__(self,support,value,source=None):
-        """Specify support cell indices and values in each cell stalk for a local section"""
+        """Specify support cell indices and values in each cell stalk for an assignment"""
         self.support=support
         self.value=value
         if source is None:
@@ -1308,19 +1276,19 @@ class SectionCell:
         else:
             self.source=source
 
-class Section:
-    def __init__(self,sectionCells):
-        self.sectionCells=sectionCells
+class Assignment:
+    def __init__(self,assignmentCells):
+        self.assignmentCells=assignmentCells
 
     def support(self):
-        """List the cells in the support of this section"""
-        return {sc.support for sc in self.sectionCells}
+        """List the cells in the support of this assignment"""
+        return {sc.support for sc in self.assignmentCells}
 
     def extend(self,sheaf,cell,value=None,tol=1e-5):
-        """Extend the section to another cell; returns True if successful"""
+        """Extend the assignment to another cell; returns True if successful"""
         
         # If the desired cell is already in the support, do nothing
-        for sc in self.sectionCells:
+        for sc in self.assignmentCells:
             if cell == sc.support:
                 if (value is None) or sheaf.cells[sc.support].metric(sc.value,value) < tol:
                     return True
@@ -1328,7 +1296,7 @@ class Section:
                     return False
 
         # Is the desired cell a coface of a cell in the support?
-        for s in self.sectionCells:
+        for s in self.assignmentCells:
             for cf in sheaf.cells[s.support].cofaces:
                 if cf.index == cell:
                     # If so, extend via restriction
@@ -1349,7 +1317,7 @@ class Section:
             # Stack the restrictions and values associated to existing support
             lst=[(cf.restriction.matrix,s.value)
                  for cf in sheaf.cells[cell].cofaces
-                 for s in self.sectionCells
+                 for s in self.assignmentCells
                  if isinstance(cf.restriction,LinearMorphism) and (cf.index == s.support)]
             if lst:
                 crs=np.vstack([e[0] for e in lst])
@@ -1368,7 +1336,7 @@ class Section:
             
         else: # ...or check consistency with an old one
             for cf in sheaf.cells[cell].cofaces:
-                for s in self.sectionCells:
+                for s in self.assignmentCells:
                     if s.support == cf.index:
                         if np.any(np.abs(cf.restriction(value)-s.value)>tol):
                             return False
@@ -1376,7 +1344,7 @@ class Section:
         # A value was successfully assigned (if no value was assigned,
         # do nothing, but it's still possible to extend)
         if value is not None:
-            self.sectionCells.append(SectionCell(cell,value))
+            self.assignmentCells.append(AssignmentCell(cell,value))
 
         return True
 
