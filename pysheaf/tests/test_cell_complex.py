@@ -9,8 +9,6 @@ sys.path.insert(0,'/Users/prag717/documents/tdm/gitrepos/pysheaf/pysheaf')
 
 import unittest
 import pysheaf as ps
-import numpy as np
-
 
 class TestCell(unittest.TestCase):
     def setUp(self):
@@ -100,21 +98,6 @@ class TestCellComplex(unittest.TestCase):
     def test_cellComplex_attribute_assignment(self):
         '''Test for cell complex attributes'''
         self.assertEqual(len(self.cmplx.cells),10)
-
-    def test_cellComplex_add_cell(self):
-        '''Test for cell complex add a single cell by instance returns cell id'''
-        pass
-
-    def test_cellComplex_add_cells_from(self):
-        '''Test for cell complex add cells from a list of instances'''
-        pass
-
-    def test_cellComplex_add_coface(self):
-        '''Test for cell complex add a single coface by index and orientation'''
-        pass
-
-    def test_add_cofaces_from(self):
-        pass
 
     def test_isFaceOf(self):
         self.assertEqual(set(self.cmplx.isFaceOf(0)),set([4,5,6,7]))

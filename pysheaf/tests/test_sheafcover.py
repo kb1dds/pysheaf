@@ -9,23 +9,23 @@ class TestSheafCover(unittest.TestCase):
                                                                               ps.SheafCoface(index=2,restriction=np.array([1]))]),
                                  ps.SheafCell(dimension=1,stalkDim=1),
                                  ps.SheafCell(dimension=1,stalkDim=1)])
-        self.asg=ps.Section([ps.SectionCell(support=0,value=0),
-                             ps.SectionCell(support=1,value=0),
-                             ps.SectionCell(support=2,value=1)])
+        self.asg=ps.Assignment([ps.AssignmentCell(support=0,value=0),
+                             ps.AssignmentCell(support=1,value=0),
+                             ps.AssignmentCell(support=2,value=1)])
 
         self.testSheaf2=ps.Sheaf([ps.SheafCell(dimension=0,stalkDim=1,cofaces=[ps.SheafCoface(index=1,restriction=np.array([1])),
                                                                               ps.SheafCoface(index=2,restriction=np.array([1]))]),
                                   ps.SheafCell(dimension=1,stalkDim=1),
                                   ps.SheafCell(dimension=1,stalkDim=1),
                                   ps.SheafCell(dimension=0,stalkDim=1,cofaces=[ps.SheafCoface(index=1,restriction=np.array([1]))])])
-        self.asg2=ps.Section([ps.SectionCell(support=0,value=0),  # A
-                              ps.SectionCell(support=1,value=0),  # C
-                              ps.SectionCell(support=2,value=1),  # B
-                              ps.SectionCell(support=3,value=0)]) # D
-        self.asg3=ps.Section([ps.SectionCell(support=0,value=0),  # A
-                              ps.SectionCell(support=1,value=0),  # C
-                              ps.SectionCell(support=2,value=1),  # B
-                              ps.SectionCell(support=3,value=1)]) # D
+        self.asg2=ps.Assignment([ps.AssignmentCell(support=0,value=0),  # A
+                              ps.AssignmentCell(support=1,value=0),  # C
+                              ps.AssignmentCell(support=2,value=1),  # B
+                              ps.AssignmentCell(support=3,value=0)]) # D
+        self.asg3=ps.Assignment([ps.AssignmentCell(support=0,value=0),  # A
+                              ps.AssignmentCell(support=1,value=0),  # C
+                              ps.AssignmentCell(support=2,value=1),  # B
+                              ps.AssignmentCell(support=3,value=1)]) # D
 
     def test_consistencyRadius1(self):
         crs = self.testSheaf.consistencyRadii(self.asg)
