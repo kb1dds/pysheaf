@@ -1,11 +1,7 @@
 PySheaf: Sheaf-theoretic toolbox
 ================================
 
-This repository consists of Python 2.7 libraries for manipulating cell complexes and data structures on them:
-
-1. Local and relative homology of abstract simplicial complexes [0]_
-
-2. Sheaves of sets or vector spaces on cell complexes [1]_, [2]_, [3]_, [4]_, [5]_, [6]_
+This repository consists of Python 2.7 libraries for manipulating cell complexes and sheaves of sets or vector spaces on cell complexes [1]_, [2]_, [3]_, [4]_, [5]_, [6]_
 
 Documentation:
 --------------
@@ -20,7 +16,7 @@ You can install by cloning this repo (there is no PyPI package).  For Linux, you
   $ git clone https://github.com/kb1dds/pysheaf.git
   $ pip install pysheaf
 
-See the `documentation <http://kb1dds.github.io/pysheaf/install.html>`_ for full details!
+See the `documentation <http://kb1dds.github.io/pysheaf/install.html>`_ for full details!  (Though it's a bit out of date...)
 
 Usage:
 ------
@@ -35,25 +31,19 @@ The general plan of usage is
    
 4. Analyze the resulting sheaf:
    
-   a. If you have data, you can build `Section` instances whose list of `SectionCell` instances refer to your sheaf.
+   a. If you have data, you can build `Assignment` instances whose list of `AssignmentCell` instances refer to your sheaf.
       
    b. You can compute cohomology of the `Sheaf` instance as well.
 
 Have a look at the `pysheaf/tests` folder for some examples!  
 
-Notes:
-------
-The pysheaf.py module should be able to duplicate the functionality of simplicialHomology.py, albeit somewhat more slowly because the base space constructions are more general and less efficient.
-
-Finally, this code is under active development, so not everything works as it should.  Stay away from `Sheaf.localSectional()` and `Cell.localPairComplex()` as these don't currently work correctly!  If you find anything that you can correct, feel free to send me suggestions!
+This code is under active development, so not everything works as it should.  If you find anything that you can correct, feel free to send me suggestions!
 
 | Thanks!
 | Michael Robinson
 | American University
 | kb1dds@gmail.com
 | michaelr@american.edu
-
-.. [0] Alan Hatcher, "Algebraic Topology", Cambridge, 2002, https://www.math.cornell.edu/~hatcher/AT/ATpage.html
 
 .. [1] http://www.drmichaelrobinson.net/sheaftutorial/index.html
 
