@@ -10,7 +10,7 @@ The PySheaf library is an experimental platform for computational and applied sh
 
 Sheaves are managed by subclassing from :py:class:`CellComplex`, which is a little awkward as :py:class:`SheafCell` is subclassed from :py:class:`Cell`, etc.  However, the idea is that everything that can be done to the base space of a sheaf is inherited from its underlying :py:class:`CellComplex` structure.
 
-Sections of sheaves have their own :py:class:`Section` class.  Truly, the data structure does not self-check for consistency, so really they are more of an "assignment" or "serration" than a section.  However, they do know how to extend themselves.
+Assignments of sheaves have their own :py:class:`Assignment` class.  This data structure does not self-check for consistency, so it is properly an "assignment" or "serration".  :py:class:`Assignment` instances know how to extend themselves consistent with a :py:class:`Sheaf`.
 
 .. toctree::
    :maxdepth: 2
