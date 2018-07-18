@@ -9,12 +9,12 @@ Although PySheaf can compute (co)homology of sheaves and cell complexes, the pri
 
 1. Construct the :py:class:`Sheaf` instance, which involves defining lists of :py:class:`SheafCell` and :py:class:`SheafCoface` instances.  Presently, the :py:class:`Sheaf` instance will remain fixed once constructed.  Therefore, make sure to have all stalks and restrictions defined at this point!
 2. If you want to compute cohomology of the :py:class:`Sheaf`, you can do so using the :py:meth:`Sheaf.cohomology()` or :py:meth:`Sheaf.cobetti()`
-3. Construct various :py:class:`Section` instances for the data you have.  Key point: a :py:class:`Section` refers to a *local* section.  Its :py:class:`SectionCell` members refer to the :py:class:`Sheaf` you've just finished building, so you must built the :py:class:`Sheaf` first!
-4. Process the data using the :py:class:`Sheaf` and :py:class:`Section` instances:
+3. Construct various :py:class:`Assignment` instances for the data you have.  Key point: a :py:class:`Assignment` refers to a *local* section.  Its :py:class:`AssignmentCell` members refer to the :py:class:`Sheaf` you've just finished building, so you must built the :py:class:`Sheaf` first!
+4. Process the data using the :py:class:`Sheaf` and :py:class:`Assignment` instances:
    
    a. You can measure the consistency using :py:meth:`Sheaf.consistencyRadius()`
-   b. You can fit a nearest global section using :py:meth:`Sheaf.fuseAssignment()`
-   c. You may also use :py:meth:`Section.extend()`
+   b. You can extend the assignment using :py:meth:`Sheaf.minimizeConsistencyRadius()` or fit a nearest global section using :py:meth:`Sheaf.fuseAssignment()`
+   c. You may also use :py:meth:`Assignment.extend()` or :py:meth:`Assignment.maximalExtend()`
 
 5. If you want to relate your :py:class:`Sheaf` to others, you may construct a :py:class:`SheafMorphism` instance, which incidentally may *also* be used as a restriction morphism if you want to build a :py:class:`Sheaf` *of* sheaves!
 
