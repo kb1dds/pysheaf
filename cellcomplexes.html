@@ -27,7 +27,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="The Sheaf type" href="sheaves.html" />
-    <link rel="prev" title="Installation instructions for PySheaf using a conda environment" href="install.html" />
+    <link rel="prev" title="Introduction" href="intro.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -59,16 +59,6 @@
 <dt id="CellComplex.homology">
 <code class="descname">homology</code><span class="sig-paren">(</span><em>k</em>, <em>subcomplex=None</em>, <em>compactSupport=False</em>, <em>tol=1e-5</em><span class="sig-paren">)</span><a class="headerlink" href="#CellComplex.homology" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the degree <cite>k</cite> homology of the <a class="reference internal" href="#CellComplex" title="CellComplex"><code class="xref py py-class docutils literal"><span class="pre">CellComplex</span></code></a>.  If you want relative homology, the <cite>subcomplex</cite> field specifies a list of indices into <a class="reference internal" href="#CellComplex.cells" title="CellComplex.cells"><code class="xref py py-class docutils literal"><span class="pre">CellComplex.cells</span></code></a> for the relative subcomplex.  If you want compactly supported homology (if you don&#8217;t know what that means, you don&#8217;t) then set <cite>compactSupport=True</cite>.  The <cite>tol</cite> argument sets the tolerance below which a singular value is said to be zero, and thus is to be considered part of the kernel. This returns a <code class="xref py py-class docutils literal"><span class="pre">numpy.ndarray</span></code> whose columns are the generators for homology.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="CellComplex.betti">
-<code class="descname">betti</code><span class="sig-paren">(</span><em>k</em>, <em>compactSupport=False</em>, <em>tol=1e-5</em><span class="sig-paren">)</span><a class="headerlink" href="#CellComplex.betti" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute the degree <cite>k</cite> Betti number of the <a class="reference internal" href="#CellComplex" title="CellComplex"><code class="xref py py-class docutils literal"><span class="pre">CellComplex</span></code></a>.  This is the dimension of the degree <cite>k</cite> homology space computed using <a class="reference internal" href="#CellComplex.homology" title="CellComplex.homology"><code class="xref py py-meth docutils literal"><span class="pre">CellComplex.homology()</span></code></a>.</p>
-<div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">This differs from the Betti number associated to the <em>cohomology</em> of any <a class="reference internal" href="sheaves.html#Sheaf" title="Sheaf"><code class="xref py py-class docutils literal"><span class="pre">Sheaf</span></code></a>.  To access that, use <a class="reference internal" href="sheaves.html#Sheaf.cobetti" title="Sheaf.cobetti"><code class="xref py py-meth docutils literal"><span class="pre">Sheaf.cobetti()</span></code></a> instead!</p>
-</div>
 </dd></dl>
 
 <dl class="method">
@@ -231,76 +221,8 @@
 </dd></dl>
 
 <dl class="class">
-<dt id="FlagComplex">
-<em class="property">class </em><code class="descname">FlagComplex</code><span class="sig-paren">(</span><em>AbstractSimplicialComplex</em><span class="sig-paren">)</span><a class="headerlink" href="#FlagComplex" title="Permalink to this definition">¶</a></dt>
-<dt>
-<code class="descname">A flag complex is an abstract simplicial complex, X, in which there is a n-simplex whenever X also contains every proper subset with cardinality 2 or more.</code></dt>
-<dt>
-<code class="descname">It is specified from a list of the one dimensional simplices, a networkx graph, or a instance of the pysheaf graph class which is converted into a list of toplexs.</code></dt>
-<dd><dl class="method">
-<dt id="FlagComplex.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>one_simplices</em>, <em>maxdim=none</em><span class="sig-paren">)</span><a class="headerlink" href="#FlagComplex.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create an abstract simplicial complex with the condition that there is a n-simplex whenever every proper subset with cardinality 2 or more is also contained within the complex.
-This is formed iteratively from a list of 1 dimensional simplices (edges). For this method, these can be obtained through a list of tuples, a networkx graph, or a pysheaf graph instance.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="Graph">
-<em class="property">class </em><code class="descname">Graph</code><span class="sig-paren">(</span><em>CellComplex</em><span class="sig-paren">)</span><a class="headerlink" href="#Graph" title="Permalink to this definition">¶</a></dt>
-<dd><p>A graph consists of a list of pairs of vertices which can be ordered or unordered. These vertices may be weighted if desired.</p>
-<dl class="method">
-<dt id="Graph.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>edges</em>, <em>vertices</em>, <em>orientation=False</em>, <em>capacity=False</em>, <em>vertex_capacity=-1)</em><span class="sig-paren">)</span><a class="headerlink" href="#Graph.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create a cell complex from a graph, where <cite>graph</cite> is a list of pairs (src,dest) or triples (src,dest,weight) of numbers representing vertices. The optional capacity specifies The optional <cite>vertex_capacity</cite> sets all the weights to the same value.  If the optional orientation is set to true, orientations of the resulting <a class="reference internal" href="#Coface" title="Coface"><code class="xref py py-class docutils literal"><span class="pre">Coface</span></code></a> instances are taken from the ordering of the vertices in the tuples in <cite>graph</cite>.</p>
-<p>The vertex labeled <cite>None</cite> in any of these tuples is an external connection.  In the resulting <code class="xref py py-class docutils literal"><span class="pre">DirectedGraph.cells</span></code>, the cells are indexed as follows:
-1. First all of the edges (in the order given),
-2. then all vertices (in the order they are given; not by their numerical values)</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="UndirectedGraph">
-<em class="property">class </em><code class="descname">UndirectedGraph</code><span class="sig-paren">(</span><em>Graph</em><span class="sig-paren">)</span><a class="headerlink" href="#UndirectedGraph" title="Permalink to this definition">¶</a></dt>
-<dd><p>A undirected graph consists of an unordered list of pairs of vertices.
-It is important to note that since there is no order, an calculations involving the orientation of cofaces, like homology cannot be used.</p>
-<dl class="attribute">
-<dt id="UndirectedGraph.graphDensity">
-<code class="descname">graphDensity</code><a class="headerlink" href="#UndirectedGraph.graphDensity" title="Permalink to this definition">¶</a></dt>
-<dd><p>Graph density measure, for an undirected graph, this is (2*(# of edges))/((# of vertices)(# of vertices - 1))</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="UndirectedGraph.graphDegreeHistogram">
-<code class="descname">graphDegreeHistogram</code><a class="headerlink" href="#UndirectedGraph.graphDegreeHistogram" title="Permalink to this definition">¶</a></dt>
-<dd><p>Histogram of the degrees of all of the vertices</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="UndirectedGraph.graphAdjacencySpectrum">
-<code class="descname">graphAdjacencySpectrum</code><a class="headerlink" href="#UndirectedGraph.graphAdjacencySpectrum" title="Permalink to this definition">¶</a></dt>
-<dd><p>A list of the eigenvalues of the adjacency matrix of the graph</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="UndirectedGraph.graphLaplacianSpectrum">
-<code class="descname">graphLaplacianSpectrum</code><a class="headerlink" href="#UndirectedGraph.graphLaplacianSpectrum" title="Permalink to this definition">¶</a></dt>
-<dd><p>A list of the eigenvalues of the laplacian matrix of the graph</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="UndirectedGraph.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>graph</em><span class="sig-paren">)</span><a class="headerlink" href="#UndirectedGraph.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create a cell complex from an undirected graph, where <cite>graph</cite> is a list of pairs (src,dest), triples (src,dest, capacity) or a networkx graph</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
 <dt id="DirectedGraph">
-<em class="property">class </em><code class="descname">DirectedGraph</code><span class="sig-paren">(</span><em>Graph</em><span class="sig-paren">)</span><a class="headerlink" href="#DirectedGraph" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descname">DirectedGraph</code><span class="sig-paren">(</span><em>CellComplex</em><span class="sig-paren">)</span><a class="headerlink" href="#DirectedGraph" title="Permalink to this definition">¶</a></dt>
 <dd><p>A directed graph consists of a list of ordered pairs of vertices.  Strictly speaking, this is a directed, weighted <em>multi</em> graph, since duplicate edges are allowed.</p>
 <dl class="method">
 <dt id="DirectedGraph.__init__">
@@ -334,7 +256,7 @@ It is important to note that since there is no order, an calculations involving 
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="install.html" title="previous chapter">Installation instructions for PySheaf using a conda environment</a></li>
+      <li>Previous: <a href="intro.html" title="previous chapter">Introduction</a></li>
       <li>Next: <a href="sheaves.html" title="next chapter">The <code class="docutils literal"><span class="pre">Sheaf</span></code> type</a></li>
   </ul></li>
 </ul>

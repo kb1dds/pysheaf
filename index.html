@@ -44,20 +44,10 @@
             
   <div class="section" id="welcome-to-pysheaf-s-documentation">
 <h1>Welcome to PySheaf&#8217;s documentation!<a class="headerlink" href="#welcome-to-pysheaf-s-documentation" title="Permalink to this headline">¶</a></h1>
-<p>The PySheaf library is an experimental platform for computational and applied sheaf theory.   Have a look at the latest version at the PySheaf GitHub repository: <a class="reference external" href="https://github.com/kb1dds/pysheaf">https://github.com/kb1dds/pysheaf</a></p>
-<p>Sheaves are managed by subclassing from <a class="reference internal" href="cellcomplexes.html#CellComplex" title="CellComplex"><code class="xref py py-class docutils literal"><span class="pre">CellComplex</span></code></a>, which is a little awkward as <a class="reference internal" href="sheaves.html#SheafCell" title="SheafCell"><code class="xref py py-class docutils literal"><span class="pre">SheafCell</span></code></a> is subclassed from <a class="reference internal" href="cellcomplexes.html#Cell" title="Cell"><code class="xref py py-class docutils literal"><span class="pre">Cell</span></code></a>, etc.  However, the idea is that everything that can be done to the base space of a sheaf is inherited from its underlying <a class="reference internal" href="cellcomplexes.html#CellComplex" title="CellComplex"><code class="xref py py-class docutils literal"><span class="pre">CellComplex</span></code></a> structure.</p>
-<p>Sections of sheaves have their own <a class="reference internal" href="sections.html#Section" title="Section"><code class="xref py py-class docutils literal"><span class="pre">Section</span></code></a> class.  Truly, the data structure does not self-check for consistency, so really they are more of an &#8220;assignment&#8221; or &#8220;serration&#8221; than a section.  However, they do know how to extend themselves.</p>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="install.html">Installation instructions for PySheaf using a conda environment</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="install.html#download-and-install-miniconda">Download and install miniconda:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="install.html#create-a-conda-environment">Create a <code class="docutils literal"><span class="pre">conda</span></code> environment</a></li>
-<li class="toctree-l2"><a class="reference internal" href="install.html#download-and-install-the-pysheaf-repository">Download and install the PySheaf repository</a></li>
-<li class="toctree-l2"><a class="reference internal" href="install.html#run-unit-tests">Run unit tests</a></li>
-</ul>
-</li>
 <li class="toctree-l1"><a class="reference internal" href="cellcomplexes.html">The CellComplex type</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="cellcomplexes.html#constructing-cellcomplex-instances">Constructing <code class="docutils literal"><span class="pre">CellComplex</span></code> instances</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cellcomplexes.html#subclasses-of-cellcomplex">Subclasses of <code class="docutils literal"><span class="pre">CellComplex</span></code></a></li>
@@ -70,7 +60,6 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="sections.html">The <code class="docutils literal"><span class="pre">Section</span></code> class</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="sections.html#data-fusion-with-section-and-sheaf-instances">Data fusion with <code class="docutils literal"><span class="pre">Section</span></code> and <code class="docutils literal"><span class="pre">Sheaf</span></code> instances</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sections.html#covers-of-cellcomplex-instances-based-on-a-section-of-a-sheaf">Covers of <code class="docutils literal"><span class="pre">CellComplex</span></code> instances based on a <code class="docutils literal"><span class="pre">Section</span></code> of a <code class="docutils literal"><span class="pre">Sheaf</span></code></a></li>
 </ul>
 </li>
 </ul>

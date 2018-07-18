@@ -63,8 +63,8 @@
 </dd></dl>
 
 <dl class="method">
-<dt id="Sheaf.cobetti">
-<code class="descname">cobetti</code><span class="sig-paren">(</span><em>k</em><span class="sig-paren">)</span><a class="headerlink" href="#Sheaf.cobetti" title="Permalink to this definition">¶</a></dt>
+<dt id="Sheaf.betti">
+<code class="descname">betti</code><span class="sig-paren">(</span><em>k</em><span class="sig-paren">)</span><a class="headerlink" href="#Sheaf.betti" title="Permalink to this definition">¶</a></dt>
 <dd><p>The dimension of the degree <cite>k</cite> sheaf cohomology space.</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
@@ -97,12 +97,6 @@
 <dt id="SheafCell.cofaces">
 <code class="descname">cofaces</code><a class="headerlink" href="#SheafCell.cofaces" title="Permalink to this definition">¶</a></dt>
 <dd><p>Like <a class="reference internal" href="cellcomplexes.html#Cell" title="Cell"><code class="xref py py-class docutils literal"><span class="pre">Cell</span></code></a>, this should be a list of coface relations, but unlike <a class="reference internal" href="cellcomplexes.html#Cell" title="Cell"><code class="xref py py-class docutils literal"><span class="pre">Cell</span></code></a>, they must be <a class="reference internal" href="#SheafCoface" title="SheafCoface"><code class="xref py py-class docutils literal"><span class="pre">SheafCoface</span></code></a> instances!</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="SheafCell.bounds">
-<code class="descname">bounds</code><a class="headerlink" href="#SheafCell.bounds" title="Permalink to this definition">¶</a></dt>
-<dd><p>The portion of the stalk in which legal values live.  This is used by the optimizer in <a class="reference internal" href="sections.html#Sheaf.fuseAssignment" title="Sheaf.fuseAssignment"><code class="xref py py-meth docutils literal"><span class="pre">Sheaf.fuseAssignment()</span></code></a> to set bounds on which values are used.  This should either be <cite>None</cite> (in which the stalk represents the entire vector space) or a list of <cite>(min,max)</cite> pairs of length <a class="reference internal" href="#SheafCell.stalkDim" title="SheafCell.stalkDim"><code class="xref py py-attr docutils literal"><span class="pre">SheafCell.stalkDim</span></code></a>.  Use <cite>None</cite> for any bound you wish to ignore.</p>
 </dd></dl>
 
 </dd></dl>
