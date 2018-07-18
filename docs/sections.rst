@@ -1,5 +1,5 @@
 The :py:class:`Assignment` class
-=============================
+================================
 
 A :py:class:`Assignment` represents a local section, which is an instance of data stored in a sheaf.  A :py:class:`Assignment` is constructed with a :py:class:`Sheaf` instance in mind, and therefore contains indices that refer into the :py:attr:`Sheaf.cells` list.  A given :py:class:`Sheaf` might have several :py:class:`Assignment` instances.
 
@@ -35,7 +35,7 @@ A :py:class:`Assignment` represents a local section, which is an instance of dat
 
 
 Data fusion with :py:class:`Assignment` and :py:class:`Sheaf` instances
---------------------------------------------------------------------
+-----------------------------------------------------------------------
 
 Given some data in a :py:class:`Assignment` for a :py:class:`Sheaf` you can measure the overall consistency radius with
 
@@ -81,7 +81,7 @@ On the other hand, if you want the nearest global section to your data, you can 
     4. `num_ele_Hallfame` - the number of top individuals that should be reported in the hall of fame (hof)
  
 Covers of :py:class:`CellComplex` instances based on a :py:class:`Assignment` of a :py:class:`Sheaf`
--------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 
 One can restrict attention to portions of a :py:class:`Assignment` instance.  This allows its consistency with its :py:class:`Sheaf` to be assessed locally.  By restricting the consistency testing to a list `testSupport` of cells in :py:meth:`Sheaf.consistencyRadius`, callers can examine consistency on a part of the base space of the :py:class:`Sheaf`.
 
