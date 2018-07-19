@@ -652,7 +652,9 @@ class Sheaf(CellComplex):
         return {frozenset(s) for s in cdd.values()}
 
     def consistentCollection(self,assignment,threshold,testSupport=None,consistencyGraph=None,ord=np.inf,tol=1e-5):
-        """Construct a maximal collection of open sets such that each subset is consistent to within the given threshold.  Note: the assignment must be supported on the entire space."""
+        """Construct a maximal collection of open sets such that each subset is consistent to within the given threshold.  
+        Note: the Assignment must be supported on the entire space.
+        Note: consistentStarCollection is usually faster, with more concise output.  Unless you need *open sets* -- and not just stars -- use that method!"""
         # First obtain a collection of consistent open sets.  These are disjoint
         initial_collection={frozenset(self.interior(s)) for s in self.consistentPartition(assignment,threshold,testSupport,consistencyGraph,ord=ord,tol=tol)}
 
@@ -676,6 +678,30 @@ class Sheaf(CellComplex):
                 collection=set()
 
         return initial_collection
+    
+    def consistentStarCollection(self,assignment,threshold,ord=np.inf,start_cell=None):
+        """Construct a maximal collection of elements such that their stars are consistent to within the given threshold.  
+        Note: the Assignment must be supported on the entire space."""
+        
+        if start_cell is None:
+            # Starting collection of cells are those that are not cofaces of any other cells
+            next_cells=set(range(len(self.cells))).difference({cf.index for c in self.cells for cf in c.cofaces})
+        else:
+            # Otherwise check the given start_cell's star for consistency...
+            if self.consistencyRadius(assignment,testSupport=self.starCells([start_cell]),ord=ord) < threshold:
+                return set([start_cell])
+            
+            # ... if that cell is not consistent, then check all of its children
+            next_cells=[cf.index for cf in self.cells[start_cell].cofaces]
+        
+        # Recurse through the rest of the sheaf diagram
+        collection=set()
+        for i in next_cells:
+            col=self.consistentStarCollection(assignment,threshold,ord,start_cell=i)
+            if col:
+                collection.update(col)
+        
+        return collection
 
     def assignmentMetric(self,assignment1,assignment2, testSupport=None, ord=np.inf):
         """Compute the distance between two assignments"""
