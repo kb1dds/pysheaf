@@ -542,7 +542,7 @@ class Sheaf(CellComplex):
                                     for cf2 in self.cofaces(c2.support):
                                         if cf1.index == cf2.index:
                                             rad=0.5*self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value)) # Note the factor of 0.5
-                                            if (not G.has_edge(c1.support,c2.support)) or (G[c1.support][c2.support]['type'] == 2 and G[c1.support][c2.support]['weight'] < rad):
+                                            if (not G.has_edge(c1.support,c2.support)) or (G[c1.support][c2.support]['type'] < 3 and G[c1.support][c2.support]['weight'] < rad):
                                                 G.add_edge(c1.support,c2.support,weight=rad,type=3)
 
         return G
