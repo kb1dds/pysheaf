@@ -1348,7 +1348,7 @@ class Assignment:
             for cf in sheaf.cells[cell].cofaces:
                 for s in self.assignmentCells:
                     if s.support == cf.index:
-                        if np.any(np.abs(cf.restriction(value)-s.value)>tol):
+                        if sheaf.cells[cf.index].metric(cf.restriction(value), s.value)>tol:
                             return False
 
         # A value was successfully assigned (if no value was assigned,
@@ -1362,7 +1362,7 @@ class Assignment:
         """Extend this Assignment to a maximal assignment that's non-conflicting (if multiassign=False) or one in which multiple values can be given to a given cell (if multiassign=True)"""
         for sc in self.assignmentCells:
             for cf in sheaf.cofaces(sc.support):
-                if multiassign or (not self.extend(sheaf,cf.index,tol=tol)):
+                if not self.extend(sheaf,cf.index,tol=tol) and multiassign:
                     self.assignmentCells.append(AssignmentCell(cf.index,
                                                                cf.restriction(sc.value),
                                                                source=sc.support))
