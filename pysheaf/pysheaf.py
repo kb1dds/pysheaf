@@ -24,7 +24,7 @@ from deap import tools
 from deap import algorithms
 
 from collections import defaultdict
-
+from itertools import combinations
 
 
 ## Data structures
@@ -644,31 +644,33 @@ class Sheaf(CellComplex):
 
     def consistentCollection(self,assignment,threshold,testSupport=None,consistencyGraph=None,ord=np.inf,tol=1e-5):
         """Construct a maximal collection of open sets such that each subset is consistent to within the given threshold.  
-        Note: the Assignment must be supported on the entire space.
-        Note: consistentStarCollection is usually faster, with more concise output.  Unless you need *open sets* -- and not just stars -- use that method!"""
-        # First obtain a collection of consistent open sets.  These are disjoint
-        initial_collection={frozenset(self.interior(s)) for s in self.consistentPartition(assignment,threshold,testSupport,consistencyGraph,ord=ord,tol=tol)}
+        Note: the Assignment need not be supported on the entire space.
+        Note: consistentStarCollection is much faster, with more concise output.  Unless you need *open sets* -- and not just stars -- use that method!"""
+
+        # Obtain collection of consistent stars.  These may or may not be disjoint
+        csc = self.consistentStarCollection(assignment,threshold,ord,start_cell=None)
+        if testSupport is not None:
+            csc.intersection_update(testSupport)
+
+        # Render these stars into actual lists of cells, rather than merely the "roots"
+        initial_collection={frozenset(self.starCells([s])) for s in csc}
 
         additions = True
         collection = set()
 
-        while additions:
-            additions=False
-            for u in initial_collection:
-                added_u=False
-                for v in initial_collection:
-                    if u is not v:
-                        u_v = u.union(v)
-                        if self.consistencyRadius(assignment,testSupport=u_v,ord=ord)<threshold:
-                            added_u=True
-                            additions=True
-                            collection.add(u_v)
-                if not added_u:
-                    collection.add(u)
-                initial_collection=collection
-                collection=set()
+        # Form all possible unions of these stars.  Note: this is not particularly efficient
+        for k in range(len(initial_collection)):
+            additions = False
+            for sets in combinations(initial_collection,k+1):
+                openset = sets[0].union(*sets[1:])
+                if self.consistencyRadius(assignment,testSupport=openset,ord=ord)<threshold:
+                    additions=True
+                    collection.add(frozenset(openset)) # Frozen sets so that we can later (outside this function) use these sets as keys
+            if not additions:  # If we stopped finding unions of this size, don't bother with any more (very small performance improvement!)
+                break
 
-        return initial_collection
+        # Remove redundant open sets before returning
+        return {s for s in collection if not [r for r in collection if s is not r and s.issubset(r)]}
     
     def consistentStarCollection(self,assignment,threshold,ord=np.inf,start_cell=None):
         """Construct a maximal collection of elements such that their stars are consistent to within the given threshold.  
