@@ -642,7 +642,7 @@ class Sheaf(CellComplex):
 
         return {frozenset(s) for s in cdd.values()}
 
-    def consistentCollection(self,assignment,threshold,testSupport=None,consistencyGraph=None,ord=np.inf,tol=1e-5):
+    def consistentCollection(self,assignment,threshold,testSupport=None,ord=np.inf,tol=1e-5):
         """Construct a maximal collection of open sets such that each subset is consistent to within the given threshold.  
         Note: the Assignment need not be supported on the entire space.
         Note: consistentStarCollection is much faster, with more concise output.  Unless you need *open sets* -- and not just stars -- use that method!"""
