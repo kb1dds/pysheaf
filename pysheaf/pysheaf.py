@@ -642,9 +642,26 @@ class Sheaf(CellComplex):
 
         return {frozenset(s) for s in cdd.values()}
 
+    def consistentFiltration(self,assignment,thresholds,testSupport=None,ord=np.inf,tol=1e-5):
+        """Compute the consistency filtration for an assignment given a list of thresholds.  Output is a list of triples: (connected open set, birth threshold, death threshold)"""
+
+        # Construct a dictionary keyed by connected open sets containing the list of thresholds where it's present 
+        d = defaultdict(list)
+        for threshold in thresholds:
+            # Compute consistent open sets... they might not be connected
+            current_collection = self.consistentCollection(assignment,threshold,testSupport,ord,tol)
+
+            # Disassemble and store each consistent open set into *connected* consistent open sets
+            for openset in current_collection:
+                for component in self.components(list(openset)):
+                    d[frozenset(component)].append(threshold)
+
+        return [(component,min(threses),max(threses)) for component,threses in d.items()]
+        
     def consistentCollection(self,assignment,threshold,testSupport=None,ord=np.inf,tol=1e-5):
         """Construct a maximal collection of open sets such that each subset is consistent to within the given threshold.  
         Note: the Assignment need not be supported on the entire space.
+        Note: open sets may not be connected
         Note: consistentStarCollection is much faster, with more concise output.  Unless you need *open sets* -- and not just stars -- use that method!"""
 
         # Obtain collection of consistent stars.  These may or may not be disjoint
