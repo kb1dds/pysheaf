@@ -15,14 +15,14 @@ class TestSheaf(unittest.TestCase):
         ## From p. 98 Example 4.9:
         ## Cells=[A,B,C,D,E,F,G] inherit id from index of this list
         ## Restriction Maps:
-        self.restAD = np.matrix([1,0,0,0])
-        self.restAG = np.matrix([0,0,1,-1])
-        self.restBD = np.matrix([1,0,0])
-        self.restBE = np.matrix([[0,0,3],[0,2,0]])
-        self.restBF = np.matrix([0,1,0])
-        self.restCE = np.matrix([[0,0,3,0],[0,0,0,2]])
-        self.restCF = np.matrix([0,0,0,1])
-        self.restCG = np.matrix([1,-1,0,0])
+        self.restAD = np.array([1,0,0,0])
+        self.restAG = np.array([0,0,1,-1])
+        self.restBD = np.array([1,0,0])
+        self.restBE = np.array([[0,0,3],[0,2,0]])
+        self.restBF = np.array([0,1,0])
+        self.restCE = np.array([[0,0,3,0],[0,0,0,2]])
+        self.restCF = np.array([0,0,0,1])
+        self.restCG = np.array([1,-1,0,0])
         ## cofaces
         self.cofaceAD = ps.SheafCoface(3,1,self.restAD)
         self.cofaceAG = ps.SheafCoface(6,1,self.restAG)
@@ -63,7 +63,17 @@ class TestSheaf(unittest.TestCase):
 
     def test_cohomology(self):
         d = self.sheaf.cohomology(0).transpose()
-        hk = np.matrix('0 0 1 0 0 0 0;1 0 0 0 0 0 0;0 1 0 1 -1 0 0;0 1 0 0 0 0 0;0 0 1 0 0 0 0;0 0 0 0 0 0 1; 0 0 0 0 0 1 0;0 0 0 1 0 0 0 ;0 0 0 0 1 0 0; 0 0 0 0 0 1 0; 0 0 0 0 0 0 1')
+        hk = np.array([[0,0,1,0,0,0,0],
+                       [1,0,0,0,0,0,0],
+                       [0,1,0,1,-1,0,0],
+                       [0,1,0,0,0,0,0],
+                       [0,0,1,0,0,0,0],
+                       [0,0,0,0,0,0,1],
+                       [0,0,0,0,0,1,0],
+                       [0,0,0,1,0,0,0],
+                       [0,0,0,0,1,0,0],
+                       [0,0,0,0,0,1,0],
+                       [0,0,0,0,0,0,1]])
         gt = np.array(hk).transpose()
         tmat = np.concatenate((d,gt))
 

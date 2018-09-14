@@ -439,7 +439,7 @@ class Sheaf(CellComplex):
                 for cf in self.cells[ks[i]].cofaces:
                     if self.cells[cf.index].compactClosure or compactSupport:
                         ridx=kp1.index(cf.index)
-                        block=np.matrix(cf.orientation*cf.restriction.matrix)
+                        block=np.array(cf.orientation*cf.restriction.matrix)
                         d[kp1idx[ridx]:kp1idx[ridx+1],kidx[i]:kidx[i+1]]+=block
             return d
         else:
@@ -1269,7 +1269,7 @@ class ConstantSheaf(Sheaf):
                               compactClosure=c.compactClosure,
                               cofaces=[SheafCoface(index=cf.index,
                                                    orientation=cf.orientation,
-                                                   restriction=np.matrix(1))
+                                                   restriction=np.array(1))
                                        for cf in c.cofaces],
                               stalkDim=1)
                     for c in cells]
@@ -1452,7 +1452,7 @@ def inducedMap(sheaf1,sheaf2,morphism,k,compactSupport=False,tol=1e-5):
     Hk_2=sheaf2.cohomology(k,compactSupport)
 
     if (not Hk_1.size) or (not Hk_2.size):
-        return np.matrix([])
+        return np.array([])
 
     # Extract the k-skeleta of each sheaf
     k_1,ksizes_1,kidx_1=sheaf1.kcells(k,compactSupport)
