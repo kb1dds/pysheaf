@@ -568,7 +568,7 @@ class Sheaf(CellComplex):
                 raise NotImplementedError('KernelProj only works for sheaves of vector spaces')
 
             if ord != 2:
-                warn('Kernel projection requires order 2 in minimizeConsistencyRadius')
+                warnings.warn('Kernel projection requires order 2 in minimizeConsistencyRadius')
                 
             # Compile dictionary of rows
             rowstarts=dict()
@@ -771,7 +771,7 @@ class Sheaf(CellComplex):
                 raise NotImplementedError('KernelProj only works for sheaves of vector spaces')
 
             if ord != 2:
-                warn('Kernel projection requires order 2 in fuseAssignment')
+                warnings.warn('Kernel projection requires order 2 in fuseAssignment')
             
             # Construct the coboundary map
             d = self.coboundary(k=0)
