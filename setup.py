@@ -11,7 +11,7 @@ def readme():
         return f.read()
 
 setup(name='pysheaf',
-      version='0.1',
+      version='0.3.1',
       description='Python applied sheaf computation library',
       url='http://github.com/kb1dds/pysheaf',
       author='Michael Robinson and Brenda Praggastis and Janelle Henrich',

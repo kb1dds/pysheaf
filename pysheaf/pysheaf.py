@@ -558,6 +558,7 @@ class Sheaf(CellComplex):
                 tol: the tol of numeric values to be considered the same
         """
         support=[sc.support for sc in assignment.assignmentCells]
+
         if activeCells is None:
             ac=[idx for idx in range(len(self.cells)) if idx not in support]
         else:
