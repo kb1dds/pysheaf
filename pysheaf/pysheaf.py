@@ -24,7 +24,7 @@ from deap import tools
 from deap import algorithms
 
 from collections import defaultdict
-
+from itertools import combinations
 
 
 ## Data structures
@@ -159,7 +159,7 @@ class CellComplex:
     def components(self,cells=[]):
         """Compute connected components; optional argument specifies permissible cells"""
         if not cells:
-            cellsleft=range(len(self.cells))
+            cellsleft=list(range(len(self.cells)))
         else:
             cellsleft=cells
 
@@ -215,7 +215,7 @@ class CellComplex:
 
         # Remove image
         if dp1.any():
-            map,j1,j2,j3=np.linalg.lstsq(ker,dp1,rcond=None)
+            map,j1,j2,j3=np.linalg.lstsq(ker,dp1)
             Hk=np.dot(ker,cokernel(map,tol));
         else:
             Hk=ker
@@ -237,8 +237,6 @@ class CellComplex:
             km1=self.skeleton(k-1,compactSupport)
 
         # Allocate output matrix
-#        print "ks=", ks
-#        print "km1=", km1
         rows=len(km1)
         cols=len(ks)
 #         d=np.zeros((rows,cols),dtype=np.complex)
@@ -247,16 +245,10 @@ class CellComplex:
             
             # Loop over all k-1-cells, writing them into the output matrix
             for i in range(len(km1)):
-#                print i, self.cells[km1[i]]
                 # Loop over faces with compact closure
-#                print "cofaces=", [cf.index for cf in self.cells[km1[i]].cofaces]
                 for cf in self.cells[km1[i]].cofaces:
-
-#                    print cf.index, self.cells[cf.index], cf.orientation,
-#                    if self.cells[cf.index].compactClosure or compactSupport:
                     if self.cells[cf.index].compactClosure and cf.orientation != 0:
                         d[i,ks.index(cf.index)]=cf.orientation
-#                        print "ok"
             return d
         else:
             return d
@@ -447,7 +439,7 @@ class Sheaf(CellComplex):
                 for cf in self.cells[ks[i]].cofaces:
                     if self.cells[cf.index].compactClosure or compactSupport:
                         ridx=kp1.index(cf.index)
-                        block=np.matrix(cf.orientation*cf.restriction.matrix)
+                        block=np.array(cf.orientation*cf.restriction.matrix)
                         d[kp1idx[ridx]:kp1idx[ridx+1],kidx[i]:kidx[i+1]]+=block
             return d
         else:
@@ -550,7 +542,7 @@ class Sheaf(CellComplex):
                                     for cf2 in self.cofaces(c2.support):
                                         if cf1.index == cf2.index:
                                             rad=0.5*self.cells[cf1.index].metric(cf1.restriction(c1.value),cf2.restriction(c2.value)) # Note the factor of 0.5
-                                            if (not G.has_edge(c1.support,c2.support)) or (G[c1.support][c2.support]['type'] == 2 and G[c1.support][c2.support]['weight'] < rad):
+                                            if (not G.has_edge(c1.support,c2.support)) or (G[c1.support][c2.support]['type'] < 3 and G[c1.support][c2.support]['weight'] < rad):
                                                 G.add_edge(c1.support,c2.support,weight=rad,type=3)
 
         return G
@@ -577,7 +569,7 @@ class Sheaf(CellComplex):
                 raise NotImplementedError('KernelProj only works for sheaves of vector spaces')
 
             if ord != 2:
-                warn('Kernel projection requires order 2 in minimizeConsistencyRadius')
+                warnings.warn('Kernel projection requires order 2 in minimizeConsistencyRadius')
                 
             # Compile dictionary of rows
             rowstarts=dict()
@@ -604,7 +596,7 @@ class Sheaf(CellComplex):
             
                 # Use least squares to solve for assignment rooted at this cell given the existing assignment
                 asg,bnds=self.serializeAssignment(assignment,activeCells=support) # Confusingly, activeSupport here refers *only* to the support of the assignment
-                result=np.linalg.lstsq(mat,asg,rcond=None)
+                result=np.linalg.lstsq(mat,asg)
                 
                 newassignment.assignmentCells.append(AssignmentCell(i,result[0]))
 
@@ -651,33 +643,52 @@ class Sheaf(CellComplex):
 
         return {frozenset(s) for s in cdd.values()}
 
-    def consistentCollection(self,assignment,threshold,testSupport=None,consistencyGraph=None,ord=np.inf,tol=1e-5):
+    def consistentFiltration(self,assignment,thresholds,testSupport=None,ord=np.inf,tol=1e-5):
+        """Compute the consistency filtration for an assignment given a list of thresholds.  Output is a list of triples: (connected open set, birth threshold, death threshold)"""
+
+        # Construct a dictionary keyed by connected open sets containing the list of thresholds where it's present 
+        d = defaultdict(list)
+        for threshold in thresholds:
+            # Compute consistent open sets... they might not be connected
+            current_collection = self.consistentCollection(assignment,threshold,testSupport,ord,tol)
+
+            # Disassemble and store each consistent open set into *connected* consistent open sets
+            for openset in current_collection:
+                for component in self.components(list(openset)):
+                    d[frozenset(component)].append(threshold)
+
+        return [(component,min(threses),max(threses)) for component,threses in d.items()]
+        
+    def consistentCollection(self,assignment,threshold,testSupport=None,ord=np.inf,tol=1e-5):
         """Construct a maximal collection of open sets such that each subset is consistent to within the given threshold.  
-        Note: the Assignment must be supported on the entire space.
-        Note: consistentStarCollection is usually faster, with more concise output.  Unless you need *open sets* -- and not just stars -- use that method!"""
-        # First obtain a collection of consistent open sets.  These are disjoint
-        initial_collection={frozenset(self.interior(s)) for s in self.consistentPartition(assignment,threshold,testSupport,consistencyGraph,ord=ord,tol=tol)}
+        Note: the Assignment need not be supported on the entire space.
+        Note: open sets may not be connected
+        Note: consistentStarCollection is much faster, with more concise output.  Unless you need *open sets* -- and not just stars -- use that method!"""
+
+        # Obtain collection of consistent stars.  These may or may not be disjoint
+        csc = self.consistentStarCollection(assignment,threshold,ord,start_cell=None)
+        if testSupport is not None:
+            csc.intersection_update(testSupport)
+
+        # Render these stars into actual lists of cells, rather than merely the "roots"
+        initial_collection={frozenset(self.starCells([s])) for s in csc}
 
         additions = True
         collection = set()
 
-        while additions:
-            additions=False
-            for u in initial_collection:
-                added_u=False
-                for v in initial_collection:
-                    if u is not v:
-                        u_v = u.union(v)
-                        if self.consistencyRadius(assignment,testSupport=u_v,ord=ord)<threshold:
-                            added_u=True
-                            additions=True
-                            collection.add(u_v)
-                if not added_u:
-                    collection.add(u)
-                initial_collection=collection
-                collection=set()
+        # Form all possible unions of these stars.  Note: this is not particularly efficient
+        for k in range(len(initial_collection)):
+            additions = False
+            for sets in combinations(initial_collection,k+1):
+                openset = sets[0].union(*sets[1:])
+                if self.consistencyRadius(assignment,testSupport=openset,ord=ord)<threshold:
+                    additions=True
+                    collection.add(frozenset(openset)) # Frozen sets so that we can later (outside this function) use these sets as keys
+            if not additions:  # If we stopped finding unions of this size, don't bother with any more (very small performance improvement!)
+                break
 
-        return initial_collection
+        # Remove redundant open sets before returning
+        return {s for s in collection if not [r for r in collection if s is not r and s.issubset(r)]}
     
     def consistentStarCollection(self,assignment,threshold,ord=np.inf,start_cell=None):
         """Construct a maximal collection of elements such that their stars are consistent to within the given threshold.  
@@ -761,7 +772,7 @@ class Sheaf(CellComplex):
                 raise NotImplementedError('KernelProj only works for sheaves of vector spaces')
 
             if ord != 2:
-                warn('Kernel projection requires order 2 in fuseAssignment')
+                warnings.warn('Kernel projection requires order 2 in fuseAssignment')
             
             # Construct the coboundary map
             d = self.coboundary(k=0)
@@ -827,7 +838,7 @@ class Sheaf(CellComplex):
         bounded=False
         bounds=None
         if activeCells is None:
-            activeCells = range(len(self.cells))
+            activeCells = list(range(len(self.cells)))
         for i in activeCells:
             if self.cells[i].bounds is not None:
                 bounded=True
@@ -920,7 +931,7 @@ class Sheaf(CellComplex):
             t1 = time.clock()
             
             t_finish = t1-t0
-            print t_finish
+            print(t_finish)
             
             if radii < tol:
                 pass
@@ -974,8 +985,8 @@ class Sheaf(CellComplex):
             chosen = [] #editted the structure of th output to reflect the structure of pysheaf
             fit = np.zeros((n,1))  #Allocates space for the prop of select
             x = np.zeros((n,2))    #Sorted list of id and rank
-            x[:, 0] = range(n,0,-1) # Get original location of the element
-            to_sort = zip(individuals, range(n)) #need to keep original index associated
+            x[:, 0] = list(range(n,0,-1)) # Get original location of the element
+            to_sort = list(zip(individuals, list(range(n)))) #need to keep original index associated
             s_inds = sorted(to_sort, key= lambda ind: getattr(ind[0], fit_attr).values[0]) #Sort by the fitnesses
             x[:, 1] = [b for a,b in s_inds]
             r =q/(1-((1-q)**n))  # normalize the distribution, q prime
@@ -1027,7 +1038,7 @@ class Sheaf(CellComplex):
             elif len(up) < size:
                 raise IndexError("up must be at least the size of individual: %d < %d" % (len(up), size))
             
-            for i, xl, xu in zip(xrange(size), low, up):
+            for i, xl, xu in zip(range(size), low, up):
                 if random.random() < indpb:
                     individual[i] = random.uniform(xl, xu)
             
@@ -1259,7 +1270,7 @@ class ConstantSheaf(Sheaf):
                               compactClosure=c.compactClosure,
                               cofaces=[SheafCoface(index=cf.index,
                                                    orientation=cf.orientation,
-                                                   restriction=np.matrix(1))
+                                                   restriction=np.array(1))
                                        for cf in c.cofaces],
                               stalkDim=1)
                     for c in cells]
@@ -1357,7 +1368,7 @@ class Assignment:
             for cf in sheaf.cells[cell].cofaces:
                 for s in self.assignmentCells:
                     if s.support == cf.index:
-                        if np.any(np.abs(cf.restriction(value)-s.value)>tol):
+                        if sheaf.cells[cf.index].metric(cf.restriction(value), s.value)>tol:
                             return False
 
         # A value was successfully assigned (if no value was assigned,
@@ -1371,7 +1382,7 @@ class Assignment:
         """Extend this Assignment to a maximal assignment that's non-conflicting (if multiassign=False) or one in which multiple values can be given to a given cell (if multiassign=True)"""
         for sc in self.assignmentCells:
             for cf in sheaf.cofaces(sc.support):
-                if multiassign or (not self.extend(sheaf,cf.index,tol=tol)):
+                if not self.extend(sheaf,cf.index,tol=tol) and multiassign:
                     self.assignmentCells.append(AssignmentCell(cf.index,
                                                                cf.restriction(sc.value),
                                                                source=sc.support))
@@ -1442,7 +1453,7 @@ def inducedMap(sheaf1,sheaf2,morphism,k,compactSupport=False,tol=1e-5):
     Hk_2=sheaf2.cohomology(k,compactSupport)
 
     if (not Hk_1.size) or (not Hk_2.size):
-        return np.matrix([])
+        return np.array([])
 
     # Extract the k-skeleta of each sheaf
     k_1,ksizes_1,kidx_1=sheaf1.kcells(k,compactSupport)
@@ -1494,7 +1505,7 @@ def perm_parity(lst):
     for i in range(0,len(lst)-1):
         if lst[i] != i:
             parity *= -1
-            mn = min(range(i,len(lst)), key=lst.__getitem__)
+            mn = min(list(range(i,len(lst))), key=lst.__getitem__)
             lst[i],lst[mn] = lst[mn],lst[i]
     return parity
 

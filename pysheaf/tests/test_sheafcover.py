@@ -40,22 +40,22 @@ class TestSheafCover(unittest.TestCase):
     
     def test_covering1(self):
         cover=frozenset(self.testSheaf.consistentCollection(self.asg,threshold=0.5))
-#        print str(cover) + '=?=' + str(frozenset([frozenset({1,2})]))
+#        print(str(cover) + '=?=' + str(frozenset([frozenset({1,2})])))
         self.assertEqual(cover,frozenset([frozenset({1,2})]))
         
     def test_covering2(self):
         cover=frozenset(self.testSheaf.consistentCollection(self.asg,threshold=1.5))
-#        print str(cover) + '=?=' + str(frozenset([frozenset({0,1,2})]))
+#        print(str(cover) + '=?=' + str(frozenset([frozenset({0,1,2})])))
         self.assertEqual(cover,frozenset([frozenset({0,1,2})]))
 
     def test_covering3(self):
         cover=frozenset(self.testSheaf2.consistentCollection(self.asg2,threshold=0.5))
-#        print str(cover) + '=?=' + str(frozenset([frozenset({1,2,3})]))
+#        print(str(cover) + '=?=' + str(frozenset([frozenset({1,2,3})])))
         self.assertEqual(cover,frozenset([frozenset({1,2,3})]))
 
     def test_covering4(self):
         cover=frozenset(self.testSheaf2.consistentCollection(self.asg3,threshold=0.5))
-#        print str(cover) + '=?=' + str(frozenset([frozenset({1,2})]))
+#        print(str(cover) + '=?=' + str(frozenset([frozenset({1,2})])))
         self.assertEqual(cover,frozenset([frozenset({1,2})]))
 
 if __name__ == '__main__':

@@ -4,6 +4,7 @@
 # This software comes with no warrantees express or implied
 
 from setuptools import setup
+#from Cython.Build import cythonize
 
 def readme():
     with open('README') as f:
@@ -21,7 +22,8 @@ setup(name='pysheaf',
       classifiers=[
         'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.6',
         'Topic :: Scientific/Engineering :: Mathematics',
       ],
+#      ext_modules=cythonize('pysheaf/pysheaf.py'),
       zip_safe=False)

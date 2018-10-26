@@ -1,12 +1,12 @@
 PySheaf: Sheaf-theoretic toolbox
 ================================
 
-This repository consists of Python 2.7 libraries for manipulating cell complexes and sheaves of sets or vector spaces on cell complexes [1]_, [2]_, [3]_, [4]_, [5]_, [6]_
+This repository consists of Python 3.6 libraries for manipulating cell complexes and sheaves of sets or vector spaces on cell complexes [1]_, [2]_, [3]_, [4]_, [5]_, [6]_
 
 Documentation:
 --------------
 
-Full documentation is at `<http://kb1dds.github.io/pysheaf/>`_
+Full (out-of-date) documentation is at `<http://kb1dds.github.io/pysheaf/>`_
 
 Download:
 ---------

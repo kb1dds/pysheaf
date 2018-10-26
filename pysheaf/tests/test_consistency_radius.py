@@ -49,9 +49,9 @@ class TestConsistencyRadius(unittest.TestCase):
         '''Test consistency radius after fusing on a small sheaf'''
         # Do the fusion to cell 2
         asg2_2 = self.testSheaf2.fuseAssignment(self.asg2_1,activeCells=[0,1,2],testSupport=[0,1,2])
-        self.assertAlmostEqual(2./3,asg2_2.assignmentCells[0].value,2) # Check that the correct value got found
-        self.assertAlmostEqual(1./3,asg2_2.assignmentCells[1].value,2) # Check that the correct value got found
-        self.assertAlmostEqual(1./3,asg2_2.assignmentCells[2].value,2) # Check that the correct value got found
+        self.assertAlmostEqual(2./3,asg2_2.assignmentCells[0].value[0],2) # Check that the correct value got found
+        self.assertAlmostEqual(1./3,asg2_2.assignmentCells[1].value[0],2) # Check that the correct value got found
+        self.assertAlmostEqual(1./3,asg2_2.assignmentCells[2].value[0],2) # Check that the correct value got found
         
         # Compute consistency radii
         self.assertAlmostEqual(0.,self.testSheaf2.consistencyRadius(asg2_2,testSupport=[0,2]),2) # Local star 0
@@ -63,7 +63,7 @@ class TestConsistencyRadius(unittest.TestCase):
         '''Test consistency radius after extending assignment on a small sheaf'''
         # Do the fusion to cell 2
         asg2_2 = self.testSheaf2.minimizeConsistencyRadius(self.asg2_1,activeCells=[2],testSupport=[0,1,2])
-        self.assertAlmostEqual(0.5,asg2_2.assignmentCells[2].value,2) # Check that the correct value got found
+        self.assertAlmostEqual(0.5,asg2_2.assignmentCells[2].value[0],2) # Check that the correct value got found
 
         # Compute consistency radii
         self.assertAlmostEqual(0.5,self.testSheaf2.consistencyRadius(asg2_2,testSupport=[0,2]),2) # Local star 0
@@ -76,9 +76,9 @@ class TestConsistencyRadius(unittest.TestCase):
         # Do the fusion to cells 2 and 3
         asg2_3 = self.testSheaf2.minimizeConsistencyRadius(self.asg2_1,activeCells=[2,3])
 
-        self.assertLess(1./3,asg2_3.assignmentCells[2].value)
-        self.assertLess(asg2_3.assignmentCells[2].value,2./3)
-        self.assertAlmostEqual(1./3,asg2_3.assignmentCells[3].value,2) # Check that the correct value got found
+        self.assertLess(1./3,asg2_3.assignmentCells[2].value[0])
+        self.assertLess(asg2_3.assignmentCells[2].value[0],2./3)
+        self.assertAlmostEqual(1./3,asg2_3.assignmentCells[3].value[0],2) # Check that the correct value got found
 
         # Compute consistency radii
         self.assertAlmostEqual(0,self.testSheaf2.consistencyRadius(asg2_3,testSupport=[2]),4) # Local star 2
