@@ -6,7 +6,9 @@ This repository consists of Python 3.6 libraries for manipulating cell complexes
 Documentation:
 --------------
 
-Full (out-of-date) documentation is at `<http://kb1dds.github.io/pysheaf/>`_
+Full (very out-of-date) documentation for PySheaf verson v0.xx is at `<http://kb1dds.github.io/pysheaf/>`_
+
+Right now, the best strategy is to look at the example code!
 
 Download:
 ---------
@@ -23,19 +25,20 @@ Usage:
 
 The general plan of usage is
 
-1. First (usually on paper!) lay out the cell complex that will serve as the base for your sheaf.  *Label each cell with a unique index, starting from zero.*  
+1. First (usually on paper!) lay out the cell complex that will serve as the base for your sheaf.  *Give each cell a unique label.*  
 
-2. Determine all of the stalks over each cell, and the restriction maps from lower dimension to higher.  Restriction maps can be a mixture of `numpy` matrices or instances of `LinearMorphism`, `SetMorphism`, or `SheafMorphism`.
+2. Determine all of the stalks over each cell, and the restriction maps.  Restriction maps can be a mixture of `numpy` matrices or arbitrary single-input Python function objects.
    
-3. Construct a `Sheaf` instance from a list of `SheafCell` instances, all at once using the information from the previous two steps.
-   
-4. Analyze the resulting sheaf:
-   
-   a. If you have data, you can build `Assignment` instances whose list of `AssignmentCell` instances refer to your sheaf.
-      
-   b. You can compute cohomology of the `Sheaf` instance as well.
+3. Construct a `Sheaf` instance and add each of your cells as `Cell` instances with the `Sheaf.AddCell` method.  Make sure to use your unique label for each `Cell`, because that is how PySheaf identifies them! Once you've done that, create each restriction as a `Coface` instance and add it to the sheaf using the `Sheaf.AddCoface` method.  The `Sheaf.AddCoface` method will connect the listed `Cell`s based on their labels.  `Cell`s and `Coface`s can be added later if you want, and they can be added in any order provided any `Coface` refers to `Cell`s that already exist.
 
-Have a look at the `pysheaf/tests` folder for some examples!  
+4. Install some data into the sheaf by way of an `Assignment` to some of the `Cell`s.  
+
+5. Analyze the sheaf and its data:
+  a. You can compute consistency radius with `Sheaf.ComputeConsistencyRadius()`
+  b. You can improve the consistency radius by extending or altering the values of the assignment with `Sheaf.FuseAssignment()`.  This will only alter Cells whose `Cell.mOptimizationCell` attribute is `True`.  You can also change the optimization algorithm if you want.
+  c. You can find all star open sets whose local consistency is less than a desired bound using `Sheaf.CellIndexesLessThanConsistencyThreshold()`.
+
+Have a look at the example code for some ideas!  
 
 This code is under active development, so not everything works as it should.  If you find anything that you can correct, feel free to send me suggestions!
 
