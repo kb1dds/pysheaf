@@ -350,7 +350,7 @@ class Sheaf(nx.DiGraph):
       cell_index_below_threshold = []
       for cell_index in cell_index_list:
          if self.GetCell(cell_index).AbleToComputeConsistency() == True:
-            if elf.GetCell(cell_index).ComputeConsistency(self.mNumpyNormType) < consistencyThreshold:
+            if self.GetCell(cell_index).ComputeConsistency(self.mNumpyNormType) < consistencyThreshold:
                cell_index_below_threshold.append(cell_index)
       return cell_index_below_threshold # CellIndexesLessThanConsistencyThreshold
 
