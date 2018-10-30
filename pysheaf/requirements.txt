@@ -1,0 +1,5 @@
+networkx==2.1
+scipy==1.0.0
+matplotlib==2.2.0
+numpy==1.14.2
+deap==1.2.2
