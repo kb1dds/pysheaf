@@ -119,8 +119,12 @@ class Cell:
       self.mExtendedAssignments[cellPathTuple] = extendedAssignment
       return # AddExtendedAssignment
 
-   def GetExtendedAssignmentValueList(self):
-      return list(self.mExtendedAssignments.values()) # GetExtendedAssignment
+   def GetExtendedAssignmentValueList(self,cellStartIndices=None):
+      if cellStartIndices is None:
+         return list(self.mExtendedAssignments.values())
+      else:
+         return [self.mExtendedAssignments[key] for key in self.mExtendedAssignments.keys() 
+                 if key[0] in cellStartIndices] # GetExtendedAssignment
 
    def CheckExtendedAssignmentPresent(self):
       return bool(self.mExtendedAssignments) # CheckExtendedAssignmentPresent
@@ -131,17 +135,20 @@ class Cell:
    def AbleToComputeConsistency(self):
       return self.mDataAssignmentPresent and (len(self.mExtendedAssignments) != 0) # AbleToComputeConsistency
 
-   def ComputeConsistency(self, numpyNormType=np.inf): 
+   def ComputeConsistency(self, numpyNormType=np.inf, cellStartIndices=None): 
       """
       Computes the error between the data assignments and extended assignments on the sheaf
       :param numpyNormType: Optional, how the errors across the sheaf are combined. default is take maximum error.
+      :param cellStartIndices: Optional, which cells may start the data flowed into this cell
       :returns: Error between the data assignments and extended assignments on the sheaf
       """
       if self.mDataAssignmentPresent == False:
          print("Cell::ComputeConsistency: Error, DataAssignment not present for cell")
       if len(self.mExtendedAssignments) == 0:
          print("Cell::ComputeConsistency: Error, ExtendedAssignment not present for cell")
-      tmp_assignments = self.GetExtendedAssignmentValueList()
+      tmp_assignments = self.GetExtendedAssignmentValueList(cellStartIndices)
+      if len(tmp_assignments) == 0:
+         return 0.
       assignment_comparisions = []
       for assignment in tmp_assignments:
          assignment_comparisions.append(self.Compare(self.mDataAssignment.mValue,assignment.mValue))
@@ -254,7 +261,7 @@ class Sheaf(nx.DiGraph):
       """
       nx.DiGraph.__init__(self)
       self.mNumpyNormType = np.inf
-      self.mPreventRedundantExtendedAssignments = True # Gives a speed up by preventing re-extending the same assignment through different paths.
+      self.mPreventRedundantExtendedAssignments = False # If True, gives a speed up by preventing re-extending the same assignment through different paths.
       self.mMaximumOptimizationIterations = 100
       self.mSheafOptimizer = self.DefaultSheafOptimizer
       return # __init__
@@ -342,6 +349,36 @@ class Sheaf(nx.DiGraph):
          self.GetCell(cell_index).ClearExtendedAssignment()
       return # ClearExtendedAssignments
 
+   def ConsistentStarCollection(self,consistencyThreshold):
+      """
+      :returns: The indexes of cells whose stars have consistency radius less than consistencyThreshold
+      """
+      cell_index_list = self.nodes()
+      cell_index_below_threshold = []
+      for cell_index in cell_index_list:
+         local_consistency_radius = 0.
+         star = [cell_index]+list(self.successors(cell_index))
+         for successor in self.successors(cell_index):
+            if self.GetCell(successor).AbleToComputeConsistency() == True:
+               local_consistency = self.GetCell(successor).ComputeConsistency(numpyNormType=self.mNumpyNormType, cellStartIndices=star)
+               if  local_consistency > local_consistency_radius:
+                   local_consistency_radius = local_consistency
+         if local_consistency_radius < consistencyThreshold:
+            cell_index_below_threshold.append(cell_index)
+            
+      # Remove duplicates!
+      maximal_star_list = []
+      for cell_index in cell_index_below_threshold:
+          not_a_duplicate=True
+          for pred in self.predecessors(cell_index):
+              if pred in cell_index_below_threshold:
+                  not_a_duplicate=False
+                  break
+          if not_a_duplicate:
+              maximal_star_list.append(cell_index)
+
+      return maximal_star_list # ConsistentStarCollection
+       
    def CellIndexesLessThanConsistencyThreshold(self,consistencyThreshold):
       """
       :returns: The indexes of cells that have consistencies less than consistencyThreshold
