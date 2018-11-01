@@ -401,7 +401,7 @@ class Sheaf(nx.DiGraph):
       for cell_index in cell_index_list:
          if self.GetCell(cell_index).AbleToComputeConsistency() == True:
             if cell_indexes is None:
-               cell_consistancies_list.append(self.GetCell(cell_index).ComputeConsistency(self.mNumpyNormType)
+               cell_consistancies_list.append(self.GetCell(cell_index).ComputeConsistency(self.mNumpyNormType))
             else:
                cell_consistancies_list.append(self.GetCell(cell_index).ComputeConsistency(self.mNumpyNormType, cellStartIndices=cell_indexes))
       if not cell_consistancies_list:
