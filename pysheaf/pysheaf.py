@@ -28,6 +28,8 @@ debugg Python 3.6 Sheaf manipulation library
 import networkx as nx
 import numpy as np
 import scipy.optimize
+from itertools import combinations
+from collections import defaultdict
 
 # Assignment Types
 CONST_VALUE_TYPE_SCALAR = "Scalar" #for ints, doubles, etc. one value. 
@@ -349,6 +351,62 @@ class Sheaf(nx.DiGraph):
          self.GetCell(cell_index).ClearExtendedAssignment()
       return # ClearExtendedAssignments
 
+   def ConsistencyFiltration(self,consistencyThreshold_list):
+      """
+      Compute the consistency filtration associated to a list of thresholds
+
+      :returns: a list of triples, (connected open set, birth threshold, death threshold)
+      """
+
+      # Construct a dictionary keyed by connected open sets containing the list of thresholds where it's present 
+      d = defaultdict(list)
+      for threshold in consistencyThreshold_list:
+         # Compute consistent open sets... they might not be connected
+         current_collection = self.ConsistentCollection(threshold)
+
+         # Disassemble and store each consistent open set into *connected* consistent open sets
+         for openset in current_collection:
+            subgraph = self.subgraph(openset)
+            for component in nx.weakly_connected_components(subgraph):
+               d[frozenset(component)].append(threshold)
+
+      return [(component,min(threses),max(threses)) for component,threses in d.items()] # ConsistencyFiltration
+
+   def ConsistentCollection(self,consistencyThreshold):
+      """
+      Compute the maximal collection of open sets at a given threshold
+
+      Note: open sets may not be connected
+      Note: Sheaf.ConsistentStarCollection() is much faster, with more concise output.  Unless you need open sets,
+      proper, use that method.
+
+      :returns: a set of frozen sets of cells
+      """
+
+      # Obtain the consistent stars
+      consistent_stars = self.ConsistentStarCollection(consistencyThreshold)
+
+      # Render these stars into actual open sets of elements
+      initial_collection={frozenset([s]+list(self.successors(s))) for s in consistent_stars}
+
+      additions = True
+      collection = set()
+
+      # Form all possible unions of stars.
+      # Note: this is not particularly efficient
+      for k in range(len(initial_collection)):
+         additions = False
+         for sets in combinations(initial_collection,k+1):
+            openset = sets[0].union(*sets[1:])
+            if self.ComputeConsistencyRadius(openset) < consistencyThreshold:
+               additions = True
+               collection.add(frozenset(openset))
+         if not additions:
+            break
+
+      # Remove redundant open sets before returning
+      return {s for s in collection if not [r for r in collection if s is not r and s.issubset(r)]} # ConsistentCollection
+
    def ConsistentStarCollection(self,consistencyThreshold):
       """
       :returns: The indexes of cells whose stars have consistency radius less than consistencyThreshold
@@ -356,17 +414,11 @@ class Sheaf(nx.DiGraph):
       cell_index_list = self.nodes()
       cell_index_below_threshold = []
       for cell_index in cell_index_list:
-         local_consistency_radius = 0.
-         star = [cell_index]+list(self.successors(cell_index))
-         for successor in self.successors(cell_index):
-            if self.GetCell(successor).AbleToComputeConsistency() == True:
-               local_consistency = self.GetCell(successor).ComputeConsistency(numpyNormType=self.mNumpyNormType, cellStartIndices=star)
-               if  local_consistency > local_consistency_radius:
-                   local_consistency_radius = local_consistency
+         local_consistency_radius=self.ComputeConsistencyRadius([cell_index]+list(self.successors(cell_index)))
          if local_consistency_radius < consistencyThreshold:
             cell_index_below_threshold.append(cell_index)
             
-      # Remove duplicates!
+      # Remove redundant stars in the cover
       maximal_star_list = []
       for cell_index in cell_index_below_threshold:
           not_a_duplicate=True
@@ -391,20 +443,27 @@ class Sheaf(nx.DiGraph):
                cell_index_below_threshold.append(cell_index)
       return cell_index_below_threshold # CellIndexesLessThanConsistencyThreshold
 
-   def ComputeConsistencyRadius(self):
+   def ComputeConsistencyRadius(self,cell_indexes=None):
       """
-      This method will call compute consistency on all cells in the sheaf. The default behavior is to 
-      then return the max error. This can be changed by setting mNumpyNormType
+      This method will call compute consistency on all cells (default) or those specified by cell_indexes in the sheaf. 
+      The default behavior is to then return the max error. This can be changed by setting mNumpyNormType
 
-      :returns: error of the sheaf
+      :returns: consistency radius of the sheaf assignment
       """
-      cell_index_list = self.nodes()
+      if cell_indexes is None:
+         cell_index_list = self.nodes()
+      else:
+         cell_index_list = cell_indexes
+
       cell_consistancies_list = []
       for cell_index in cell_index_list:
          if self.GetCell(cell_index).AbleToComputeConsistency() == True:
-            cell_consistancies_list.append(self.GetCell(cell_index).ComputeConsistency(self.mNumpyNormType))
-      if not cell_consistancies_list:
-         print("Sheaf::ComputeConsistencyRadius: Error, unable to compute consistency for any cells")
+            if cell_indexes is None:
+               cell_consistancies_list.append(self.GetCell(cell_index).ComputeConsistency(self.mNumpyNormType))
+            else:
+               cell_consistancies_list.append(self.GetCell(cell_index).ComputeConsistency(self.mNumpyNormType, cellStartIndices=cell_indexes))
+      #if not cell_consistancies_list:
+      #   print("Sheaf::ComputeConsistencyRadius: Error, unable to compute consistency for any cells")
       return np.linalg.norm(cell_consistancies_list,ord=self.mNumpyNormType) # ComputeConsistencyRadius
 
    def SerializeAssignments(self):
