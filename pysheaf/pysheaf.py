@@ -28,6 +28,8 @@ debugg Python 3.6 Sheaf manipulation library
 import networkx as nx
 import numpy as np
 import scipy.optimize
+from itertools import combinations
+from collections import defaultdict
 
 # Assignment Types
 CONST_VALUE_TYPE_SCALAR = "Scalar" #for ints, doubles, etc. one value. 
@@ -348,6 +350,62 @@ class Sheaf(nx.DiGraph):
       for cell_index in cell_index_list:
          self.GetCell(cell_index).ClearExtendedAssignment()
       return # ClearExtendedAssignments
+
+   def ConsistencyFiltration(self,consistencyThreshold_list):
+      """
+      Compute the consistency filtration associated to a list of thresholds
+
+      :returns: a list of triples, (connected open set, birth threshold, death threshold)
+      """
+
+      # Construct a dictionary keyed by connected open sets containing the list of thresholds where it's present 
+      d = defaultdict(list)
+      for threshold in consistencyThreshold_list:
+         # Compute consistent open sets... they might not be connected
+         current_collection = self.ConsistentCollection(threshold)
+
+         # Disassemble and store each consistent open set into *connected* consistent open sets
+         for openset in current_collection:
+            subgraph = self.subgraph(openset)
+            for component in nx.weakly_connected_components(subgraph):
+               d[frozenset(component)].append(threshold)
+
+      return [(component,min(threses),max(threses)) for component,threses in d.items()] # ConsistencyFiltration
+
+   def ConsistentCollection(self,consistencyThreshold):
+      """
+      Compute the maximal collection of open sets at a given threshold
+
+      Note: open sets may not be connected
+      Note: Sheaf.ConsistentStarCollection() is much faster, with more concise output.  Unless you need open sets,
+      proper, use that method.
+
+      :returns: a set of frozen sets of cells
+      """
+
+      # Obtain the consistent stars
+      consistent_stars = self.ConsistentStarCollection(consistencyThreshold)
+
+      # Render these stars into actual open sets of elements
+      initial_collection={frozenset([s]+list(self.successors(s))) for s in consistent_stars}
+
+      additions = True
+      collection = set()
+
+      # Form all possible unions of stars.
+      # Note: this is not particularly efficient
+      for k in range(len(initial_collection)):
+         additions = False
+         for sets in combinations(initial_collection,k+1):
+            openset = sets[0].union(*sets[1:])
+            if self.ComputeConsistencyRadius(openset) < consistencyThreshold:
+               additions = True
+               collection.add(frozenset(openset))
+         if not additions:
+            break
+
+      # Remove redundant open sets before returning
+      return {s for s in collection if not [r for r in collection if s is not r and s.issubset(r)]} # ConsistentCollection
 
    def ConsistentStarCollection(self,consistencyThreshold):
       """
