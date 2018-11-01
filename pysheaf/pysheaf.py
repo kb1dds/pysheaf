@@ -356,17 +356,11 @@ class Sheaf(nx.DiGraph):
       cell_index_list = self.nodes()
       cell_index_below_threshold = []
       for cell_index in cell_index_list:
-         local_consistency_radius = 0.
-         star = [cell_index]+list(self.successors(cell_index))
-         for successor in self.successors(cell_index):
-            if self.GetCell(successor).AbleToComputeConsistency() == True:
-               local_consistency = self.GetCell(successor).ComputeConsistency(numpyNormType=self.mNumpyNormType, cellStartIndices=star)
-               if  local_consistency > local_consistency_radius:
-                   local_consistency_radius = local_consistency
+         local_consistency_radius=self.ComputeConsistencyRadius([cell_index]+list(self.successors(cell_index)))
          if local_consistency_radius < consistencyThreshold:
             cell_index_below_threshold.append(cell_index)
             
-      # Remove duplicates!
+      # Remove redundant stars in the cover
       maximal_star_list = []
       for cell_index in cell_index_below_threshold:
           not_a_duplicate=True
@@ -391,18 +385,25 @@ class Sheaf(nx.DiGraph):
                cell_index_below_threshold.append(cell_index)
       return cell_index_below_threshold # CellIndexesLessThanConsistencyThreshold
 
-   def ComputeConsistencyRadius(self):
+   def ComputeConsistencyRadius(self,cell_indexes=None):
       """
-      This method will call compute consistency on all cells in the sheaf. The default behavior is to 
-      then return the max error. This can be changed by setting mNumpyNormType
+      This method will call compute consistency on all cells (default) or those specified by cell_indexes in the sheaf. 
+      The default behavior is to then return the max error. This can be changed by setting mNumpyNormType
 
-      :returns: error of the sheaf
+      :returns: consistency radius of the sheaf assignment
       """
-      cell_index_list = self.nodes()
+      if cell_indexes is None:
+         cell_index_list = self.nodes()
+      else:
+         cell_index_list = cell_indexes
+
       cell_consistancies_list = []
       for cell_index in cell_index_list:
          if self.GetCell(cell_index).AbleToComputeConsistency() == True:
-            cell_consistancies_list.append(self.GetCell(cell_index).ComputeConsistency(self.mNumpyNormType))
+            if cell_indexes is None:
+               cell_consistancies_list.append(self.GetCell(cell_index).ComputeConsistency(self.mNumpyNormType)
+            else:
+               cell_consistancies_list.append(self.GetCell(cell_index).ComputeConsistency(self.mNumpyNormType, cellStartIndices=cell_indexes))
       if not cell_consistancies_list:
          print("Sheaf::ComputeConsistencyRadius: Error, unable to compute consistency for any cells")
       return np.linalg.norm(cell_consistancies_list,ord=self.mNumpyNormType) # ComputeConsistencyRadius
