@@ -404,8 +404,8 @@ class Sheaf(nx.DiGraph):
                cell_consistancies_list.append(self.GetCell(cell_index).ComputeConsistency(self.mNumpyNormType))
             else:
                cell_consistancies_list.append(self.GetCell(cell_index).ComputeConsistency(self.mNumpyNormType, cellStartIndices=cell_indexes))
-      if not cell_consistancies_list:
-         print("Sheaf::ComputeConsistencyRadius: Error, unable to compute consistency for any cells")
+      #if not cell_consistancies_list:
+      #   print("Sheaf::ComputeConsistencyRadius: Error, unable to compute consistency for any cells")
       return np.linalg.norm(cell_consistancies_list,ord=self.mNumpyNormType) # ComputeConsistencyRadius
 
    def SerializeAssignments(self):
