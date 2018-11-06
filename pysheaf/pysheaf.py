@@ -121,13 +121,16 @@ class Cell:
       self.mExtendedAssignments[cellPathTuple] = extendedAssignment
       return # AddExtendedAssignment
 
-   def GetExtendedAssignmentValueList(self,cellStartIndices=None):
+   def GetLocalExtendedAssignmentValueList(self,cellStartIndices=None):
       if cellStartIndices is None:
-         return list(self.mExtendedAssignments.values())
+         return self.GetExtendedAssignmentValueList()
       else:
          return [self.mExtendedAssignments[key] for key in self.mExtendedAssignments.keys() 
-                 if key[0] in cellStartIndices] # GetExtendedAssignment
+                 if key[0] in cellStartIndices] # GetLocalExtendedAssignmentValueList
 
+   def GetExtendedAssignmentValueList(self):
+      return list(self.mExtendedAssignments.values()) # GetExtendedAssignmentValueList
+  
    def CheckExtendedAssignmentPresent(self):
       return bool(self.mExtendedAssignments) # CheckExtendedAssignmentPresent
 
@@ -148,7 +151,7 @@ class Cell:
          print("Cell::ComputeConsistency: Error, DataAssignment not present for cell")
       if len(self.mExtendedAssignments) == 0:
          print("Cell::ComputeConsistency: Error, ExtendedAssignment not present for cell")
-      tmp_assignments = self.GetExtendedAssignmentValueList(cellStartIndices)
+      tmp_assignments = self.GetLocalExtendedAssignmentValueList(cellStartIndices)
       if len(tmp_assignments) == 0:
          return 0.
       assignment_comparisions = []
