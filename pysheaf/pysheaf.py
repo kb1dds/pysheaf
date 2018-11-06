@@ -351,7 +351,7 @@ class Sheaf(nx.DiGraph):
          self.GetCell(cell_index).ClearExtendedAssignment()
       return # ClearExtendedAssignments
 
-   def ConsistencyFiltration(self,consistencyThreshold_list):
+   def ConsistencyFiltration(self,consistencyThresholdList):
       """
       Compute the consistency filtration associated to a list of thresholds
 
@@ -359,8 +359,8 @@ class Sheaf(nx.DiGraph):
       """
 
       # Construct a dictionary keyed by connected open sets containing the list of thresholds where it's present 
-      d = defaultdict(list)
-      for threshold in consistencyThreshold_list:
+      threshold_dictionary = defaultdict(list)
+      for threshold in consistencyThresholdList:
          # Compute consistent open sets... they might not be connected
          current_collection = self.ConsistentCollection(threshold)
 
@@ -368,9 +368,14 @@ class Sheaf(nx.DiGraph):
          for openset in current_collection:
             subgraph = self.subgraph(openset)
             for component in nx.weakly_connected_components(subgraph):
-               d[frozenset(component)].append(threshold)
+               threshold_dictionary[frozenset(component)].append(threshold)
+               
+      # Assemble persistence diagram
+      persistence_diagram=[]
+      for component,threses in threshold_dictionary.items():
+          persistence_diagram.append((component,min(threses),max(threses)))
 
-      return [(component,min(threses),max(threses)) for component,threses in d.items()] # ConsistencyFiltration
+      return persistence_diagram # ConsistencyFiltration
 
    def ConsistentCollection(self,consistencyThreshold):
       """
@@ -387,25 +392,35 @@ class Sheaf(nx.DiGraph):
       consistent_stars = self.ConsistentStarCollection(consistencyThreshold)
 
       # Render these stars into actual open sets of elements
-      initial_collection={frozenset([s]+list(self.successors(s))) for s in consistent_stars}
-
-      additions = True
-      collection = set()
+      initial_collection = set()
+      for s in consistent_stars:
+          initial_collection.add(frozenset([s]+list(self.successors(s))))
 
       # Form all possible unions of stars.
       # Note: this is not particularly efficient
-      for k in range(len(initial_collection)):
-         additions = False
-         for sets in combinations(initial_collection,k+1):
-            openset = sets[0].union(*sets[1:])
-            if self.ComputeConsistencyRadius(openset) < consistencyThreshold:
-               additions = True
-               collection.add(frozenset(openset))
-         if not additions:
+      openset_collection = set()
+      for number_of_sets_in_union in range(len(initial_collection)):
+         updates_made = False
+         for opensets_for_union in combinations(initial_collection,number_of_sets_in_union+1):
+            openset = opensets_for_union[0].union(*opensets_for_union[1:])
+            if self.ComputeLocalConsistencyRadius(openset) < consistencyThreshold:
+               updates_made = True
+               openset_collection.add(frozenset(openset))
+         if not updates_made:
             break
 
       # Remove redundant open sets before returning
-      return {s for s in collection if not [r for r in collection if s is not r and s.issubset(r)]} # ConsistentCollection
+      openset_collection_irredundant = set()
+      for first_openset in openset_collection:
+          redundant = False
+          for second_openset in openset_collection:
+              if (first_openset is not second_openset) and first_openset.issubset(second_openset):
+                  redundant = True
+                  break
+          if not redundant:
+              openset_collection_irredundant.add(first_openset)
+              
+      return openset_collection_irredundant # ConsistentCollection
 
    def ConsistentStarCollection(self,consistencyThreshold):
       """
@@ -414,7 +429,7 @@ class Sheaf(nx.DiGraph):
       cell_index_list = self.nodes()
       cell_index_below_threshold = []
       for cell_index in cell_index_list:
-         local_consistency_radius=self.ComputeConsistencyRadius([cell_index]+list(self.successors(cell_index)))
+         local_consistency_radius=self.ComputeLocalConsistencyRadius([cell_index]+list(self.successors(cell_index)))
          if local_consistency_radius < consistencyThreshold:
             cell_index_below_threshold.append(cell_index)
             
@@ -443,28 +458,36 @@ class Sheaf(nx.DiGraph):
                cell_index_below_threshold.append(cell_index)
       return cell_index_below_threshold # CellIndexesLessThanConsistencyThreshold
 
-   def ComputeConsistencyRadius(self,cell_indexes=None):
+   def ComputeLocalConsistencyRadius(self,cellIndices=None):
+      """
+      This method will call compute consistency on all cells (default) or those specified by cellIndices in the sheaf. 
+      The default behavior is to then return the max error. This can be changed by setting mNumpyNormType
+
+      :returns: consistency radius of the sheaf assignment
+      """
+      if cellIndices is None:
+         cell_index_list = self.nodes()
+      else:
+         cell_index_list = cellIndices
+
+      cell_consistancies_list = []
+      for cell_index in cell_index_list:
+         if self.GetCell(cell_index).AbleToComputeConsistency() == True:
+            if cellIndices is None:
+               cell_consistancies_list.append(self.GetCell(cell_index).ComputeConsistency(self.mNumpyNormType))
+            else:
+               cell_consistancies_list.append(self.GetCell(cell_index).ComputeConsistency(self.mNumpyNormType, cellStartIndices=cellIndices))
+
+      return np.linalg.norm(cell_consistancies_list,ord=self.mNumpyNormType) # ComputeConsistencyRadius
+      
+   def ComputeConsistencyRadius(self):
       """
       This method will call compute consistency on all cells (default) or those specified by cell_indexes in the sheaf. 
       The default behavior is to then return the max error. This can be changed by setting mNumpyNormType
 
       :returns: consistency radius of the sheaf assignment
       """
-      if cell_indexes is None:
-         cell_index_list = self.nodes()
-      else:
-         cell_index_list = cell_indexes
-
-      cell_consistancies_list = []
-      for cell_index in cell_index_list:
-         if self.GetCell(cell_index).AbleToComputeConsistency() == True:
-            if cell_indexes is None:
-               cell_consistancies_list.append(self.GetCell(cell_index).ComputeConsistency(self.mNumpyNormType))
-            else:
-               cell_consistancies_list.append(self.GetCell(cell_index).ComputeConsistency(self.mNumpyNormType, cellStartIndices=cell_indexes))
-      #if not cell_consistancies_list:
-      #   print("Sheaf::ComputeConsistencyRadius: Error, unable to compute consistency for any cells")
-      return np.linalg.norm(cell_consistancies_list,ord=self.mNumpyNormType) # ComputeConsistencyRadius
+      return self.ComputeLocalConsistencyRadius(cellIndices=None)
 
    def SerializeAssignments(self):
       """
