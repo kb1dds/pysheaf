@@ -52,6 +52,7 @@ class Cell:
       self.mOptimizationCell = optimizationCell # if the cell's data assignment can be changed by the optimizer
       self.mExtendFromThisCell = extendFromThisCell # if the cell should be maximally extended from
       self.mBounds = [(None,None)] * self.mDataDimension # python magic for a list of tuples the length of dimension
+      self.mExtendedAssignmentConsistancyWeightDivisor = 2.0
       if compareAssignmentsMethod==None:
          self.Compare = self.DefaultCompareAssignments
       else:
@@ -138,7 +139,9 @@ class Cell:
       return self.mDataAssignmentPresent # CheckDataAssignmentPresent
 
    def AbleToComputeConsistency(self):
-      return self.mDataAssignmentPresent and (len(self.mExtendedAssignments) != 0) # AbleToComputeConsistency
+      multiple_extended_assignments = (len(self.mExtendedAssignments) > 1)
+      data_and_extended_assignments = self.mDataAssignmentPresent and (len(self.mExtendedAssignments) != 0)
+      return multiple_extended_assignments or data_and_extended_assignments # AbleToComputeConsistency
 
    def ComputeConsistency(self, numpyNormType=np.inf, cellStartIndices=None): 
       """
@@ -147,16 +150,20 @@ class Cell:
       :param cellStartIndices: Optional, which cells may start the data flowed into this cell
       :returns: Error between the data assignments and extended assignments on the sheaf
       """
-      if self.mDataAssignmentPresent == False:
-         print("Cell::ComputeConsistency: Error, DataAssignment not present for cell")
       if len(self.mExtendedAssignments) == 0:
          print("Cell::ComputeConsistency: Error, ExtendedAssignment not present for cell")
       tmp_assignments = self.GetLocalExtendedAssignmentValueList(cellStartIndices)
       if len(tmp_assignments) == 0:
          return 0.
       assignment_comparisions = []
-      for assignment in tmp_assignments:
-         assignment_comparisions.append(self.Compare(self.mDataAssignment.mValue,assignment.mValue))
+      if self.mDataAssignmentPresent == True: 
+         for assignment in tmp_assignments:
+            assignment_comparisions.append(self.Compare(self.mDataAssignment.mValue,assignment.mValue))
+      for current_assignment_index in range(len(tmp_assignments)):
+         for test_assignment_index in range(len(tmp_assignments)):
+            if current_assignment_index != test_assignment_index:
+               assignment_comparisions.append(self.Compare(tmp_assignments[current_assignment_index].mValue,tmp_assignments[test_assignment_index].mValue)/self.mExtendedAssignmentConsistancyWeightDivisor)
+      
       return np.linalg.norm(assignment_comparisions,ord=numpyNormType) # ComputeConsistency
 
    def DefaultCompareAssignments(self,leftValue,rightValue):
@@ -396,8 +403,8 @@ class Sheaf(nx.DiGraph):
 
       # Render these stars into actual open sets of elements
       initial_collection = set()
-      for s in consistent_stars:
-          initial_collection.add(frozenset([s]+list(self.successors(s))))
+      for star in consistent_stars:
+          initial_collection.add(frozenset([star]+list(self.successors(star))))
 
       # Form all possible unions of stars.
       # Note: this is not particularly efficient
