@@ -24,8 +24,19 @@ import numpy as np
 import pysheaf as ps
 import dataTools
 
-
-
+def BuildConstantSheaf(G, dataDimension=1):
+    """Construct a constant sheaf on a graph G with a given dataDimension"""
+    shf=ps.Sheaf()
+    
+    # Add cells for each node in the graph
+    for node in G.nodes():
+        shf.AddCell(node, ps.Cell('vector',dataDimension=dataDimension))
+        
+    # Add cofaces for each edge in the graph
+    for edge in G.edges():
+        shf.AddCoface(edge[0],edge[1],ps.Coface('vector','vector',dataTools.LinearMorphism(np.eye(dataDimension))))
+    
+    return shf # BuildConstantSheaf
 
 class LinearAlgebraSheafAnalysisTool:
    def __init__(self, inputSheaf):
