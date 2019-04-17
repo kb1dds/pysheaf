@@ -28,6 +28,10 @@ debugg Python 3.6 Sheaf manipulation library
 import networkx as nx
 import numpy as np
 import scipy.optimize
+import os
+import time
+import datetime
+import socket
 from itertools import combinations
 from collections import defaultdict
 
@@ -263,6 +267,7 @@ class Sheaf(nx.DiGraph):
    FuseAssignment 
    ComputeConsistencyRadius
    """
+   directory_output_path="output"
    def __init__(self):
       """ 
       users can set the following at any time after construction 
@@ -591,3 +596,51 @@ class Sheaf(nx.DiGraph):
 
    def DefaultSheafOptimizer(self, functionToIterate, serializedAssignments, boundsList,maxIterations):
       return scipy.optimize.minimize(functionToIterate,serializedAssignments,method = "SLSQP",bounds=boundsList, tol = 1e-5, options = {'maxiter':maxIterations}) # DefualtSheafOptimizer
+
+   def CreateOutputFolder(self,thePath):
+      """
+      Create an output folder.
+      """
+      print("Create an Output Folder")
+      newtimestr = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+      sid = socket.gethostname()
+      thename = "PySheaf_" + newtimestr + "_" + sid
+      Sheaf.directory_output_path = os.path.join(thePath, thename)
+
+      if not os.path.exists(Sheaf.directory_output_path):
+         print("The path doesn't exist.  Trying to make.")
+         os.makedirs(Sheaf.directory_output_path)
+
+   def OutputConsistencyRadius(self,cr):
+      """
+      Write the consistency radius to an output file.
+      """
+      file_name = 'ConsistencyRadius.txt'
+      f = open(os.path.join(Sheaf.directory_output_path, file_name), 'a+')
+      f.write(str(cr))
+      f.write("\n")
+      f.close()
+
+   def OutputFuseAssignment(self,cr):
+      """
+      Write the fuse assignment to an output file.
+      """
+      file_name = 'FuseAssignment.txt'
+      f = open(os.path.join(Sheaf.directory_output_path, file_name), 'a+')
+      f.write(str(cr))
+      f.write("\n")
+      f.close()
+
+   def OutputConsistencyFiltration(self,threshold,cf):
+      """
+      Write the consistency filtration to an output file.
+      """
+      file_name = 'ConsistencyFiltration.txt'
+      f = open(os.path.join(Sheaf.directory_output_path, file_name), 'a+')
+      th = str(threshold)
+      f.write(th)
+      f.write(str(" : "))
+      f.write(str(cf))
+      f.write("\n")
+      f.close()
+
