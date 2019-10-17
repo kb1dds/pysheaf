@@ -444,7 +444,7 @@ class Sheaf(nx.DiGraph):
       cell_index_list = self.nodes()
       cell_index_below_threshold = []
       for cell_index in cell_index_list:
-         local_consistency_radius=self.ComputeLocalConsistencyRadius([cell_index]+list(self.successors(cell_index)))
+         local_consistency_radius=self.ComputeStarLocalConsistencyRadius(cell_index)
          if local_consistency_radius < consistencyThreshold:
             cell_index_below_threshold.append(cell_index)
             
@@ -494,7 +494,16 @@ class Sheaf(nx.DiGraph):
                cell_consistancies_list.append(self.GetCell(cell_index).ComputeConsistency(self.mNumpyNormType, cellStartIndices=cellIndices))
 
       return np.linalg.norm(cell_consistancies_list,ord=self.mNumpyNormType) # ComputeConsistencyRadius
-      
+   
+   def ComputeStarLocalConsistencyRadius(self,cellIndex):
+      """
+      This method computes the local consistency radius of a star started on a given cellIndex.
+      The default behavior is to then return the max error. This can be changed by setting mNumpyNormType
+
+      :returns: consistency radius of the sheaf assignment
+      """
+      return self.ComputeLocalConsistencyRadius([cellIndex]+list(self.successors(cellIndex)))
+   
    def ComputeConsistencyRadius(self):
       """
       This method will call compute consistency on all cells (default) or those specified by cell_indexes in the sheaf. 
