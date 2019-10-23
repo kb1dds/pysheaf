@@ -23,6 +23,40 @@
 import numpy as np
 import pysheaf as ps
 import dataTools
+import networkx as nx
+
+def LocallyFuseAssignment( sheaf ):
+    '''
+    Perform Sheaf.FuseAssignment() locally, which should use less memory (but is probably slower)
+    '''
+    
+    # Locality for this is based on connected sets of optimization cells.  
+    optimization_cell_indices=sheaf.GetOptimizationCellIndexList() 
+    
+    # To find connected components of optimization cells, build an undirected graph whose vertices are optimization cells
+    # and edges are induced by the sheaf's graph
+    G=sheaf.to_undirected().subgraph(optimization_cell_indices)
+    
+    # For each component, 
+    #  1. Turn on each component as optimization cells, 
+    #  2. turn off the rest, and 
+    #  3. run FuseAssignment.  
+    for component in nx.connected_components(G):
+        for node in sheaf.nodes():
+            if node in component:
+                sheaf.GetCell(node).mOptimizationCell=True
+            else:
+                sheaf.GetCell(node).mOptimizationCell=False
+        sheaf.FuseAssignment()
+
+    # Put the optimization cells back to the way they were
+    for node in sheaf.nodes():
+        if node in optimization_cell_indices:
+            sheaf.GetCell(node).mOptimizationCell=True
+        else:
+            sheaf.GetCell(node).mOptimizationCell=False
+            
+    return
 
 def BuildConstantSheaf(G, dataDimension=1):
     """Construct a constant sheaf on a graph G with a given dataDimension"""
