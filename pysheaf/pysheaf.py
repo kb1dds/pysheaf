@@ -295,7 +295,7 @@ class Sheaf(nx.DiGraph):
       return # AddCoface
 
    def GetCell(self,cellIndex):
-      return self.node[cellIndex]['vertex'] # GetCell
+      return self.nodes[cellIndex]['vertex'] # GetCell
 
    def GetCoface(self, cellIndexStart, cellIndexTo):
       return self[cellIndexStart][cellIndexTo]['edge'] # GetCoface
