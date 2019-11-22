@@ -30,6 +30,9 @@ def LocallyFuseAssignment( sheaf ):
     Perform Sheaf.FuseAssignment() locally, which should use less memory (but is probably slower)
     '''
     
+    # Any cell marked as not being solved for doesn't get extended assignments
+    sheaf.ClearExtendedAssignments()
+    
     # Locality for this is based on connected sets of optimization cells.  
     optimization_cell_indices=sheaf.GetOptimizationCellIndexList() 
     
@@ -42,12 +45,29 @@ def LocallyFuseAssignment( sheaf ):
     #  2. turn off the rest, and 
     #  3. run FuseAssignment.  
     for component in nx.connected_components(G):
+        # TODO TBD: The views thing is not working correctly.  I think I need to copy!
         for node in sheaf.nodes():
             if node in component:
                 sheaf.GetCell(node).mOptimizationCell=True
             else:
                 sheaf.GetCell(node).mOptimizationCell=False
-        sheaf.FuseAssignment()
+                sheaf.GetCell(node).ClearExtendedAssignment()
+
+        print('=====')
+        print(component)
+        print('?????')
+        print([x for x in sheaf.nodes() if (x in component) or [nd2 for nd2 in component if x in sheaf.successors(nd2)]])
+        # Focus our attention on this component, only.  (This avoids flowdown dependencies from other cells)
+        subsheaf=nx.classes.graphviews.subgraph_view(sheaf,filter_node=lambda x: (x in component) or [nd2 for nd2 in component if x in sheaf.successors(nd2)])
+        print('.....')
+        subsheaf.FuseAssignment()
+        print('Subsheaf consistency {}'.format(subsheaf.ComputeConsistencyRadius()))
+
+        for nd in subsheaf.nodes():
+            print(' Node {}, value = {}'.format(nd,sheaf.GetCell(nd).mDataAssignment))
+        for nd1,nd2 in subsheaf.edges():
+            print(' Edge {},{}, type={}, value = {}'.format(nd1,nd2,type(sheaf.GetCoface(nd1,nd2).mEdgeMethod),sheaf.GetCoface(nd1,nd2).mEdgeMethod.matrix))
+        print('-----')
 
     # Put the optimization cells back to the way they were
     for node in sheaf.nodes():
