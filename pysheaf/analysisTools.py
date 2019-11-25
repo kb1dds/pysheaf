@@ -53,21 +53,11 @@ def LocallyFuseAssignment( sheaf ):
                 sheaf.GetCell(node).mOptimizationCell=False
                 sheaf.GetCell(node).ClearExtendedAssignment()
 
-        print('=====')
-        print(component)
-        print('?????')
-        print([x for x in sheaf.nodes() if (x in component) or [nd2 for nd2 in component if x in sheaf.successors(nd2)]])
         # Focus our attention on this component, only.  (This avoids flowdown dependencies from other cells)
         subsheaf=nx.classes.graphviews.subgraph_view(sheaf,filter_node=lambda x: (x in component) or [nd2 for nd2 in component if x in sheaf.successors(nd2)])
-        print('.....')
+        
+        # Perform the optimization
         subsheaf.FuseAssignment()
-        print('Subsheaf consistency {}'.format(subsheaf.ComputeConsistencyRadius()))
-
-        for nd in subsheaf.nodes():
-            print(' Node {}, value = {}'.format(nd,sheaf.GetCell(nd).mDataAssignment))
-        for nd1,nd2 in subsheaf.edges():
-            print(' Edge {},{}, type={}, value = {}'.format(nd1,nd2,type(sheaf.GetCoface(nd1,nd2).mEdgeMethod),sheaf.GetCoface(nd1,nd2).mEdgeMethod.matrix))
-        print('-----')
 
     # Put the optimization cells back to the way they were
     for node in sheaf.nodes():
@@ -76,6 +66,10 @@ def LocallyFuseAssignment( sheaf ):
         else:
             sheaf.GetCell(node).mOptimizationCell=False
             
+    # Propagate all extended assignments, since that's what Sheaf.FuseAssignment() does at this point
+    for c in sheaf.GetCellIndexList(): 
+        sheaf.MaximallyExtendCell(c)
+    
     return
 
 def BuildConstantSheaf(G, dataDimension=1):
