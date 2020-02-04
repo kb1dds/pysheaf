@@ -168,7 +168,7 @@ class Cell:
             if current_assignment_index != test_assignment_index:
                assignment_comparisions.append(self.Compare(tmp_assignments[current_assignment_index].mValue,tmp_assignments[test_assignment_index].mValue)/self.mExtendedAssignmentConsistancyWeightDivisor)
       
-      return np.linalg.norm(assignment_comparisions,ord=numpyNormType) # ComputeConsistency
+      return np.linalg.norm(np.array(assignment_comparisions,dtype='float'),ord=numpyNormType) # ComputeConsistency
 
    def DefaultCompareAssignments(self,leftValue,rightValue):
       return abs(leftValue - rightValue) #DefaultCompareAssignments
