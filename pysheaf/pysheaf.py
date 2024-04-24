@@ -502,7 +502,7 @@ class Sheaf(nx.DiGraph):
 
       :returns: consistency radius of the sheaf assignment
       """
-      return self.ComputeLocalConsistencyRadius([cellIndex]+list(self.successors(cellIndex)))
+      return self.ComputeLocalConsistencyRadius([cellIndex]+[item for v in nx.dfs_successors(self,cellIndex).values() for item in v])
    
    def ComputeConsistencyRadius(self):
       """
