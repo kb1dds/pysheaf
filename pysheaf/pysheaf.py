@@ -56,7 +56,7 @@ class Cell:
       self.mOptimizationCell = optimizationCell # if the cell's data assignment can be changed by the optimizer
       self.mExtendFromThisCell = extendFromThisCell # if the cell should be maximally extended from
       self.mBounds = [(None,None)] * self.mDataDimension # python magic for a list of tuples the length of dimension
-      self.mExtendedAssignmentConsistancyWeightDivisor = 2.0
+      self.mExtendedAssignmentConsistancyWeight = None  # If None, only compare assignments against assignment ON this cell.  Otherwise, compare incoming assignments using this weight
       if compareAssignmentsMethod==None:
          self.Compare = self.DefaultCompareAssignments
       else:
@@ -163,10 +163,11 @@ class Cell:
       if self.mDataAssignmentPresent == True: 
          for assignment in tmp_assignments:
             assignment_comparisions.append(self.Compare(self.mDataAssignment.mValue,assignment.mValue))
-      for current_assignment_index in range(len(tmp_assignments)):
-         for test_assignment_index in range(len(tmp_assignments)):
-            if current_assignment_index != test_assignment_index:
-               assignment_comparisions.append(self.Compare(tmp_assignments[current_assignment_index].mValue,tmp_assignments[test_assignment_index].mValue)/self.mExtendedAssignmentConsistancyWeightDivisor)
+      if self.mExtendedAssignmentConsistancyWeight is not None:
+         for current_assignment_index in range(len(tmp_assignments)):
+            for test_assignment_index in range(len(tmp_assignments)):
+               if current_assignment_index != test_assignment_index:
+                  assignment_comparisions.append(self.Compare(tmp_assignments[current_assignment_index].mValue,tmp_assignments[test_assignment_index].mValue)*self.mExtendedAssignmentConsistancyWeight)
       
       return np.linalg.norm(np.array(assignment_comparisions,dtype='float'),ord=numpyNormType) # ComputeConsistency
 
