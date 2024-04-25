@@ -22,7 +22,7 @@
 
 import numpy as np
 import pysheaf as ps
-from . import dataTools
+import dataTools
 import networkx as nx
 
 def LocallyFuseAssignment( sheaf ):
