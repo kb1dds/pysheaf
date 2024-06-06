@@ -23,11 +23,10 @@ jobs:
         with:
           python-version: '3.12'
 
-      # ADJUST THIS: install all dependencies (including pdoc)
       - run: pip install -e .
       # ADJUST THIS: build your documentation into docs/.
       # We use a custom build script for pdoc itself, ideally you just run `pdoc -o docs/ ...` here.
-      - run: python pdoc pysheaf/pysheaf.py -o docs/
+      - run: pdoc pysheaf/pysheaf.py -o docs/
 
       - uses: actions/upload-pages-artifact@v3
         with:
