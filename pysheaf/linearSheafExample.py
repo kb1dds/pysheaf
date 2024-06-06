@@ -22,8 +22,8 @@
 
 import numpy as np
 import pysheaf as ps
-import dataTools
-import analysisTools
+#import dataTools
+#import analysisTools
 
 
 def CompareArrays(array1,array2):
