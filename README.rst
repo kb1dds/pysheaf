@@ -18,8 +18,6 @@ You can install by cloning this repo (there is no PyPI package).  For Linux, you
   $ git clone https://github.com/kb1dds/pysheaf.git
   $ pip install pysheaf
 
-See the `documentation <http://kb1dds.github.io/pysheaf/install.html>`_ for full details!  (Though it's a bit out of date...)
-
 Usage:
 ------
 
