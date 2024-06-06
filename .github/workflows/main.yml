@@ -26,7 +26,7 @@ jobs:
       - run: pip install -e .
       # ADJUST THIS: build your documentation into docs/.
       # We use a custom build script for pdoc itself, ideally you just run `pdoc -o docs/ ...` here.
-      - run: pdoc pysheaf/ -o docs/
+      - run: pdoc --logo https://github.com/kb1dds/pysheaf/blob/master/pysheaf.png?raw=true pysheaf/ -o docs/
 
       - uses: actions/upload-pages-artifact@v3
         with:
