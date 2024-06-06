@@ -52,6 +52,7 @@ class Cell:
       """Dimension of the stalk on this Cell instance"""
       self.mDataAssignmentPresent = False
       self.mDataAssignment = 0
+      """Value of the (single) assignment on the Cell instance.  Only one assignment is permitted at a time."""
       self.mExtendedAssignments = {}
       self.mDataTagType = dataTagType
       self.mOptimizationCell = optimizationCell # if the cell's data assignment can be changed by the optimizer
