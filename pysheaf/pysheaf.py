@@ -49,6 +49,7 @@ class Cell:
    """
    def __init__(self,dataTagType,compareAssignmentsMethod=None, serializeAssignmentMethod=None, deSerializeAssignmentMethod=None, dataDimension=1, optimizationCell = False, extendFromThisCell=True):
       self.mDataDimension = dataDimension
+      """Dimension of the stalk on this Cell instance"""
       self.mDataAssignmentPresent = False
       self.mDataAssignment = 0
       self.mExtendedAssignments = {}
