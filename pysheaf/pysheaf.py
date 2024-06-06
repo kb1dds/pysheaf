@@ -1,5 +1,6 @@
 """ 
-debugg Python 3.6 Sheaf manipulation library
+# PySheaf main module and classes
+
 """
 # MIT License
 
@@ -54,15 +55,21 @@ class Cell:
       self.mDataAssignment = 0
       """Value of the (single) assignment on the Cell instance.  Only one assignment is permitted at a time."""
       self.mExtendedAssignments = {}
+      """Values of other parts of the assignment that have been propagated into this `Cell` via the `Cofaces` during extension.  Usually you should not touch this!"""
       self.mDataTagType = dataTagType
-      self.mOptimizationCell = optimizationCell # if the cell's data assignment can be changed by the optimizer
+      """Data type tag for limited type checking against `Coface` instances.  Can be anything hashable."""
+      self.mOptimizationCell = optimizationCell
+      """True if the cell's data assignment can be changed by the optimizer"""
       self.mExtendFromThisCell = extendFromThisCell # if the cell should be maximally extended from
       self.mBounds = [(None,None)] * self.mDataDimension # python magic for a list of tuples the length of dimension
-      self.mExtendedAssignmentConsistancyWeight = None  # If None, only compare assignments against assignment ON this cell.  Otherwise, compare incoming assignments using this weight
+      """List of pairs, one for each data dimension, specifying bounds for the assignment's value.  Use `None` if no bound is desired."""
+      self.mExtendedAssignmentConsistancyWeight = None
+      """If None, only compare assignments against assignment ON this cell.  Otherwise, compare incoming assignments using this weight.  Usually keep the default, which is `None`."""
       if compareAssignmentsMethod==None:
          self.Compare = self.DefaultCompareAssignments
       else:
          self.Compare = compareAssignmentsMethod
+         """The pseudometric for this `Cell`"""
 
       if serializeAssignmentMethod==None:
          self.mSerialize = self.DefaultSerialize
@@ -224,10 +231,14 @@ class Coface:
       edgeMethod  is called when the sheaf extends from one cell to another.
       The edge method return value will set the value on a assignment
       """
-      self.mOrientation = 0 # orientation is either -1 or 1.
+      self.mOrientation = 0
+      """Orientation is either -1 or 1.  Unused if set to 0."""
       self.mInputTagType = inputTagType
+      """Type tag for the input"""
       self.mOutputTagType = outputTagType
+      """Type tag for the output"""
       self.mEdgeMethod = edgeMethod
+      """Function to apply along the edge.  This can also be any class that will respond to Python's calling semantics.  See `dataTools.py` for other reasonable possibilities"""
       return # __init__
 
    def SetEdgeMethod(self,methodToSet):
@@ -247,7 +258,9 @@ class Assignment:
    """
    def __init__(self, valueType,value):
       self.mValue = value
-      self.mValueType = valueType 
+      """Value of the assignment"""
+      self.mValueType = valueType
+      """Data type of the assignment.  Can be anything hashable"""
       return # __init__
    def __str__(self):
       return str(self.mValue) # __str__
@@ -281,9 +294,13 @@ class Sheaf(nx.DiGraph):
       """
       nx.DiGraph.__init__(self)
       self.mNumpyNormType = np.inf
-      self.mPreventRedundantExtendedAssignments = False # If True, gives a speed up by preventing re-extending the same assignment through different paths.
+      """Norm for computing the consistency radius.  Defaults to `np.inf`, though `2` is also reasonable."""
+      self.mPreventRedundantExtendedAssignments = False
+      """If `True`, gives a speed up by preventing re-extending the same assignment through different paths. Only set to `True` if you are sure that your sheaf's underlying diagram actually commutes!"""
       self.mMaximumOptimizationIterations = 100
+      """Maximum number of iterations to run the optimizer."""
       self.mSheafOptimizer = self.DefaultSheafOptimizer
+      """Function to override the default optimizer if desired."""
       return # __init__
 
    def AddCell(self,cellIndex,cellToAdd):
