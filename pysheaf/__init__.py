@@ -1,4 +1,3 @@
-from .pysheaf import *
 """
 # Python 3.6 Sheaf theoretic toolbox
 
@@ -22,3 +21,5 @@ Most of the details you need to get started are in the `pysheaf` module.  Start 
   c. You can find all star open sets whose local consistency is less than a desired bound using `Sheaf.CellIndexesLessThanConsistencyThreshold()`.
 
 """
+
+from .pysheaf import *
