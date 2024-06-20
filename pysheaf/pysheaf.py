@@ -25,7 +25,7 @@
 # SOFTWARE.
 
 
-
+import nlopt
 import networkx as nx
 import numpy as np
 import scipy.optimize
@@ -612,6 +612,20 @@ class Sheaf(nx.DiGraph):
          self.MaximallyExtendCell(extendable_cell_index)
       return self.ComputeConsistencyRadius()# OptimizationIteration
 
+   def OptimizationIterationNlopt(self,optimizationCellDataAssignments,another_parameter):
+      """
+      This method is meant to be run by the genetic algorithm or optimizer.
+
+      :returns: The consistency radius of the sheaf
+      """
+      self.ClearExtendedAssignments()
+      self.DeserializeAssignments(optimizationCellDataAssignments)
+      extendable_cells_list = self.GetExtendableCellIndexList()
+      for extendable_cell_index in extendable_cells_list:
+         self.MaximallyExtendCell(extendable_cell_index)
+      return self.ComputeConsistencyRadius()# OptimizationIterationNlopt
+
+
    def FuseAssignment(self):
       """
       The optimizer is set up to run on all optimization cells. 
@@ -625,6 +639,32 @@ class Sheaf(nx.DiGraph):
 
    def DefaultSheafOptimizer(self, functionToIterate, serializedAssignments, boundsList,maxIterations):
       return scipy.optimize.minimize(functionToIterate,serializedAssignments,method = "SLSQP",bounds=boundsList, tol = 1e-5, options = {'maxiter':maxIterations}) # DefualtSheafOptimizer
+
+   def NloptSheafOptimizer(self, functionToIterate, serializedAssignments, boundsList,maxIterations):
+      print("***NloptSheafOptimizer***")
+      opt = nlopt.opt(nlopt.LD_AUGLAG_EQ, serializedAssignments.size)
+      boundL = [0 for x in range(serializedAssignments.size)]
+      opt.remove_inequality_constraints()
+      opt.remove_equality_constraints()
+      opt.set_xtol_rel(1e-8)
+      opt.set_stopval(1e-8)
+      opt.set_maxeval(100000)
+      opt.set_ftol_rel(1e-8)
+      opt.set_min_objective(functionToIterate)
+      result = opt.optimize(serializedAssignments)
+      opt_val = opt.last_optimum_value()
+      lastresult = opt.last_optimize_result()
+      print("result ", result)
+      print("opt value ",opt_val)
+      print("last result ",lastresult)
+      print("success code ",nlopt.SUCCESS)
+      return result
+
+   def ScipyLeastSquaresSheafOptimizer(self, functionToIterate, serializedAssignments, boundsList,maxIterations):
+      print("***ScipyLeastSquaresSheafOptimizer***")
+      result = scipy.optimize.least_squares(functionToIterate,serializedAssignments,gtol=1e-8,xtol=1e-8,ftol=1e-8,max_nfev=maxIterations,verbose=2)
+      return result
+
 
    def CreateOutputFolder(self,thePath):
       """
