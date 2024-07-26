@@ -673,3 +673,74 @@ class Sheaf(nx.DiGraph):
       f.write("\n")
       f.close()
 
+   def from_netlist(self, netlist, **kwargs):
+        '''
+Construct a sheaf using a `netlist` dictionary.
+Additional optional arguments accepted as `**kwargs`, so that these can be used as parameters as the sheaf is being built.  
+
+> [!CAUTION]
+> This function uses `eval()` to unpack and build Python expressions from strings.  You have been warned; sanitize your input!
+
+Each entry in `netlist` is named, and has fields:
+* `data_dimension`, 
+* `bounds` (optional), 
+* `value` (optional; NB: parsed with `eval()`),
+* `optimize` (optional; anything not integer `0` is `True`; default = `True`),
+* `ports` (optional),
+* `connections` (optional).
+
+The `ports` field is a dictionary naming each port, and associating a string that defines a function for the corresponding restriction map.  
+Subsequently, `connections` is a list of dictionaries, each one has a `part` and `port` field, which index into the `netlist` dictionary.
+
+Example:
+```
+{ "AND2" : { "data_dimension" : 2,
+	     "bounds" : "[(0,1)]*2",
+	     "ports" : { "IN1" : "lambda x: x[0]",
+		       "IN2" : "lambda x: x[1]",
+		       "OUT" : "lambda x: x[0]*x[1]" },
+             "connections" : [
+	       { "part" : "AND1",
+		 "port" : "IN1"}
+	     ]
+           }
+...}
+```
+> [!TIP]
+> The default behavior is that all cells created are optimization cells unless specified by the `optimize` flag.
+        '''
+        
+        # First, build the cells
+        for k,v in netlist.items():
+            if isinstance(v['data_dimension'],int):
+                ddim = v['data_dimension']
+            else:
+                ddim = eval(v['data_dimension'])
+                
+            self.AddCell(k,
+                         ps.Cell('cell',
+                                 dataDimension = ddim))
+
+            try:
+                self.GetCell(k).SetDataAssignment(ps.Assignment('cell',eval(v['value'])))
+            except KeyError:
+                self.GetCell(k).SetDataAssignment(ps.Assignment('cell',np.zeros((ddim,))))
+
+            try:
+                self.GetCell(k).mOptimizationCell = (v['optimize']!=0)
+            except KeyError:
+                self.GetCell(k).mOptimizationCell = True
+
+        # Next, build the restrictions (upper level of poset)
+        for k,v in netlist.items():
+            # Connect to each port listed
+            try v['connections']: 
+               for vp in v['connections']:
+                  part=vp['part']
+                  port=vp['port']
+                  self.AddCoface(part,k,
+                                 ps.Coface('cell','cell',
+                                           eval(parts[part]['ports'][port])))
+            except KeyError:
+               pass
+        return
