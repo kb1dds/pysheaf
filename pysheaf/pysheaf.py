@@ -673,7 +673,7 @@ class Sheaf(nx.DiGraph):
       f.write("\n")
       f.close()
 
-   def from_netlist(self, netlist, **kwargs):
+   def fromNetlist(self, netlist, **kwargs):
         '''
 Construct a sheaf using a `netlist` dictionary.
 Additional optional arguments accepted as `**kwargs`, so that these can be used as parameters as the sheaf is being built.  
@@ -723,29 +723,30 @@ Example:
                 ddim = eval(v['data_dimension'])
                 
             self.AddCell(k,
-                         ps.Cell('cell',
-                                 dataDimension = ddim))
+                         Cell('cell',
+                              dataDimension = ddim))
 
             try:
-                self.GetCell(k).SetDataAssignment(ps.Assignment('cell',eval(v['value'])))
+                self.GetCell(k).SetDataAssignment(Assignment('cell',eval(v['value'])))
             except KeyError:
-                self.GetCell(k).SetDataAssignment(ps.Assignment('cell',np.zeros((ddim,))))
+                self.GetCell(k).SetDataAssignment(Assignment('cell',np.zeros((ddim,))))
 
             try:
                 self.GetCell(k).mOptimizationCell = (v['optimize']!=0)
             except KeyError:
                 self.GetCell(k).mOptimizationCell = True
 
-        # Next, build the restrictions (upper level of poset)
+        # Next, build the restrictions
         for k,v in netlist.items():
-            # Connect to each port listed
-            try v['connections']: 
-               for vp in v['connections']:
+           # Connect to each port listed
+           try:
+              v['connections']
+           except KeyError:
+              continue
+           for vp in v['connections']:
                   part=vp['part']
                   port=vp['port']
                   self.AddCoface(part,k,
-                                 ps.Coface('cell','cell',
-                                           eval(parts[part]['ports'][port])))
-            except KeyError:
-               pass
+                                 Coface('cell','cell',
+                                        eval(netlist[part]['ports'][port])))
         return
