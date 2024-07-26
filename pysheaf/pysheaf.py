@@ -698,13 +698,18 @@ Example:
 	     "bounds" : "[(0,1)]*2",
 	     "ports" : { "IN1" : "lambda x: x[0]",
 		       "IN2" : "lambda x: x[1]",
-		       "OUT" : "lambda x: x[0]*x[1]" },
-             "connections" : [
-	       { "part" : "AND1",
+		       "OUT" : "lambda x: x[0]*x[1]" }},
+...
+    "A": {
+	"data_dimension" : 1,
+	"bounds" : "[(0,1)]",
+	"connections" : [
+	       { "part" : "AND2",
 		 "port" : "IN1"}
-	     ]
-           }
+	   ]
+    },
 ...}
+
 ```
 > [!TIP]
 > The default behavior is that all cells created are optimization cells unless specified by the `optimize` flag.
