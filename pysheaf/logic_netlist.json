@@ -1,0 +1,67 @@
+{ "AND2" : { "data_dimension" : 2,
+	     "bounds" : "[(0,1)]*2",
+	     "ports" : { "IN1" : "lambda x: x[0]",
+			 "IN2" : "lambda x: x[1]",
+			 "OUT" : "lambda x: x[0]*x[1]" }
+	   },
+  "OR2" : { "data_dimension" : 2,
+	    "bounds" : "[(0,1)]*2",
+	    "ports" : { "IN1" : "lambda x: x[0]",
+			"IN2" : "lambda x: x[1]",
+			"OUT" : "lambda x: min(x[0]+x[1],1)" }
+	  },
+  "NOT" : { "data_dimension" : 1,
+	    "bounds" : "[(0,1)]",
+	    "ports" : { "IN" : "lambda x: x[0]",
+			"OUT" : "lambda x: 1-x[0]" }
+	  },
+  "A": { "data_dimension" : 1,
+	 "bounds" : "[(0,1)]",
+	 "optimize" : 0,
+	 "connections" : [
+	     { "part" : "AND2",
+	       "port" : "IN1"}
+	 ]
+       },
+  "B": { "data_dimension" : 1,
+	 "bounds" : "[(0,1)]",
+	 "optimize" : 0,
+	 "connections" : [
+	     { "part" : "AND2",
+	       "port" : "IN2"}
+	 ]
+       },
+  "C" : { "data_dimension" : 1,
+	  "bounds" : "[(0,1)]",
+	  "optimize" : 0,
+	  "connections" : [
+    	      { "part" : "OR2",
+		"port" : "IN1"}
+	  ]
+	},
+  "E" : { "data_dimension" : 1,
+	  "bounds" : "[(0,1)]",
+	  "connections" : [
+	      { "part" : "AND2",
+		"port" : "OUT"},
+	      { "part" : "NOT",
+		"port" : "IN"}
+	  ]
+	},
+  "F" : { "data_dimension" : 1,
+	  "bounds" : "[(0,1)]",
+	  "connections" : [
+	      { "part" : "NOT",
+		"port" : "OUT"},
+	      { "part" : "OR2",
+		"port" : "IN2"}
+	  ]
+	},
+  "Q" : { "data_dimension" : 1,
+	  "bounds" : "[(0,1)]",
+	  "connections" : [
+	      { "part" : "OR2",
+		"port" : "OUT"}
+	  ]
+	}
+}
