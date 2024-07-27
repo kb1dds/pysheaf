@@ -1,3 +1,8 @@
+""" 
+# Example to demonstrate the use of `Sheaf.fromNetlist()` to build a sheaf specified by a JSON file.
+
+"""
+
 # MIT License
 
 # Copyright (c) 2024 Michael Robinson
@@ -26,7 +31,7 @@ import networkx as nx
 import pysheaf as ps
 #import matplotlib.pyplot as plt
 
-netlist=json.load(open('logic_netlist.json'))
+netlist=json.load(open('pysheaf/logic_netlist.json'))
 
 shf = ps.Sheaf()
 shf.fromNetlist(netlist)
