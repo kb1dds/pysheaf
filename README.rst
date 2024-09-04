@@ -9,7 +9,7 @@ Documentation:
 Full documentation for PySheaf is at `<http://kb1dds.github.io/pysheaf/>`_
 
 You might also think the best strategy is to look at some example code!
-There is another repo containing several examples in Jupyter notebooks: `<https://donnadietz.com/pysheaf.html>`_
+There are several examples in Jupyter notebooks here: `<https://donnadietz.com/pysheaf.html>`_
 
 Download:
 ---------
