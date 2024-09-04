@@ -6,9 +6,10 @@ This repository consists of Python 3.6 libraries for manipulating cell complexes
 Documentation:
 --------------
 
-Full (very out-of-date) documentation for PySheaf verson v0.xx is at `<http://kb1dds.github.io/pysheaf/>`_
+Full documentation for PySheaf is at `<http://kb1dds.github.io/pysheaf/>`_
 
-Right now, the best strategy is to look at the example code!
+You might also think the best strategy is to look at some example code!
+There is another repo containing several examples in Jupyter notebooks: `<https://github.com/kb1dds/pysheaf_examples>`
 
 Download:
 ---------
