@@ -154,8 +154,8 @@ class Cell:
    def AbleToComputeConsistency(self):
       multiple_extended_assignments = (len(self.mExtendedAssignments) > 1)
       data_and_extended_assignments = self.mDataAssignmentPresent and (len(self.mExtendedAssignments) != 0)
-      return multiple_extended_assignments or data_and_extended_assignments # AbleToComputeConsistency
-
+      return (multiple_extended_assignments and self.mExtendedAssignmentConsistancyWeight!=None) \
+              or data_and_extended_assignments # AbleToComputeConsistency
    def ComputeConsistency(self, numpyNormType=np.inf, cellStartIndices=None): 
       """
       Computes the error between the data assignments and extended assignments on the sheaf
@@ -513,7 +513,10 @@ class Sheaf(nx.DiGraph):
             else:
                cell_consistancies_list.append(self.GetCell(cell_index).ComputeConsistency(self.mNumpyNormType, cellStartIndices=cellIndices))
 
-      return np.linalg.norm(cell_consistancies_list,ord=self.mNumpyNormType) # ComputeConsistencyRadius
+      if len(cell_consistancies_list)>0:
+         return np.linalg.norm(cell_consistancies_list,ord=self.mNumpyNormType) # ComputeConsistencyRadius
+      else: 
+         return None
    
    def ComputeStarLocalConsistencyRadius(self,cellIndex):
       """
