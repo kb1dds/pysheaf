@@ -35,9 +35,42 @@ import datetime
 import socket
 from itertools import combinations
 from collections import defaultdict
+from aenum import Enum
 
 # Assignment Types
 CONST_VALUE_TYPE_SCALAR = "Scalar" #for ints, doubles, etc. one value. 
+
+class CellType(Enum):
+
+   CONSTRAINT = 'constraint'
+   NON_CONSTRAINT = 'non_constraint'
+   ANY = 'any'
+
+   @classmethod
+   def _missing_name_(cls, name):
+      for member in cls:
+         if member.name.lower() == name.lower():
+            return member
+
+   @classmethod
+   def _missing_(cls, value):
+      return cls.ANY
+
+class CellConstraintType(Enum):
+
+   EQUALITY = 'eq'
+   INEQUALITY = 'ineq'
+   NONE = None
+
+   @classmethod
+   def _missing_name_(cls, name):
+      for member in cls:
+         if member.name.lower() == name.lower():
+            return member
+
+   @classmethod
+   def _missing_(cls, value):
+      return cls.NONE
 
 class Cell:
    """
@@ -48,7 +81,7 @@ class Cell:
    The cell has a compare method which is used to compare two of the same types of assignment objects. 
 
    """
-   def __init__(self,dataTagType,compareAssignmentsMethod=None, serializeAssignmentMethod=None, deSerializeAssignmentMethod=None, dataDimension=1, optimizationCell = False, extendFromThisCell=True):
+   def __init__(self,dataTagType,compareAssignmentsMethod=None, serializeAssignmentMethod=None, deSerializeAssignmentMethod=None, dataDimension=1, optimizationCell = False, extendFromThisCell=True, constraintType:CellConstraintType = CellConstraintType.NONE):
       self.mDataDimension = dataDimension
       """Dimension of the stalk on this Cell instance"""
       self.mDataAssignmentPresent = False
@@ -80,9 +113,23 @@ class Cell:
          self.mDeserialize = self.DefaultDeserialize
       else:
          self.mDeserialize = deSerializeAssignmentMethod
+
+      self.mConsistancyWeight = 1.0
+
+      self.mConstraintType = constraintType
+
       return # __init__
 
    def SetDataAssignment(self, dataAssignment):
+      if type(dataAssignment.mValue) == float:
+         assert self.mDataDimension == 1
+      elif type(dataAssignment.mValue) == list: 
+         assert len(dataAssignment.mValue) == self.mDataDimension, "Dimension of assignment is not equal to self.mDataDimension"
+      elif type(dataAssignment.mValue) == np.array or type(dataAssignment.mValue) == np.ndarray:
+         assert dataAssignment.mValue.size == self.mDataDimension, "Dimension of assignment is not equal to self.mDataDimension"
+      else:
+         print('WARNING:  Dimension of assignment not checked')
+
       if self.mDataTagType == dataAssignment.mValueType:
          self.mDataAssignmentPresent = True
          self.mDataAssignment = dataAssignment
@@ -154,8 +201,8 @@ class Cell:
    def AbleToComputeConsistency(self):
       multiple_extended_assignments = (len(self.mExtendedAssignments) > 1)
       data_and_extended_assignments = self.mDataAssignmentPresent and (len(self.mExtendedAssignments) != 0)
-      return (multiple_extended_assignments and self.mExtendedAssignmentConsistancyWeight!=None) \
-              or data_and_extended_assignments # AbleToComputeConsistency
+      return multiple_extended_assignments or data_and_extended_assignments # AbleToComputeConsistency
+
    def ComputeConsistency(self, numpyNormType=np.inf, cellStartIndices=None): 
       """
       Computes the error between the data assignments and extended assignments on the sheaf
@@ -171,13 +218,26 @@ class Cell:
       assignment_comparisions = []
       if self.mDataAssignmentPresent == True: 
          for assignment in tmp_assignments:
-            assignment_comparisions.append(self.Compare(self.mDataAssignment.mValue,assignment.mValue))
+            comparison_result = self.Compare(self.mDataAssignment.mValue,assignment.mValue)*self.mConsistancyWeight
+            if not isinstance(comparison_result, np.ndarray):
+               if not isinstance(comparison_result, list):
+                  comparison_result = np.array([comparison_result])
+               else:
+                  comparison_result = np.array(comparison_result)
+            assignment_comparisions.append(comparison_result)
+
       if self.mExtendedAssignmentConsistancyWeight is not None:
          for current_assignment_index in range(len(tmp_assignments)):
-            for test_assignment_index in range(len(tmp_assignments)):
+            for test_assignment_index in range(current_assignment_index, len(tmp_assignments)):
                if current_assignment_index != test_assignment_index:
-                  assignment_comparisions.append(self.Compare(tmp_assignments[current_assignment_index].mValue,tmp_assignments[test_assignment_index].mValue)*self.mExtendedAssignmentConsistancyWeight)
-      
+                  comparison_result = self.Compare(tmp_assignments[current_assignment_index].mValue,tmp_assignments[test_assignment_index].mValue)*self.mExtendedAssignmentConsistancyWeight 
+                  if not isinstance(comparison_result, np.ndarray):
+                     if not isinstance(comparison_result, list):
+                        comparison_result = np.array([comparison_result])
+                     else:
+                        comparison_result = np.array(comparison_result)
+                  assignment_comparisions.append(comparison_result)
+
       return np.linalg.norm(np.array(assignment_comparisions,dtype='float'),ord=numpyNormType) # ComputeConsistency
 
    def DefaultCompareAssignments(self,leftValue,rightValue):
@@ -301,15 +361,20 @@ class Sheaf(nx.DiGraph):
       """Maximum number of iterations to run the optimizer."""
       self.mSheafOptimizer = self.DefaultSheafOptimizer
       """Function to override the default optimizer if desired."""
+      self.mOptConstraints = None
       return # __init__
 
    def AddCell(self,cellIndex,cellToAdd):
       self.add_node(cellIndex,vertex = cellToAdd)
       return # AddCell
 
-   def AddCoface(self,cellIndexFrom, cellIndexTo, cofaceToAdd):
+   def AddCoface(self,cellIndexFrom, cellIndexTo, cofaceToAdd, restriction_str=None):
       if (self.GetCell(cellIndexFrom).mDataTagType == cofaceToAdd.mInputTagType) and (self.GetCell(cellIndexTo).mDataTagType == cofaceToAdd.mOutputTagType):
-         self.add_edge(cellIndexFrom,cellIndexTo,edge=cofaceToAdd)
+
+         if restriction_str:            
+            self.add_edge(cellIndexFrom,cellIndexTo,edge=cofaceToAdd, restriction=restriction_str)
+         else:
+            self.add_edge(cellIndexFrom,cellIndexTo,edge=cofaceToAdd)
       else:
          print("Sheaf::AddCoface: Error, coface types do not match cells from:",cellIndexFrom,"to:",cellIndexTo)
       return # AddCoface
@@ -493,7 +558,7 @@ class Sheaf(nx.DiGraph):
                cell_index_below_threshold.append(cell_index)
       return cell_index_below_threshold # CellIndexesLessThanConsistencyThreshold
 
-   def ComputeLocalConsistencyRadius(self,cellIndices=None):
+   def ComputeLocalConsistencyRadius(self,cellIndices=None, cellTypes:CellType=CellType.ANY):
       """
       This method will call compute consistency on all cells (default) or those specified by cellIndices in the sheaf. 
       The default behavior is to then return the max error. This can be changed by setting mNumpyNormType
@@ -507,7 +572,16 @@ class Sheaf(nx.DiGraph):
 
       cell_consistancies_list = []
       for cell_index in cell_index_list:
-         if self.GetCell(cell_index).AbleToComputeConsistency() == True:
+
+         able_to_compute_consistency = self.GetCell(cell_index).AbleToComputeConsistency()
+         cell_constraint_type = self.GetCell(cell_index).mConstraintType
+         should_compute_consistency = (  (cellTypes==CellType.ANY)
+                                     or ((cellTypes==CellType.CONSTRAINT)     and (cell_constraint_type!=CellConstraintType.NONE))
+                                     or ((cellTypes==CellType.NON_CONSTRAINT) and (cell_constraint_type==CellConstraintType.NONE)) 
+                                     )
+         do_consistency_calc = able_to_compute_consistency and should_compute_consistency
+
+         if do_consistency_calc:
             if cellIndices is None:
                cell_consistancies_list.append(self.GetCell(cell_index).ComputeConsistency(self.mNumpyNormType))
             else:
@@ -517,7 +591,7 @@ class Sheaf(nx.DiGraph):
          return np.linalg.norm(cell_consistancies_list,ord=self.mNumpyNormType) # ComputeConsistencyRadius
       else: 
          return None
-   
+
    def ComputeStarLocalConsistencyRadius(self,cellIndex):
       """
       This method computes the local consistency radius of a star started on a given cellIndex.
@@ -527,14 +601,14 @@ class Sheaf(nx.DiGraph):
       """
       return self.ComputeLocalConsistencyRadius([cellIndex]+[item for v in nx.dfs_successors(self,cellIndex).values() for item in v])
    
-   def ComputeConsistencyRadius(self):
+   def ComputeConsistencyRadius(self, cellTypes:CellType=CellType.ANY):
       """
       This method will call compute consistency on all cells (default) or those specified by cell_indexes in the sheaf. 
       The default behavior is to then return the max error. This can be changed by setting mNumpyNormType
 
       :returns: consistency radius of the sheaf assignment
       """
-      return self.ComputeLocalConsistencyRadius(cellIndices=None)
+      return self.ComputeLocalConsistencyRadius(cellIndices=None, cellTypes=cellTypes)
 
    def SerializeAssignments(self):
       """
@@ -613,7 +687,22 @@ class Sheaf(nx.DiGraph):
       extendable_cells_list = self.GetExtendableCellIndexList()
       for extendable_cell_index in extendable_cells_list:
          self.MaximallyExtendCell(extendable_cell_index)
+
       return self.ComputeConsistencyRadius()# OptimizationIteration
+
+   # TODO: This is a lot here that's redundant...
+   def OptimizationConstraintsIteration(self,optimizationCellDataAssignments):
+      """
+      This method is meant to be run by the genetic algorithm or optimizer. 
+
+      :returns: The consistency radius of the sheaf
+      """
+      self.ClearExtendedAssignments()
+      self.DeserializeAssignments(optimizationCellDataAssignments)
+      extendable_cells_list = self.GetExtendableCellIndexList()
+      for extendable_cell_index in extendable_cells_list:
+         self.MaximallyExtendCell(extendable_cell_index)
+      return self.ComputeConsistencyRadius(cellTypes =CellType.CONSTRAINT)# OptimizationIteration
 
    def FuseAssignment(self):
       """
@@ -622,12 +711,15 @@ class Sheaf(nx.DiGraph):
       """
       optimization_cell_data_values = self.SerializeAssignments()
       bounds_list = self.GetBoundsList()
-      optimizer_results = self.mSheafOptimizer(self.OptimizationIteration,optimization_cell_data_values,bounds_list,self.mMaximumOptimizationIterations)
+      constraint_cells_consistency_radius = self.OptimizationConstraintsIteration(optimization_cell_data_values)
+      if constraint_cells_consistency_radius:
+         self.mOptConstraints = ({'type': 'eq', 'fun': self.OptimizationConstraintsIteration})
+      optimizer_results = self.mSheafOptimizer(self.OptimizationIteration,optimization_cell_data_values,bounds_list,self.mMaximumOptimizationIterations,self.mOptConstraints)
       return optimizer_results # FuseAssignment 
 
 
-   def DefaultSheafOptimizer(self, functionToIterate, serializedAssignments, boundsList,maxIterations):
-      return scipy.optimize.minimize(functionToIterate,serializedAssignments,method = "SLSQP",bounds=boundsList, tol = 1e-5, options = {'maxiter':maxIterations}) # DefualtSheafOptimizer
+   def DefaultSheafOptimizer(self, functionToIterate, serializedAssignments, boundsList,maxIterations,constraints):
+      return scipy.optimize.minimize(functionToIterate,serializedAssignments,method = "SLSQP",bounds=boundsList, tol = 1e-5, options = {'maxiter':maxIterations}, constraints=constraints) # DefualtSheafOptimizer
 
    def CreateOutputFolder(self,thePath):
       """
